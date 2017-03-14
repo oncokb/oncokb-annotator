@@ -755,6 +755,7 @@ def main(argv):
             print '     1) ONCOTREE_CODE in clinical data file'
             print '     2) ONCOTREE_CODE exist in MAF'
             print '     3) default tumor type (-t)'
+            print '  Default OncoKB base url is http://oncokb.org'
             sys.exit()
         elif opt in ("-m"):
             inputmaffile = arg
