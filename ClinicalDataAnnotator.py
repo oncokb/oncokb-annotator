@@ -19,7 +19,7 @@ def main(argv):
 
     for opt, arg in opts:
         if opt == '-h':
-            print 'ClinicalDataAnnotator.py -i <input clinical file> -o <output clinical file> -a <annotated alteration files, separate by #>'
+            print 'ClinicalDataAnnotator.py -i <input clinical file> -o <output clinical file> -a <annotated alteration files, separate by ,>'
             print '  Essential clinical columns:'
             print '    SAMPLE_ID: sample ID'
             sys.exit()
@@ -28,7 +28,7 @@ def main(argv):
         elif opt in ("-o"):
             outputclinicalfile = arg
         elif opt in ("-a"):
-            annotatedalterationfiles = arg.split('#')
+            annotatedalterationfiles = arg.split(',')
 
     if inputclinicalfile == '' or outputclinicalfile=='' or len(annotatedalterationfiles)==0:
         print 'for help: python ClinicalDataAnnotator.py -h'
@@ -44,7 +44,7 @@ if __name__ == "__main__":
     # argv = [
     #     '-i', 'data/example_clinical.txt',
     #     '-o', 'data/example_clinical.oncokb.txt',
-    #     '-a', 'data/example_maf.oncokb.txt#data/example_cna.oncokb.txt'
+    #     '-a', 'data/example_maf.oncokb.txt,data/example_cna.oncokb.txt'
     # ]
     # main(argv)
 

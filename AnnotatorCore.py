@@ -8,6 +8,8 @@ import urllib
 import os.path
 import re
 
+csv.field_size_limit(sys.maxsize) # for reading large files
+
 baseurl = "http://oncokb.org"
 
 levels = [
@@ -359,7 +361,7 @@ def processclinicaldata(annotatedmutfiles, clinicalfile, outfile):
     sampledrivers = {}
     sampleactionablecount = {}
     for annotatedmutfile in annotatedmutfiles:
-        print annotatedmutfile
+        # print annotatedmutfile
         with open(annotatedmutfile, 'rU') as mutfile:
             reader = csv.reader(mutfile, delimiter='\t')
             headers = readheaders(reader)
@@ -523,47 +525,52 @@ oncokbcache = {}
 
 def cacheannotated(annotatedfile, defaultCancerType, cancerTypeMap):
     with open(annotatedfile, 'r') as infile:
-        reader = csv.reader(infile, delimiter='\t')
-        headers = readheaders(reader)
+        try:
+            reader = csv.reader(infile, delimiter='\t')
+            headers = readheaders(reader)
 
-        ihugo = geIndexOfHeader(headers, ['HUGO_SYMBOL', 'HUGO_GENE_SYMBOL'])
-        iconsequence = geIndexOfHeader(headers, ['VARIANT_CLASSIFICATION', 'MUTATION_TYPE'])
-        ihgvs = geIndexOfHeader(headers, ['ALTERATION', 'HGVSP_SHORT', 'AMINO_ACID_CHANGE', 'AA_CHANGE', 'FUSION'])
-        isample = geIndexOfHeader(headers, ['SAMPLE_ID', 'TUMOR_SAMPLE_BARCODE'])
-        istart = geIndexOfHeader(headers, ['PROTEIN_START'])
-        iend = geIndexOfHeader(headers, ['PROTEIN_END'])
-        icancertype = geIndexOfHeader(headers, ['ONCOTREE_CODE', 'CANCER_TYPE'])
-        # imutationeffect = headers['MUTATION_EFFECT']
-        ioncogenic = headers['ONCOGENIC']
+            ihugo = geIndexOfHeader(headers, ['HUGO_SYMBOL', 'HUGO_GENE_SYMBOL'])
+            iconsequence = geIndexOfHeader(headers, ['VARIANT_CLASSIFICATION', 'MUTATION_TYPE'])
+            ihgvs = geIndexOfHeader(headers, ['ALTERATION', 'HGVSP_SHORT', 'AMINO_ACID_CHANGE', 'AA_CHANGE', 'FUSION'])
+            isample = geIndexOfHeader(headers, ['SAMPLE_ID', 'TUMOR_SAMPLE_BARCODE'])
+            istart = geIndexOfHeader(headers, ['PROTEIN_START'])
+            iend = geIndexOfHeader(headers, ['PROTEIN_END'])
+            icancertype = geIndexOfHeader(headers, ['ONCOTREE_CODE', 'CANCER_TYPE'])
+            # imutationeffect = headers['MUTATION_EFFECT']
+            ioncogenic = headers['ONCOGENIC']
 
-        for row in reader:
-            hugo = row[ihugo]
-            if hugo not in curatedgenes:
-                continue
+            for row in reader:
+                try:
+                    hugo = row[ihugo]
+                    if hugo not in curatedgenes:
+                        continue
 
-            hgvs = row[ihgvs]
-            if hgvs.startswith('p.'):
-                hgvs = hgvs[2:]
+                    hgvs = row[ihgvs]
+                    if hgvs.startswith('p.'):
+                        hgvs = hgvs[2:]
 
-            sample = row[isample]
-            cancertype = defaultCancerType
-            if icancertype >= 0:
-                cancertype = row[icancertype]
-            if sample in cancerTypeMap:
-                cancertype = cancerTypeMap[sample]
-            key = '-'.join([hugo, hgvs, cancertype])
-            #            oncokb = row[ioncokb]
+                    sample = row[isample]
+                    cancertype = defaultCancerType
+                    if icancertype >= 0:
+                        cancertype = row[icancertype]
+                    if sample in cancerTypeMap:
+                        cancertype = cancerTypeMap[sample]
+                    key = '-'.join([hugo, hgvs, cancertype])
+                    #            oncokb = row[ioncokb]
 
-            oncokbcache[key] = {}
-            # oncokbcache[key]['mutation_effect'] = row[imutationeffect]
-            oncokbcache[key]['oncogenic'] = row[ioncogenic]
-            for l in levels:
-                il = headers[l]
-                if il < len(row):
-                    oncokbcache[key][l] = row[il].split(',')
-                else:
-                    oncokbcache[key][l] = []
-
+                    oncokbcache[key] = {}
+                    # oncokbcache[key]['mutation_effect'] = row[imutationeffect]
+                    oncokbcache[key]['oncogenic'] = row[ioncogenic]
+                    for l in levels:
+                        il = headers[l]
+                        if il < len(row):
+                            oncokbcache[key][l] = row[il].split(',')
+                        else:
+                            oncokbcache[key][l] = []
+                except Exception:
+                    pass
+        except Exception:
+            pass
 
 def geIndexOfHeader(headers, keywords):
     for k in keywords:
@@ -575,11 +582,11 @@ def geIndexOfHeader(headers, keywords):
 def pullsinglehotspots(hugo, proteinchange, alterationtype, consequence, start, end, cancertype):
     try:
         if hugo in missensesinglehotspots and consequence == "missense_variant":
-            for i in range(start, end + 1):
+            for i in range(int(start), int(end) + 1):
                 if i in missensesinglehotspots[hugo]:
                     return "Y"
         if hugo in indelsinglehotspots and (consequence == "inframe_insertion" or consequence == "inframe_insertion"):
-            for i in range(start, end + 1):
+            for i in range(int(start), int(end) + 1):
                 if i in indelsinglehotspots[hugo]:
                     return "Y"
     except TypeError:
@@ -590,7 +597,7 @@ def pullsinglehotspots(hugo, proteinchange, alterationtype, consequence, start, 
 def pull3dhotspots(hugo, proteinchange, alterationtype, consequence, start, end, cancertype):
     try:
         if hugo in _3dhotspots and consequence == "missense_variant":
-            for i in range(start, end + 1):
+            for i in range(int(start), int(end) + 1):
                 if i in _3dhotspots[hugo]:
                     return "Y"
     except TypeError:

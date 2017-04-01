@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
-python MafAnnotator.py -i data/example_maf.txt -o data/example_maf.oncokb.txt -c data/example_clinical.txt
-python CnaAnnotator.py -i data/example_cna.txt -o data/example_cna.oncokb.txt -c data/example_clinical.txt
-python ClinicalDataAnnotator.py -i data/example_clinical.txt -o data/example_clinical.oncokb.txt -a data/example_maf.oncokb.txt#data/example_cna.oncokb.txt
+IMAF="data/example_maf.txt"
+OMAF="data/example_maf.oncokb.txt"
+ICNA="data/example_cna.txt"
+OCNA="data/example_cna.oncokb.txt"
+IC="data/example_clinical.txt"
+OC="data/example_clinical.oncokb.txt"
+python MafAnnotator.py -i $IMAF -o $OMAF -c $IC
+python CnaAnnotator.py -i $ICNA -o $OCNA -c $IC
+python ClinicalDataAnnotator.py -i $IC -o $OC -a $OMAF,$OCNA
 
