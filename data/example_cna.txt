@@ -1,0 +1,3 @@
+Gene Symbol	Locus ID	Cytoband	TCGA-05-4417-01	TCGA-02-0033-01
+ERBB2	0	0	2	1
+CDK4	0	0	-2	2
