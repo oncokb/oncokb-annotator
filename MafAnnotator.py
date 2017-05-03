@@ -65,12 +65,12 @@ def main(argv):
     print 'done!'
 
 if __name__ == "__main__":
-    # argv = [
-    #     '-i', 'data/example_maf.txt',
-    #     '-o', 'data/example_maf.oncokb.txt',
-    #     '-c', 'data/example_clinical.txt',
-    # ]
-    # main(argv)
+    argv = [
+        '-i', 'data/example_maf.txt',
+        '-o', 'data/example_maf.oncokb.txt',
+        '-c', 'data/example_clinical.txt',
+    ]
+    main(argv)
 
     # print sys.argv[1:]
-    main(sys.argv[1:])
+    # main(sys.argv[1:])

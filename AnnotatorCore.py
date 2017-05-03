@@ -99,15 +99,22 @@ def processalterationevents(eventfile, outfile, defaultCancerType, cancerTypeMap
     with open(eventfile, 'rU') as infile:
         reader = csv.reader(infile, delimiter='\t')
 
+        defaultoncokbres = ""
         headers = readheaders(reader)
         outf.write(headers['^-$'])
+
         # outf.write("\tmutation_effect")
         outf.write("\toncogenic")
+        defaultoncokbres += "\t"
         for l in levels:
             outf.write('\t' + l)
+            defaultoncokbres += "\t"
         outf.write("\tHighest_level")
-        outf.write("is-a-hotspot")
-        outf.write("is-a-3d-hotspot")
+        defaultoncokbres += "\t"
+
+        outf.write("\tis-a-hotspot")
+        outf.write("\tis-a-3d-hotspot")
+
         outf.write("\n")
 
         ihugo = geIndexOfHeader(headers, ['HUGO_SYMBOL', 'HUGO_GENE_SYMBOL'])
@@ -181,6 +188,8 @@ def processalterationevents(eventfile, outfile, defaultCancerType, cancerTypeMap
                 end = start
 
             oncokblevels = pulloncokb(hugo, hgvs, None, consequence, start, end, cancertype)
+            if oncokblevels=="":
+                oncokblevels = defaultoncokbres
             row.append(oncokblevels)
 
             hotspot = pullsinglehotspots(hugo, hgvs, None, consequence, start, end, cancertype)
