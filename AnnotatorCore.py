@@ -59,7 +59,7 @@ def getsampleid(rawsampleid):
 
 def getcuratedgenes(genelistfile):
     genelist = set()
-    with open(genelistfile, 'r') as infile:
+    with open(genelistfile, 'rU') as infile:
         reader = csv.reader(infile, delimiter='\t')
         for row in reader:
             genelist.add(row[1])
@@ -96,7 +96,7 @@ def processalterationevents(eventfile, outfile, defaultCancerType, cancerTypeMap
     if os.path.isfile(outfile):
         cacheannotated(outfile, defaultCancerType, cancerTypeMap)
     outf = open(outfile, 'w+', 1000)
-    with open(eventfile, 'r') as infile:
+    with open(eventfile, 'rU') as infile:
         reader = csv.reader(infile, delimiter='\t')
 
         headers = readheaders(reader)
@@ -198,7 +198,7 @@ def processsv(svdata, outfile, defaultCancerType, cancerTypeMap, retainonlycurat
     if os.path.isfile(outfile):
         cacheannotated(outfile, defaultCancerType, cancerTypeMap)
     outf = open(outfile, 'w+')
-    with open(svdata, 'r') as infile:
+    with open(svdata, 'rU') as infile:
         reader = csv.reader(infile, delimiter='\t')
 
         headers = readheaders(reader)
@@ -277,7 +277,7 @@ def processcnagisticdata(cnafile, outfile, defaultCancerType, cancerTypeMap, ret
     if os.path.isfile(outfile):
         cacheannotated(outfile, defaultCancerType, cancerTypeMap)
     outf = open(outfile, 'w+', 1000)
-    with open(cnafile, 'r') as infile:
+    with open(cnafile, 'rU') as infile:
         reader = csv.reader(infile, delimiter='\t')
         headers = readheaders(reader)
         startofsamples = getfirstcolumnofsampleingisticdata(headers['^-$'].split('\t'))
@@ -428,7 +428,7 @@ def processclinicaldata(annotatedmutfiles, clinicalfile, outfile):
 
     outf = open(outfile, 'w+')
 
-    with open(clinicalfile, 'r') as clinfile:
+    with open(clinicalfile, 'rU') as clinfile:
         reader = csv.reader(clinfile, delimiter='\t')
         headers = readheaders(reader)
         outf.write(headers['^-$'])
@@ -473,7 +473,7 @@ def processclinicaldata(annotatedmutfiles, clinicalfile, outfile):
 
 def processmutationdata(mutfile, outfile, clinicaldata):
     outf = open(outfile, 'w+')
-    with open(mutfile, 'r') as infile:
+    with open(mutfile, 'rU') as infile:
         reader = csv.reader(infile, delimiter='\t')
         headers = readheaders(reader)
 
@@ -524,7 +524,7 @@ oncokbcache = {}
 
 
 def cacheannotated(annotatedfile, defaultCancerType, cancerTypeMap):
-    with open(annotatedfile, 'r') as infile:
+    with open(annotatedfile, 'rU') as infile:
         try:
             reader = csv.reader(infile, delimiter='\t')
             headers = readheaders(reader)
@@ -703,7 +703,7 @@ def gettreatments(evidence):
 
 
 def readCancerTypes(clinicalFile, data):
-    with open(clinicalFile, 'r') as infile:
+    with open(clinicalFile, 'rU') as infile:
         reader = csv.reader(infile, delimiter='\t')
         headers = readheaders(reader)
 
