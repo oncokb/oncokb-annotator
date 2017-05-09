@@ -6,7 +6,6 @@ from AnnotatorCore import *
 
 def main(argv):
 
-    baseurl = 'http://oncokb.org'
     inputmaffile = ''
     inputclinicalfile = ''
     outputmaffile = ''
@@ -48,7 +47,7 @@ def main(argv):
         elif opt in ("-t"):
             defaultcancertype = arg
         elif opt in ("-u"):
-            baseurl = arg
+            setbaseurl(arg)
 
     if inputmaffile == '' or outputmaffile=='':
         print 'for help: python MafAnnotator.py -h'

@@ -6,7 +6,6 @@ from AnnotatorCore import *
 
 def main(argv):
 
-    baseurl = 'http://oncokb.org'
     inputclinicalfile = ''
     outputclinicalfile = ''
     annotatedalterationfiles = []

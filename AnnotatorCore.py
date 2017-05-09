@@ -12,6 +12,9 @@ csv.field_size_limit(sys.maxsize) # for reading large files
 
 baseurl = "http://oncokb.org"
 
+def setbaseurl(u):
+    baseurl = u
+
 levels = [
     'LEVEL_1',
     'LEVEL_2A',
