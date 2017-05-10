@@ -102,21 +102,20 @@ def processalterationevents(eventfile, outfile, defaultCancerType, cancerTypeMap
     with open(eventfile, 'rU') as infile:
         reader = csv.reader(infile, delimiter='\t')
 
-        defaultoncokbres = ""
         headers = readheaders(reader)
         outf.write(headers['^-$'])
 
-        # outf.write("\tmutation_effect")
-        outf.write("\toncogenic")
-        defaultoncokbres += "\t"
-        for l in levels:
-            outf.write('\t' + l)
-            defaultoncokbres += "\t"
-        outf.write("\tHighest_level")
-        defaultoncokbres += "\t"
-
         outf.write("\tis-a-hotspot")
         outf.write("\tis-a-3d-hotspot")
+
+        # outf.write("\tmutation_effect")
+        outf.write("\toncogenic")
+
+        for l in levels:
+            outf.write('\t' + l)
+
+        outf.write("\tHighest_level")
+
 
         outf.write("\n")
 
@@ -190,16 +189,14 @@ def processalterationevents(eventfile, outfile, defaultCancerType, cancerTypeMap
             if start is not None and end is None:
                 end = start
 
-            oncokblevels = pulloncokb(hugo, hgvs, None, consequence, start, end, cancertype)
-            if oncokblevels=="":
-                oncokblevels = defaultoncokbres
-            row.append(oncokblevels)
-
             hotspot = pullsinglehotspots(hugo, hgvs, None, consequence, start, end, cancertype)
             row.append(hotspot)
 
             _3dhotspot = pull3dhotspots(hugo, hgvs, None, consequence, start, end, cancertype)
             row.append(_3dhotspot)
+
+            oncokblevels = pulloncokb(hugo, hgvs, None, consequence, start, end, cancertype)
+            row.append(oncokblevels)
 
             outf.write('\t'.join(row) + "\n")
 
