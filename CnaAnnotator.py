@@ -40,7 +40,7 @@ def main(argv):
         elif opt in ("-t"):
             defaultcancertype = arg
         elif opt in ("-u"):
-            setbaseurl(arg)
+            setoncokbbaseurl(arg)
 
     if inputcnafile == '' or outputcnafile=='':
         print 'for help: python MafAnnotator.py -h'

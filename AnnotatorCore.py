@@ -10,10 +10,17 @@ import re
 
 csv.field_size_limit(sys.maxsize) # for reading large files
 
-baseurl = "http://oncokb.org"
+oncokbbaseurl = "http://oncokb.org"
+def setoncokbbaseurl(u):
+    oncokbbaseurl = u
 
-def setbaseurl(u):
-    baseurl = u
+cancerhotspotsbaseurl = "http://cancerhotspots.org"
+def setcancerhotspotsbaseurl(u):
+    cancerhotspotsbaseurl = u
+
+_3dhotspotsbaseurl = "http://cancerhotspots.org/3d"
+def set3dhotspotsbaseurl(u):
+    _3dhotspotsbaseurl = u
 
 levels = [
     'LEVEL_1',
@@ -87,9 +94,9 @@ def gethotspots(url, type):
     return hotspots
 
 
-missensesinglehotspots = gethotspots("http://cancerhotspots.mskcc.org/internal/api/hotspots/single", "single residue")
-indelsinglehotspots = gethotspots("http://cancerhotspots.mskcc.org/internal/api/hotspots/single", "in-frame indel")
-_3dhotspots = gethotspots("http://3dhotspots.org/3d/api/hotspots/3d", None)
+missensesinglehotspots = gethotspots(cancerhotspotsbaseurl+"/api/hotspots/single", "single residue")
+indelsinglehotspots = gethotspots(cancerhotspotsbaseurl+"/api/hotspots/single", "in-frame indel")
+_3dhotspots = gethotspots(_3dhotspotsbaseurl+"/api/hotspots/3d", None)
 curatedgenes |= set(missensesinglehotspots.keys())
 curatedgenes |= set(indelsinglehotspots.keys())
 curatedgenes |= set(_3dhotspots.keys())
@@ -623,7 +630,7 @@ def pulloncokb(hugo, proteinchange, alterationtype, consequence, start, end, can
         # url = 'http://dashi-dev.cbio.mskcc.org:8080/oncokb/api/indicator.json?source=cbioportal'
         # url = 'http://localhost:8080/oncokb/api/indicator.json?source=cbioportal'
         # url = 'http://dashi.cbio.mskcc.org:38080/internal/legacy-api/indicator.json?source=cbioportal'
-        url = baseurl+'/legacy-api/indicator.json?source=cbioportal'
+        url = oncokbbaseurl+'/legacy-api/indicator.json?source=cbioportal'
         url += '&hugoSymbol=' + hugo
         url += '&alteration=' + proteinchange
         url += '&tumorType=' + cancertype

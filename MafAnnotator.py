@@ -12,14 +12,14 @@ def main(argv):
     defaultcancertype = 'cancer'
 
     try:
-        opts, args = getopt.getopt(argv, "hi:o:c:t:u:")
+        opts, args = getopt.getopt(argv, "hi:o:c:t:u:v:")
     except getopt.GetoptError:
         print 'for help: python MafAnnotator.py -h'
         sys.exit(2)
 
     for opt, arg in opts:
         if opt == '-h':
-            print 'MafAnnotator.py -i <input MAF file> -o <output MAF file> [-c <input clinical file>] [-t <default tumor type>] [-u base-url]'
+            print 'MafAnnotator.py -i <input MAF file> -o <output MAF file> [-c <input clinical file>] [-t <default tumor type>] [-u oncokb-base-url] [-v cancerhotspots-base-url]'
             print '  Essential MAF columns (case insensitive):'
             print '    HUGO_SYMBOL: Hugo gene symbol'
             print '    VARIANT_CLASSIFICATION: Translational effect of variant allele'
@@ -47,7 +47,9 @@ def main(argv):
         elif opt in ("-t"):
             defaultcancertype = arg
         elif opt in ("-u"):
-            setbaseurl(arg)
+            setoncokbbaseurl(arg)
+        elif opt in ("-v"):
+            setcancerhotspotsbaseurl(arg)
 
     if inputmaffile == '' or outputmaffile=='':
         print 'for help: python MafAnnotator.py -h'
