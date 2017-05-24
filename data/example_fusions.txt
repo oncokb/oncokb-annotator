@@ -1,0 +1,6 @@
+Hugo_Symbol	Entrez_Gene_Id	Center	Tumor_Sample_Barcode	Fusion	DNA_support	RNA_support	Method	Frame	Comments
+MLL2	0	.	S1	MLL2-intragenic	yes	unknown	NA	unknown	
+EML4	0	.	S2	ALK-EML4 fusion	yes	unknown	NA	unknown	EML4 (NM_019063) - ALK (NM_004304) fusion (EML4 exons 1-14 with ALK exons 20-29) : c.1328:EML4_c.3173-203:ALKinv
+EGFR	0	.	S3	EGFR-intragenic	yes	unknown	NA	unknown	EGFR (NM_005228) Rearrangement : c.89-15335_c.889+605inv Note: The EGFR Rearrangement results in the intragenic inversion of exons2-7 of EGFR. While this rearrangement is not the canonical EGFR vIII intragenic deletion event, there might be additional events, not detected by MSK-IMPACT, the possibility of a EGFR vIII deletion cannot be excluded.
+ERG	0	.	S4	TMPRSS2-ERG fusion	yes	unknown	NA	out of frame	TMPRSS2 (NM_001135099) - ERG (NM_182918) fusion (TMPRSS2 exon 1 fused to ERG exons 2-10): c.56-27:TMPSS2_c.18+6821:ERGdel
+TMPRSS2	0	.	S5	TMPRSS2-ERG fusion	yes	unknown	NA	out of frame	TMPRSS2 (NM_001135099) - ERG (NM_182918) fusion (TMPRSS2 exon 1 fused to ERG exons 2-10): c.56-27:TMPSS2_c.18+6821:ERGdel
