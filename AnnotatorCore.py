@@ -179,7 +179,7 @@ def processalterationevents(eventfile, outfile, defaultCancerType, cancerTypeMap
             if iend >= 0 and row[iend] != 'NULL':
                 end = row[iend]
 
-            if start is None and iproteinpos >= 0 and row[iproteinpos] != "" and row[iproteinpos] != ".":
+            if start is None and iproteinpos >= 0 and row[iproteinpos] != "" and row[iproteinpos] != "." and row[iproteinpos] != "-":
                 poss = row[iproteinpos].split('/')[0].split('-')
                 try:
                     start = int(poss[0])
@@ -652,8 +652,8 @@ def pulloncokb(hugo, proteinchange, alterationtype, consequence, start, end, can
 
         try:
             evidences = json.load(urllib.urlopen(url))
-            if not evidences['geneExist'] or (not evidences['variantExist'] and not evidences['alleleExist']):
-                return ''
+            # if not evidences['geneExist'] or (not evidences['variantExist'] and not evidences['alleleExist']):
+            #     return ''
 
             # # mutation effect
             # for e in evidences[0]:
@@ -670,15 +670,16 @@ def pulloncokb(hugo, proteinchange, alterationtype, consequence, start, end, can
                 level = treatment['level']
 
                 if level not in levels:
-                    continue
-                drugs = treatment['drugs']
-                if len(drugs) == 0:
-                    oncokbdata[level].append('[NOT SPECIFIED]')
+                    oncokbdata[level].append('')
                 else:
-                    drugnames = []
-                    for drug in drugs:
-                        drugnames.append(drug['drugName'])
-                    oncokbdata[level].append('+'.join(drugnames))
+                    drugs = treatment['drugs']
+                    if len(drugs) == 0:
+                        oncokbdata[level].append('[NOT SPECIFIED]')
+                    else:
+                        drugnames = []
+                        for drug in drugs:
+                            drugnames.append(drug['drugName'])
+                        oncokbdata[level].append('+'.join(drugnames))
         except:
             print url
             # sys.exit()
