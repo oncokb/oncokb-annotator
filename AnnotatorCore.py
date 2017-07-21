@@ -328,6 +328,7 @@ def processcnagisticdata(cnafile, outfile, defaultCancerType, cancerTypeMap, ret
                 continue
 
             for rawsample in rawsamples:
+                rawsample = rawsample.upper()
                 if rawsample in headers:
                     cna = row[headers[rawsample]]
                     if cna in cnaEventMap:

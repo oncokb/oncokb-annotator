@@ -1,4 +1,5 @@
 Hugo_Symbol	Variant_Classification	Tumor_Sample_Barcode	HGVSp_Short	Transcript_ID	Protein_position
+EP300	3'UTR	TCGA-UY-A9PD	.	ENST00000263253	.
 TP53	Nonsense_Mutation	TCGA-02-0033-01	p.R248*	ENST00000269305	248
 CUL1	Missense_Mutation	TCGA-A6-2672-01A-01W-0833-10	p.Y466S	ENST00000325222	466/776
 EGFR	Missense_Mutation	308	A839V	ENST00000275493	105-108
