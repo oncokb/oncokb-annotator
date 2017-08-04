@@ -13,14 +13,14 @@ def main(argv):
     defaultcancertype = 'cancer'
 
     try:
-        opts, args = getopt.getopt(argv, "hi:o:c:d:t:u:")
+        opts, args = getopt.getopt(argv, "hi:o:c:s:d:t:u:")
     except getopt.GetoptError:
         print 'for help: python CnaAnnotator.py -h'
         sys.exit(2)
 
     for opt, arg in opts:
         if opt == '-h':
-            print 'CnaAnnotator.py -i <input cNA file> -o <output MAF file> [-c <input clinical file>] [-t <default tumor type>] [-u base-url]'
+            print 'CnaAnnotator.py -i <input cNA file> -o <output MAF file> [-c <input clinical file>] [-s sample list filter] [-t <default tumor type>] [-u base-url]'
             print '  Input CNA file should follow the GISTIC output (https://cbioportal.readthedocs.io/en/latest/File-Formats.html#discrete-copy-number-data)'
             print '  Essential clinical columns:'
             print '    SAMPLE_ID: sample ID'
@@ -37,6 +37,8 @@ def main(argv):
             outputcnafile = arg
         elif opt in ("-c"):
             inputclinicalfile = arg
+        elif opt in ("-s"):
+            setsampleidsfileterfile(arg)
         elif opt in ("-t"):
             defaultcancertype = arg
         elif opt in ("-u"):

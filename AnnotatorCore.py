@@ -12,15 +12,25 @@ csv.field_size_limit(sys.maxsize) # for reading large files
 
 oncokbbaseurl = "http://oncokb.org"
 def setoncokbbaseurl(u):
+    global oncokbbaseurl
     oncokbbaseurl = u
 
 cancerhotspotsbaseurl = "http://cancerhotspots.org"
 def setcancerhotspotsbaseurl(u):
+    global cancerhotspotsbaseurl
     cancerhotspotsbaseurl = u
 
 _3dhotspotsbaseurl = "http://cancerhotspots.org/3d"
 def set3dhotspotsbaseurl(u):
+    global _3dhotspotsbaseurl
     _3dhotspotsbaseurl = u
+
+sampleidsfilter = None
+def setsampleidsfileterfile(f):
+    global sampleidsfilter
+    content = [line.rstrip() for line in open(f)]
+    sampleidsfilter = set(content)
+    print len(sampleidsfilter)
 
 levels = [
     'LEVEL_1',
@@ -144,6 +154,9 @@ def processalterationevents(eventfile, outfile, defaultCancerType, cancerTypeMap
                 print i
 
             sample = getsampleid(row[isample])
+            if sampleidsfilter and sample not in sampleidsfilter:
+                continue
+
             hugo = row[ihugo]
             if retainonlycuratedgenes and hugo not in curatedgenes:
                 continue
@@ -239,6 +252,10 @@ def processsv(svdata, outfile, defaultCancerType, cancerTypeMap, retainonlycurat
                 print i
 
             sample = getsampleid(row[isample])
+
+            if sampleidsfilter and sample not in sampleidsfilter:
+                continue
+
             gene1 = row[igene1]
             gene2 = row[igene2]
             if retainonlycuratedgenes and gene1 not in curatedgenes and gene2 not in curatedgenes:
@@ -336,6 +353,10 @@ def processcnagisticdata(cnafile, outfile, defaultCancerType, cancerTypeMap, ret
                         if alteration == "Amplification" or alteration == "Deletion":
                             cancertype = defaultCancerType
                             sample = getsampleid(rawsample)
+
+                            if sampleidsfilter and sample not in sampleidsfilter:
+                                continue
+
                             if sample in cancerTypeMap:
                                 cancertype = cancerTypeMap[sample]
                             oncokblevels = pulloncokb(hugo, alteration, None, None, None, None, cancertype)
@@ -405,6 +426,7 @@ def processclinicaldata(annotatedmutfiles, clinicalfile, outfile):
 
             for row in reader:
                 sample = getsampleid(row[isample])
+
                 oncogenic = ""
                 if ioncogenic < len(row):
                     oncogenic = row[ioncogenic].lower()
@@ -455,9 +477,13 @@ def processclinicaldata(annotatedmutfiles, clinicalfile, outfile):
         isample = headers['SAMPLE_ID']
 
         for row in reader:
+            sample = row[isample]
+
+            if sampleidsfilter and sample not in sampleidsfilter:
+                continue
+                
             # print row
             outf.write('\t'.join(row))
-            sample = row[isample]
 
             for l in levels:
                 outf.write('\t')

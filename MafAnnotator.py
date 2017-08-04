@@ -12,14 +12,14 @@ def main(argv):
     defaultcancertype = 'cancer'
 
     try:
-        opts, args = getopt.getopt(argv, "hi:o:c:t:u:v:")
+        opts, args = getopt.getopt(argv, "hi:o:c:s:t:u:v:")
     except getopt.GetoptError:
         print 'for help: python MafAnnotator.py -h'
         sys.exit(2)
 
     for opt, arg in opts:
         if opt == '-h':
-            print 'MafAnnotator.py -i <input MAF file> -o <output MAF file> [-c <input clinical file>] [-t <default tumor type>] [-u oncokb-base-url] [-v cancerhotspots-base-url]'
+            print 'MafAnnotator.py -i <input MAF file> -o <output MAF file> [-c <input clinical file>] [-s sample list filter] [-t <default tumor type>] [-u oncokb-base-url] [-v cancerhotspots-base-url]'
             print '  Essential MAF columns (case insensitive):'
             print '    HUGO_SYMBOL: Hugo gene symbol'
             print '    VARIANT_CLASSIFICATION: Translational effect of variant allele'
@@ -44,6 +44,8 @@ def main(argv):
             outputmaffile = arg
         elif opt in ("-c"):
             inputclinicalfile = arg
+        elif opt in ("-s"):
+            setsampleidsfileterfile(arg)
         elif opt in ("-t"):
             defaultcancertype = arg
         elif opt in ("-u"):
@@ -66,12 +68,12 @@ def main(argv):
     print 'done!'
 
 if __name__ == "__main__":
-#     argv = [
-#         '-i', 'data/example_maf.txt',
-#         '-o', 'data/example_maf.oncokb.txt',
-#         '-c', 'data/example_clinical.txt',
-#     ]
-#     main(argv)
+    # argv = [
+    #     '-i', 'data/example_maf.txt',
+    #     '-o', 'data/example_maf.oncokb.txt',
+    #     '-c', 'data/example_clinical.txt',
+    # ]
+    # main(argv)
 
     # print sys.argv[1:]
     main(sys.argv[1:])
