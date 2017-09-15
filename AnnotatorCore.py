@@ -86,7 +86,6 @@ def getcuratedgenes(genelistfile):
     return genelist
 
 
-curatedgenes = getcuratedgenes('data/curated_genes.txt')
 
 
 def gethotspots(url, type):
@@ -103,16 +102,26 @@ def gethotspots(url, type):
                 hotspots[gene].add(i)
     return hotspots
 
+missensesinglehotspots = None
+indelsinglehotspots = None
+_3dhotspots = None
+curatedgenes = getcuratedgenes('data/curated_genes.txt')
 
-missensesinglehotspots = gethotspots(cancerhotspotsbaseurl+"/api/hotspots/single", "single residue")
-indelsinglehotspots = gethotspots(cancerhotspotsbaseurl+"/api/hotspots/single", "in-frame indel")
-_3dhotspots = gethotspots(_3dhotspotsbaseurl+"/api/hotspots/3d", None)
-curatedgenes |= set(missensesinglehotspots.keys())
-curatedgenes |= set(indelsinglehotspots.keys())
-curatedgenes |= set(_3dhotspots.keys())
+def inithotspots():
+    global missensesinglehotspots
+    global indelsinglehotspots
+    global _3dhotspots
+    global curatedgenes
+    missensesinglehotspots = gethotspots(cancerhotspotsbaseurl+"/api/hotspots/single", "single residue")
+    indelsinglehotspots = gethotspots(cancerhotspotsbaseurl+"/api/hotspots/single", "in-frame indel")
+    _3dhotspots = gethotspots(_3dhotspotsbaseurl+"/api/hotspots/3d", None)
+    curatedgenes |= set(missensesinglehotspots.keys())
+    curatedgenes |= set(indelsinglehotspots.keys())
+    curatedgenes |= set(_3dhotspots.keys())
 
 
 def processalterationevents(eventfile, outfile, defaultCancerType, cancerTypeMap, retainonlycuratedgenes):
+    inithotspots()
     if os.path.isfile(outfile):
         cacheannotated(outfile, defaultCancerType, cancerTypeMap)
     outf = open(outfile, 'w+', 1000)
@@ -481,7 +490,7 @@ def processclinicaldata(annotatedmutfiles, clinicalfile, outfile):
 
             if sampleidsfilter and sample not in sampleidsfilter:
                 continue
-                
+
             # print row
             outf.write('\t'.join(row))
 
