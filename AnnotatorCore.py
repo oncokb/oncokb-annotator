@@ -637,7 +637,7 @@ def pullsinglehotspots(hugo, proteinchange, alterationtype, consequence, start, 
             for i in range(int(start), int(end) + 1):
                 if i in missensesinglehotspots[hugo]:
                     return "Y"
-        if hugo in indelsinglehotspots and (consequence == "inframe_insertion" or consequence == "inframe_insertion"):
+        if hugo in indelsinglehotspots and (consequence == "inframe_insertion" or consequence == "inframe_deletion"):
             for i in range(int(start), int(end) + 1):
                 if i in indelsinglehotspots[hugo]:
                     return "Y"
@@ -738,7 +738,7 @@ def gethighestsensitivitylevel(oncokbdata):
     if "LEVEL_R1" in oncokbdata:
         r1 = set(oncokbdata["LEVEL_R1"])
     for l in levels:
-        if l.startswith("LEVEL_R") or l not in oncokbdata:
+        if l.startswith("LEVEL_R") or l not in oncokbdata or oncokbdata[l]=='':
             continue
         if not r1.issuperset(set(oncokbdata[l])):
             return l
