@@ -120,10 +120,10 @@ def inithotspots():
     curatedgenes |= set(_3dhotspots.keys())
 
 
-def processalterationevents(eventfile, outfile, defaultCancerType, cancerTypeMap, retainonlycuratedgenes):
+def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerType, cancerTypeMap, retainonlycuratedgenes):
     inithotspots()
-    if os.path.isfile(outfile):
-        cacheannotated(outfile, defaultCancerType, cancerTypeMap)
+    if os.path.isfile(previousoutfile):
+        cacheannotated(previousoutfile, defaultCancerType, cancerTypeMap)
     outf = open(outfile, 'w+', 1000)
     with open(eventfile, 'rU') as infile:
         reader = csv.reader(infile, delimiter='\t')
@@ -232,9 +232,9 @@ def processalterationevents(eventfile, outfile, defaultCancerType, cancerTypeMap
     outf.close()
 
 
-def processsv(svdata, outfile, defaultCancerType, cancerTypeMap, retainonlycuratedgenes):
-    if os.path.isfile(outfile):
-        cacheannotated(outfile, defaultCancerType, cancerTypeMap)
+def processsv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap, retainonlycuratedgenes):
+    if os.path.isfile(previousoutfile):
+        cacheannotated(previousoutfile, defaultCancerType, cancerTypeMap)
     outf = open(outfile, 'w+')
     with open(svdata, 'rU') as infile:
         reader = csv.reader(infile, delimiter='\t')
@@ -315,9 +315,9 @@ cnaEventMap = {
 }
 
 
-def processcnagisticdata(cnafile, outfile, defaultCancerType, cancerTypeMap, retainonlycuratedgenes):
-    if os.path.isfile(outfile):
-        cacheannotated(outfile, defaultCancerType, cancerTypeMap)
+def processcnagisticdata(cnafile, outfile, previousoutfile, defaultCancerType, cancerTypeMap, retainonlycuratedgenes):
+    if os.path.isfile(previousoutfile):
+        cacheannotated(previousoutfile, defaultCancerType, cancerTypeMap)
     outf = open(outfile, 'w+', 1000)
     with open(cnafile, 'rU') as infile:
         reader = csv.reader(infile, delimiter='\t')
