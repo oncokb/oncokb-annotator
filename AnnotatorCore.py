@@ -7,6 +7,7 @@ import json
 import urllib
 import os.path
 import re
+import matplotlib.pyplot as plt
 
 csv.field_size_limit(sys.maxsize) # for reading large files
 
@@ -476,6 +477,7 @@ def processclinicaldata(annotatedmutfiles, clinicalfile, outfile):
 
     outf = open(outfile, 'w+')
 
+    # export to anntoated file
     with open(clinicalfile, 'rU') as clinfile:
         reader = csv.reader(clinfile, delimiter='\t')
         headers = readheaders(reader)
@@ -504,6 +506,7 @@ def processclinicaldata(annotatedmutfiles, clinicalfile, outfile):
                 highestlevel = gethighestsensitivitylevel(sampleleveltreatments[sample])
             outf.write('\t' + highestlevel)
 
+
             actionablecount = 0
             if sample in sampleactionablecount:
                 actionablecount = sampleactionablecount[sample]
@@ -522,6 +525,107 @@ def processclinicaldata(annotatedmutfiles, clinicalfile, outfile):
 
     outf.close()
 
+def plotclinicalactionability(annotatedclinicalfile, outfile, parameters):
+    with open(annotatedclinicalfile, 'rU') as clinfile:
+        reader = csv.reader(clinfile, delimiter='\t')
+        headers = readheaders(reader)
+        isample = headers['SAMPLE_ID']
+        ilevel = headers['HIGHEST_LEVEL']
+        icat = headers[parameters["catogerycolumn"].upper()] #e.g. "CANCER_TYPE"
+
+        catsamplecount = {}
+        catactionablesamplecount = {}
+        levelcatsamplecount = {}
+
+        for row in reader:
+            sample = row[isample]
+            if sampleidsfilter and sample not in sampleidsfilter:
+                continue
+
+            cat = row[icat]
+            if cat not in catsamplecount:
+                catsamplecount[cat] = 0
+            catsamplecount[cat] += 1
+
+            if cat not in catactionablesamplecount:
+                catactionablesamplecount[cat] = 0
+
+            level = row[ilevel]
+            if level in levels:
+                catactionablesamplecount[cat] += 1
+
+                if level not in levelcatsamplecount:
+                    levelcatsamplecount[level] = {}
+                if cat not in levelcatsamplecount[level]:
+                    levelcatsamplecount[level][cat] = 0
+                levelcatsamplecount[level][cat] += 1
+
+    # level colors
+    levelcolors = {
+        'LEVEL_1': '#33A02C',
+        'LEVEL_2A': '#1F78B4',
+        'LEVEL_2B': '#80B1D3',
+        'LEVEL_3A': '#984EA3',
+        'LEVEL_3B': '#BE98CE',
+        'LEVEL_4': '#424242',
+        'LEVEL_R1': '#EE3424',
+        'LEVEL_R2': '#F79A92',
+        'LEVEL_R3': '#FCD6D3',
+        'Other': 'grey'
+    }
+
+    # plot
+    catarray = []
+    catpercarray = []
+    for cat in catsamplecount:
+        if catsamplecount[cat] >= parameters["thresholdcat"]:
+            catarray.append(cat)
+
+            catpercarray.append(catactionablesamplecount[cat] * 100.0 / catsamplecount[cat])
+
+    ncat = len(catarray)
+    if ncat > 0:
+        order = reversed(sorted(range(len(catpercarray)),key=lambda x:catpercarray[x]))
+        catarray = [catarray[i] for i in order]
+
+        ind = range(ncat)
+
+        f = plt.figure()
+
+        legends = []
+        plts = []
+        accumlevelcancerperc = [0] * ncat
+        for level in levels:
+            if level not in levelcatsamplecount:
+                continue
+
+            levelcancerperc = [0] * ncat
+            for k in ind:
+                cat = catarray[k]
+                if catsamplecount[cat] < parameters["thresholdcat"]:
+                    continue
+                if cat in levelcatsamplecount[level]:
+                    levelcancerperc[k] = levelcatsamplecount[level][cat] * 100.0 / catsamplecount[cat]
+
+            width = 0.75
+            plts = [plt.bar(ind, levelcancerperc, width, color=levelcolors[level], bottom=accumlevelcancerperc)] + plts
+            legends = [level] + legends
+            accumlevelcancerperc = map(sum, zip(accumlevelcancerperc,levelcancerperc))
+
+        ax = plt.axes()
+        ax.set_axisbelow(True)
+        ax.yaxis.grid() # horizontal lines
+        plt.margins(0.01)
+        plt.tick_params(axis='y', which='major', labelsize=7)
+        plt.ylabel('Percentage of samples')
+        plt.title('OncoKB actionability')
+        plt.xticks([i+0.5 for i in ind], catarray, rotation=45, ha="right", fontsize=7)
+        plt.subplots_adjust(left=0.2, bottom=0.3)
+        # plt.yticks(np.arange(0, 81, 10))
+        plt.legend(plts, legends, fontsize=7)
+
+        # plt.show()
+        f.savefig(outfile, bbox_inches='tight')
 
 def processmutationdata(mutfile, outfile, clinicaldata):
     outf = open(outfile, 'w+')
