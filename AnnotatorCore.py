@@ -526,6 +526,9 @@ def processclinicaldata(annotatedmutfiles, clinicalfile, outfile):
     outf.close()
 
 def plotclinicalactionability(annotatedclinicalfile, outfile, parameters):
+    if os.path.isfile(outfile):
+        os.remove(outfile)
+
     with open(annotatedclinicalfile, 'rU') as clinfile:
         reader = csv.reader(clinfile, delimiter='\t')
         headers = readheaders(reader)
@@ -617,9 +620,9 @@ def plotclinicalactionability(annotatedclinicalfile, outfile, parameters):
         ax.yaxis.grid() # horizontal lines
         plt.margins(0.01)
         plt.tick_params(axis='y', which='major', labelsize=7)
-        plt.ylabel('Percentage of samples')
-        plt.title('OncoKB actionability')
-        plt.xticks([i+0.5 for i in ind], catarray, rotation=45, ha="right", fontsize=7)
+        plt.ylabel('Percentage of samples (%)')
+        plt.title('OncoKB Actionability')
+        plt.xticks([i+0.5 for i in ind], catarray, rotation=60, ha="right", fontsize=6)
         plt.subplots_adjust(left=0.2, bottom=0.3)
         # plt.yticks(np.arange(0, 81, 10))
         plt.legend(plts, legends, fontsize=7)

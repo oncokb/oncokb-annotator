@@ -25,7 +25,6 @@ def main(argv):
             print '  Input CNA file should follow the GISTIC output (https://cbioportal.readthedocs.io/en/latest/File-Formats.html#discrete-copy-number-data)'
             print '  Essential clinical columns:'
             print '    SAMPLE_ID: sample ID'
-            print '    ONCOTREE_CODE: tumor type code from oncotree (oncotree.mskcc.org)'
             print '  Cancer type will be assigned based on the following priority:'
             print '     1) ONCOTREE_CODE in clinical data file'
             print '     2) ONCOTREE_CODE exist in MAF'

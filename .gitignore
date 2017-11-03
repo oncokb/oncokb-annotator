@@ -1,5 +1,5 @@
 # oncokb output data
-data/*.oncokb.txt
+data/*.oncokb.*
 process
 
 # Byte-compiled / optimized / DLL files
