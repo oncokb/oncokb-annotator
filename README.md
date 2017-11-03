@@ -3,7 +3,9 @@ Annotates variants in MAF with OncoKB annotation.
 
 Please try 
 * `python MafAnnotator.py -h`
+* `python FusionAnnotator.py -h`
 * `python CnaAnnotator.py -h`
 * `python ClinicalDataAnnotator.py -h`
+* `python OncoKBPlots.py -h`
 
-Example input files are [here](https://github.com/oncokb/oncokb-annotator/tree/master/data).
+Example input files are under [data](data). An example script is here: [example.sh](example.sh)
