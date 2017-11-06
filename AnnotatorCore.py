@@ -570,11 +570,25 @@ def plotclinicalactionability(annotatedclinicalfile, outfile, parameters):
         'LEVEL_2B': '#80B1D3',
         'LEVEL_3A': '#984EA3',
         'LEVEL_3B': '#BE98CE',
-        'LEVEL_4': '#424242',
+        'LEVEL_4': '#a8a8a8',
         'LEVEL_R1': '#EE3424',
         'LEVEL_R2': '#F79A92',
         'LEVEL_R3': '#FCD6D3',
         'Other': 'grey'
+    }
+
+    # level legend
+    levellegend = {
+        'LEVEL_1': 'Level 1',
+        'LEVEL_2A': 'Level 2A',
+        'LEVEL_2B': 'Level 2B',
+        'LEVEL_3A': 'Level 3A',
+        'LEVEL_3B': 'Level 3B',
+        'LEVEL_4': 'Level 4',
+        'LEVEL_R1': 'Level R1',
+        'LEVEL_R2': 'Level R2',
+        'LEVEL_R3': 'Level R3',
+        'Other': 'Other'
     }
 
     # plot
@@ -612,20 +626,21 @@ def plotclinicalactionability(annotatedclinicalfile, outfile, parameters):
 
             width = 0.75
             plts = [plt.bar(ind, levelcancerperc, width, color=levelcolors[level], bottom=accumlevelcancerperc)] + plts
-            legends = [level] + legends
+            legends = [levellegend[level]] + legends
             accumlevelcancerperc = map(sum, zip(accumlevelcancerperc,levelcancerperc))
 
         ax = plt.axes()
         ax.set_axisbelow(True)
-        ax.yaxis.grid() # horizontal lines
+        ax.set_aspect(0.1)
+        ax.yaxis.grid(linestyle="dotted", color="lightgray") # horizontal lines
         plt.margins(0.01)
-        plt.tick_params(axis='y', which='major', labelsize=7)
-        plt.ylabel('Percentage of samples (%)')
+        plt.tick_params(axis='y', which='major', labelsize=6)
+        plt.ylabel('% of samples')
         plt.title('OncoKB Actionability')
         plt.xticks([i+0.5 for i in ind], catarray, rotation=60, ha="right", fontsize=6)
         plt.subplots_adjust(left=0.2, bottom=0.3)
         # plt.yticks(np.arange(0, 81, 10))
-        plt.legend(plts, legends, fontsize=7)
+        plt.legend(plts, legends, fontsize=6)
 
         # plt.show()
         f.savefig(outfile, bbox_inches='tight')
