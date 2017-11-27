@@ -207,7 +207,8 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
             if start is None and iproteinpos >= 0 and row[iproteinpos] != "" and row[iproteinpos] != "." and row[iproteinpos] != "-":
                 poss = row[iproteinpos].split('/')[0].split('-')
                 try:
-                    start = int(poss[0])
+                    if len(poss) > 0:
+                        start = int(poss[0])
                     if len(poss) == 2:
                         end = int(poss[1])
                 except ValueError:
