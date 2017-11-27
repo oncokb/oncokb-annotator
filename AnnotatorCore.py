@@ -537,6 +537,7 @@ def plotclinicalactionability(annotatedclinicalfile, outfile, parameters):
         headers = readheaders(reader)
         isample = headers['SAMPLE_ID']
         ilevel = headers['HIGHEST_LEVEL']
+        ioncogenic = headers['ONCOGENIC_MUTATIONS']
         icat = headers[parameters["catogerycolumn"].upper()] #e.g. "CANCER_TYPE"
 
         catsamplecount = {}
@@ -557,14 +558,24 @@ def plotclinicalactionability(annotatedclinicalfile, outfile, parameters):
                 catactionablesamplecount[cat] = 0
 
             level = row[ilevel]
+            oncogenic = row[ioncogenic]
+
+            exlevel = level
+
             if level in levels:
                 catactionablesamplecount[cat] += 1
+            elif len(oncogenic.strip()) > 0:
+                exlevel = "Oncogenic"
+            else:
+                exlevel = "VUS"
 
-                if level not in levelcatsamplecount:
-                    levelcatsamplecount[level] = {}
-                if cat not in levelcatsamplecount[level]:
-                    levelcatsamplecount[level][cat] = 0
-                levelcatsamplecount[level][cat] += 1
+            if exlevel not in levelcatsamplecount:
+                levelcatsamplecount[exlevel] = {}
+            if cat not in levelcatsamplecount[exlevel]:
+                levelcatsamplecount[exlevel][cat] = 0
+            levelcatsamplecount[exlevel][cat] += 1
+
+    extlevels = levels + ["Oncogenic", "VUS"]
 
     # level colors
     levelcolors = {
@@ -577,6 +588,8 @@ def plotclinicalactionability(annotatedclinicalfile, outfile, parameters):
         'LEVEL_R1': '#EE3424',
         'LEVEL_R2': '#F79A92',
         'LEVEL_R3': '#FCD6D3',
+        'Oncogenic': '#ffdab9',
+        'VUS': '#d1d1d1',
         'Other': 'grey'
     }
 
@@ -591,21 +604,23 @@ def plotclinicalactionability(annotatedclinicalfile, outfile, parameters):
         'LEVEL_R1': 'Level R1',
         'LEVEL_R2': 'Level R2',
         'LEVEL_R3': 'Level R3',
+        'Oncogenic': 'Oncogenic, no level',
+        'VUS': 'VUS',
         'Other': 'Other'
     }
 
     # plot
-    catarray = []
-    catpercarray = []
+    catarray = [] # cancer types
+    catactionabilityarray = [] # actionabiligy percentages per cancer type
     for cat in catsamplecount:
         if catsamplecount[cat] >= parameters["thresholdcat"]:
             catarray.append(cat)
-
-            catpercarray.append(catactionablesamplecount[cat] * 100.0 / catsamplecount[cat])
+            catactionabilityarray.append(catactionablesamplecount[cat] * 100.0 / catsamplecount[cat])
 
     ncat = len(catarray)
     if ncat > 0:
-        order = reversed(sorted(range(len(catpercarray)),key=lambda x:catpercarray[x]))
+        # sort categories (cancer type) based on alteration frequency
+        order = reversed(sorted(range(len(catactionabilityarray)),key=lambda x:catactionabilityarray[x]))
         catarray = [catarray[i] for i in order]
 
         ind = range(ncat)
@@ -615,7 +630,7 @@ def plotclinicalactionability(annotatedclinicalfile, outfile, parameters):
         legends = []
         plts = []
         accumlevelcancerperc = [0] * ncat
-        for level in levels:
+        for level in extlevels:
             if level not in levelcatsamplecount:
                 continue
 
@@ -635,7 +650,7 @@ def plotclinicalactionability(annotatedclinicalfile, outfile, parameters):
         ax = plt.axes()
         ax.set_axisbelow(True)
         ax.set_aspect(0.1)
-        ax.yaxis.grid(linestyle="dotted", color="lightgray") # horizontal lines
+        # ax.yaxis.grid(linestyle="dotted", color="lightgray") # horizontal lines
         plt.margins(0.01)
         plt.tick_params(axis='y', which='major', labelsize=6)
         plt.ylabel('% of samples')
@@ -643,7 +658,7 @@ def plotclinicalactionability(annotatedclinicalfile, outfile, parameters):
         plt.xticks([i+0.5 for i in ind], catarray, rotation=60, ha="right", fontsize=6)
         plt.subplots_adjust(left=0.2, bottom=0.3)
         # plt.yticks(np.arange(0, 81, 10))
-        plt.legend(plts, legends, fontsize=6)
+        plt.legend(plts, legends, fontsize=6, bbox_to_anchor=(1.01, 1), loc="upper left")
 
         # plt.show()
         f.savefig(outfile, bbox_inches='tight')
