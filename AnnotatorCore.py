@@ -108,7 +108,7 @@ def gethotspots(url, type):
 missensesinglehotspots = None
 indelsinglehotspots = None
 _3dhotspots = None
-curatedgenes = getcuratedgenes('data/curated_genes.txt')
+curatedgenes = getcuratedgenes(os.path.join(os.path.dirname(__file__), 'data/curated_genes.txt'))
 
 def inithotspots():
     global missensesinglehotspots
