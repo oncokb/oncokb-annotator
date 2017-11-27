@@ -7,6 +7,8 @@ import json
 import urllib
 import os.path
 import re
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 csv.field_size_limit(sys.maxsize) # for reading large files
