@@ -14,17 +14,19 @@ def main(argv):
     }
 
     try:
-        opts, args = getopt.getopt(argv, "hi:o:c:s:n:")
+        opts, args = getopt.getopt(argv, "hi:o:c:s:n:l:")
     except getopt.GetoptError:
         print 'for help: python OncoKBPlots.py -h'
         sys.exit(2)
 
     for opt, arg in opts:
         if opt == '-h':
-            print 'OncoKBPlots.py -i <annotated clinical file> -o <output PDF file> [-c <categorization column, e.g. CANCER_TYPE>] [-s sample list filter] [-n threshold of # samples in a category]'
+            print 'OncoKBPlots.py -i <annotated clinical file> -o <output PDF file> [-c <categorization column, e.g. CANCER_TYPE>] [-s sample list filter] [-n threshold of # samples in a category] [-l comma separated levels to include]'
             print '  Essential clinical columns:'
             print '    SAMPLE_ID: sample ID'
             print '    HIGHEST_LEVEL: Highest OncoKB levels'
+            print '  Supported levels (-l): '
+            print '    LEVEL_1,LEVEL_2A,LEVEL_2B,LEVEL_3A,LEVEL_3B,LEVEL_4,ONCOGENIC,VUS'
             sys.exit()
         elif opt in ("-i"):
             annotatedclinicalfile = arg
@@ -36,6 +38,8 @@ def main(argv):
             setsampleidsfileterfile(arg)
         elif opt in ("-n"):
             params["thresholdcat"] = int(arg)
+        elif opt in ("-l"):
+            params["levels"] = arg.split(",")
 
     if annotatedclinicalfile == '' or outputpdffile== '':
         print 'for help: python OncoKBPlots.py -h'
@@ -52,7 +56,8 @@ if __name__ == "__main__":
     #     '-i', '/Users/jgao/projects/oncokb-annotator/process/mskimpact/data_clinical_2017-11-01.oncokb.txt',#'data/example_clinical.oncokb.txt',
     #     '-o', '/Users/jgao/projects/oncokb-annotator/process/mskimpact/data_clinical_2017-11-01.oncokb.pdf',#'data/example_clinical.oncokb.pdf',
     #     '-c', 'CANCER_TYPE',
-    #     '-n', '100'
+    #     '-n', '100',
+    #     '-l', 'LEVEL_1,LEVEL_2A,LEVEL_2B,LEVEL_3A,LEVEL_3B,LEVEL_4'
     # ]
     # main(argv)
 

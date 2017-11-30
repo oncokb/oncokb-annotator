@@ -532,6 +532,10 @@ def plotclinicalactionability(annotatedclinicalfile, outfile, parameters):
     if os.path.isfile(outfile):
         os.remove(outfile)
 
+    extlevels = levels + ["ONCOGENIC", "VUS"]
+    if "levels" in parameters:
+        extlevels = parameters["levels"]
+
     with open(annotatedclinicalfile, 'rU') as clinfile:
         reader = csv.reader(clinfile, delimiter='\t')
         headers = readheaders(reader)
@@ -562,10 +566,10 @@ def plotclinicalactionability(annotatedclinicalfile, outfile, parameters):
 
             exlevel = level
 
-            if level in levels:
+            if level in extlevels:
                 catactionablesamplecount[cat] += 1
             elif len(oncogenic.strip()) > 0:
-                exlevel = "Oncogenic"
+                exlevel = "ONCOGENIC"
             else:
                 exlevel = "VUS"
 
@@ -574,8 +578,6 @@ def plotclinicalactionability(annotatedclinicalfile, outfile, parameters):
             if cat not in levelcatsamplecount[exlevel]:
                 levelcatsamplecount[exlevel][cat] = 0
             levelcatsamplecount[exlevel][cat] += 1
-
-    extlevels = levels + ["Oncogenic", "VUS"]
 
     # level colors
     levelcolors = {
@@ -588,7 +590,7 @@ def plotclinicalactionability(annotatedclinicalfile, outfile, parameters):
         'LEVEL_R1': '#EE3424',
         'LEVEL_R2': '#F79A92',
         'LEVEL_R3': '#FCD6D3',
-        'Oncogenic': '#ffdab9',
+        'ONCOGENIC': '#ffdab9',
         'VUS': '#d1d1d1',
         'Other': 'grey'
     }
@@ -604,7 +606,7 @@ def plotclinicalactionability(annotatedclinicalfile, outfile, parameters):
         'LEVEL_R1': 'Level R1',
         'LEVEL_R2': 'Level R2',
         'LEVEL_R3': 'Level R3',
-        'Oncogenic': 'Oncogenic, no level',
+        'ONCOGENIC': 'Oncogenic, no level',
         'VUS': 'VUS',
         'Other': 'Other'
     }
