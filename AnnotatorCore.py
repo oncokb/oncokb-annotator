@@ -182,6 +182,8 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
             hgvs = row[ihgvs]
             if hgvs.startswith('p.'):
                 hgvs = hgvs[2:]
+            if hugo=='TERT' and (row[iconsequence]=='5\'Flank' or row[iconsequence]=='5\'UTR'):
+                hgvs = "Promoter Mutations"
 
             cancertype = defaultCancerType
             if icancertype >= 0:
