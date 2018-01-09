@@ -465,7 +465,7 @@ def processclinicaldata(annotatedmutfiles, clinicalfile, outfile):
                     else:
                         variant = gene1 + "-" + gene2 + " fusion"
 
-                if oncogenic == "oncogenic" or oncogenic == "likely oncogenic":
+                if oncogenic == "oncogenic" or oncogenic == "likely oncogenic" or oncogenic == "predicted oncogenic":
                     sampledrivers[sample].append(variant)
 
                 for l in levels:
