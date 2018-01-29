@@ -1,6 +1,7 @@
-Hugo_Symbol	Tumor_Sample_Barcode	Fusion
-MLL2	TCGA-02-0033-01	MLL2-intragenic
-ALK	TCGA-05-4417-01	ALK-EML4 fusion
-EGFR	TCGA-06-0155-01	EGFR-intragenic
-ERG	TCGA-06-0155-01	TMPRSS2-ERG fusion
-TMPRSS2	TCGA-05-4417-01	TMPRSS2-ERG fusion
+Tumor_Sample_Barcode	Fusion
+TCGA-02-0033-01	MLL2-intragenic
+TCGA-05-4417-01	ALK-EML4 fusion
+TCGA-06-0155-01	EGFR-intragenic
+TCGA-06-0155-01	TMPRSS2-ERG fusion
+TCGA-05-4417-01	TMPRSS2-ERG fusion
+TCGA-06-0155-01	ERBB2-intragenic

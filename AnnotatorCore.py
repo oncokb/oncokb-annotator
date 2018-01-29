@@ -257,6 +257,7 @@ def processsv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap
 
         igene1 = geIndexOfHeader(headers, ['GENE1'])
         igene2 = geIndexOfHeader(headers, ['GENE2'])
+        ifusion = geIndexOfHeader(headers, ['FUSION'])
         isample = geIndexOfHeader(headers, ['SAMPLE_ID', 'TUMOR_SAMPLE_BARCODE'])
         icancertype = geIndexOfHeader(headers, ['ONCOTREE_CODE', 'CANCER_TYPE'])
 
@@ -271,8 +272,22 @@ def processsv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap
             if sampleidsfilter and sample not in sampleidsfilter:
                 continue
 
-            gene1 = row[igene1]
-            gene2 = row[igene2]
+            gene1 = None
+            gene2 = None
+            if igene1>=0:
+                gene1 = row[igene1]
+            if igene2>=0:
+                gene2 = row[igene2]
+            if igene1<0 and igene2<0 and ifusion>=0:
+                fusion = row[ifusion]
+                if fusion.endswith(" fusion"):
+                    fusion = fusion[0:len(fusion)-len(" fusion")]
+                parts = fusion.split("-")
+                gene1 = parts[0]
+                gene2 = gene1
+                if len(parts)>1 and parts[0]!="intragenic":
+                    gene2 = parts[1]
+
             if retainonlycuratedgenes and gene1 not in curatedgenes and gene2 not in curatedgenes:
                 continue
 
@@ -293,18 +308,18 @@ def processsv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap
             if gene1 == gene2:
                 oncokblevels = pulloncokb(gene1, "Deletion", None, None, None, None, cancertype)
             else:
-                # oncokblevels = pulloncokb(gene1+'-'+gene2, '', 'fusion', None, None, None, cancertype)
+                oncokblevels = pulloncokb(gene1+'-'+gene2, '', 'structural_variant', 'fusion', None, None, cancertype)
 
-                oncokblevels = pulloncokb(gene1, gene1 + '-' + gene2 + " fusion", None, None, None, None, cancertype)
-                if oncokblevels == unknownvaraint:
-                    oncokblevels = pulloncokb(gene1, gene2 + '-' + gene1 + " fusion", None, None, None, None,
-                                              cancertype)
-                if oncokblevels == unknownvaraint:
-                    oncokblevels = pulloncokb(gene2, gene1 + '-' + gene2 + " fusion", None, None, None, None,
-                                              cancertype)
-                if oncokblevels == unknownvaraint:
-                    oncokblevels = pulloncokb(gene2, gene2 + '-' + gene1 + " fusion", None, None, None, None,
-                                              cancertype)
+                # oncokblevels = pulloncokb(gene1, gene1 + '-' + gene2 + " fusion", None, None, None, None, cancertype)
+                # if oncokblevels == unknownvaraint:
+                #     oncokblevels = pulloncokb(gene1, gene2 + '-' + gene1 + " fusion", None, None, None, None,
+                #                               cancertype)
+                # if oncokblevels == unknownvaraint:
+                #     oncokblevels = pulloncokb(gene2, gene1 + '-' + gene2 + " fusion", None, None, None, None,
+                #                               cancertype)
+                # if oncokblevels == unknownvaraint:
+                #     oncokblevels = pulloncokb(gene2, gene2 + '-' + gene1 + " fusion", None, None, None, None,
+                #                               cancertype)
             row.append(oncokblevels)
             outf.write('\t'.join(row) + "\n")
 
@@ -803,7 +818,7 @@ def pull3dhotspots(hugo, proteinchange, alterationtype, consequence, start, end,
 
 
 def pulloncokb(hugo, proteinchange, alterationtype, consequence, start, end, cancertype):
-    if hugo not in curatedgenes and alterationtype and alterationtype.lower() != 'fusion':
+    if hugo not in curatedgenes and alterationtype and alterationtype.lower() != 'fusion' and alterationtype.lower() != 'structural_variant':
         return ""
 
     key = '-'.join([hugo, proteinchange, cancertype])

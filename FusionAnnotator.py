@@ -62,7 +62,7 @@ def main(argv):
 
     print 'annotating '+inputfusionfile+"..."
 
-    processalterationevents(inputfusionfile, outputfusionfile, previousresultfile, defaultcancertype, cancertypemap, False)
+    processsv(inputfusionfile, outputfusionfile, previousresultfile, defaultcancertype, cancertypemap, False)
 
     print 'done!'
 
