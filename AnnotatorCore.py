@@ -563,6 +563,7 @@ def plotclinicalactionability(annotatedclinicalfile, outfile, parameters):
 
         catsamplecount = {}
         catactionablesamplecount = {}
+        oncogenicsamplecount = {}
         levelcatsamplecount = {}
 
         for row in reader:
@@ -577,6 +578,7 @@ def plotclinicalactionability(annotatedclinicalfile, outfile, parameters):
 
             if cat not in catactionablesamplecount:
                 catactionablesamplecount[cat] = 0
+                oncogenicsamplecount[cat] = 0
 
             level = row[ilevel]
             oncogenic = row[ioncogenic]
@@ -585,7 +587,9 @@ def plotclinicalactionability(annotatedclinicalfile, outfile, parameters):
 
             if level in extlevels:
                 catactionablesamplecount[cat] += 1
+                oncogenicsamplecount[cat] += 1
             elif len(oncogenic.strip()) > 0:
+                oncogenicsamplecount[cat] += 1
                 exlevel = "ONCOGENIC"
             else:
                 exlevel = "VUS"
@@ -631,15 +635,17 @@ def plotclinicalactionability(annotatedclinicalfile, outfile, parameters):
     # plot
     catarray = [] # cancer types
     catactionabilityarray = [] # actionabiligy percentages per cancer type
+    catoncogenicarray = [] # actionabiligy percentages per cancer type
     for cat in catsamplecount:
         if catsamplecount[cat] >= parameters["thresholdcat"]:
             catarray.append(cat)
             catactionabilityarray.append(catactionablesamplecount[cat] * 100.0 / catsamplecount[cat])
+            catoncogenicarray.append(oncogenicsamplecount[cat] * 100.0 / catsamplecount[cat])
 
     ncat = len(catarray)
     if ncat > 0:
-        # sort categories (cancer type) based on alteration frequency
-        order = reversed(sorted(range(len(catactionabilityarray)),key=lambda x:catactionabilityarray[x]))
+        # sort categories (cancer type) based on actionability and then oncogenic frequency
+        order = reversed(sorted(range(len(catoncogenicarray)),key=lambda x:(catactionabilityarray[x],catoncogenicarray[x])))
         catarray = [catarray[i] for i in order]
 
         ind = range(ncat)
