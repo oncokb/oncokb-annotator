@@ -524,6 +524,11 @@ def processclinicaldata(annotatedmutfiles, clinicalfile, outfile):
             highestlevel = ''
             if sample in sampleleveltreatments:
                 highestlevel = gethighestsensitivitylevel(sampleleveltreatments[sample])
+            # if highestlevel == '':
+            #     if sample in sampledrivers and len(sampledrivers[sample])>0:
+            #         highestlevel = 'Oncogenic, no level'
+            #     else:
+            #         highestlevel = "VUS"
             outf.write('\t' + highestlevel)
 
 
@@ -645,7 +650,7 @@ def plotclinicalactionability(annotatedclinicalfile, outfile, parameters):
     ncat = len(catarray)
     if ncat > 0:
         # sort categories (cancer type) based on actionability and then oncogenic frequency
-        order = reversed(sorted(range(len(catoncogenicarray)),key=lambda x:(catactionabilityarray[x],catoncogenicarray[x])))
+        order = reversed(sorted(range(ncat),key=lambda x:(catactionabilityarray[x],catoncogenicarray[x])))
         catarray = [catarray[i] for i in order]
 
         ind = range(ncat)
