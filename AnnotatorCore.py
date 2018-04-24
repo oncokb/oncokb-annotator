@@ -18,12 +18,12 @@ def setoncokbbaseurl(u):
     global oncokbbaseurl
     oncokbbaseurl = u
 
-cancerhotspotsbaseurl = "http://cancerhotspots.org"
+cancerhotspotsbaseurl = "http://www.cancerhotspots.org"
 def setcancerhotspotsbaseurl(u):
     global cancerhotspotsbaseurl
     cancerhotspotsbaseurl = u
 
-_3dhotspotsbaseurl = "http://cancerhotspots.org/3d"
+_3dhotspotsbaseurl = "http://www.3dhotspots.org"
 def set3dhotspotsbaseurl(u):
     global _3dhotspotsbaseurl
     _3dhotspotsbaseurl = u
