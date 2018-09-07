@@ -138,7 +138,6 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
         outf.write("\tis-a-3d-hotspot")
 
         outf.write("\tmutation_effect")
-        outf.write("\tmutation_effect_citations")
         outf.write("\toncogenic")
 
         for l in levels:
@@ -146,6 +145,7 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
 
         outf.write("\tHighest_level")
 
+        outf.write("\tcitations")
 
         outf.write("\n")
 
@@ -249,11 +249,11 @@ def processsv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap
         headers = readheaders(reader)
         outf.write(headers['^-$'])
         outf.write("\tmutation_effect")
-        outf.write("\tmutation_effect_citations")
         outf.write("\toncogenic")
         for l in levels:
             outf.write('\t' + l)
-        outf.write("\tHighest_level\n")
+        outf.write("\tHighest_level")
+        outf.write("\tcitations\n")
 
         unknownvaraint = pulloncokb("NOT-A-GENE", "Deletion", None, None, None, None, "")
 
@@ -361,11 +361,11 @@ def processcnagisticdata(cnafile, outfile, previousoutfile, defaultCancerType, c
 
         outf.write('SAMPLE_ID\tCANCER_TYPE\tHUGO_SYMBOL\tALTERATION')
         outf.write("\tmutation_effect")
-        outf.write("\tmutation_effect_citations")
         outf.write("\toncogenic")
         for l in levels:
             outf.write('\t' + l)
-        outf.write("\tHighest_level\n")
+        outf.write("\tHighest_level")
+        outf.write("\tcitations\n")
 
         i = 0
         for row in reader:
@@ -763,7 +763,7 @@ def cacheannotated(annotatedfile, defaultCancerType, cancerTypeMap):
             iend = geIndexOfHeader(headers, ['PROTEIN_END'])
             icancertype = geIndexOfHeader(headers, ['ONCOTREE_CODE', 'CANCER_TYPE'])
             imutationeffect = headers['MUTATION_EFFECT']
-            imutationeffectcitations = headers['MUTATION_EFFECT_CITATIONS']
+            icitations = headers['CITATIONS']
             ioncogenic = headers['ONCOGENIC']
 
             for row in reader:
@@ -787,7 +787,7 @@ def cacheannotated(annotatedfile, defaultCancerType, cancerTypeMap):
 
                     oncokbcache[key] = {}
                     oncokbcache[key]['mutation_effect'] = row[imutationeffect]
-                    oncokbcache[key]['mutation_effect_citations'] = row[imutationeffectcitations]
+                    oncokbcache[key]['citations'] = row[icitations]
                     oncokbcache[key]['oncogenic'] = row[ioncogenic]
                     for l in levels:
                         il = headers[l]
@@ -832,6 +832,22 @@ def pull3dhotspots(hugo, proteinchange, alterationtype, consequence, start, end,
         print hugo + ":" + str(start) + "-" + str(end)
     return ""
 
+def appendoncokbcitations(citations, pmids, abstracts):
+    if citations is None:
+        citations = []
+
+    if pmids is not None:
+        for pmid in pmids:
+            if pmid not in citations:
+                citations.append(pmid)
+
+    if abstracts is not None:
+        for abstract in abstracts:
+            abstractStr = abstract['abstract'] + '(' + abstract['link'] + ')'
+            if abstractStr not in citations:
+                citations.append(abstractStr)
+
+    return citations
 
 def pulloncokb(hugo, proteinchange, alterationtype, consequence, start, end, cancertype):
     if hugo not in curatedgenes and alterationtype and alterationtype.lower() != 'fusion' and alterationtype.lower() != 'structural_variant':
@@ -860,7 +876,7 @@ def pulloncokb(hugo, proteinchange, alterationtype, consequence, start, end, can
             oncokbdata[l] = []
 
         oncokbdata['mutation_effect'] = ""
-        oncokbdata['mutation_effect_citations'] = []
+        oncokbdata['citations'] = []
         oncokbdata['oncogenic'] = ""
 
         try:
@@ -871,14 +887,7 @@ def pulloncokb(hugo, proteinchange, alterationtype, consequence, start, end, can
             # mutation effect
             if(evidences['mutationEffect'] is not None):
                 oncokbdata['mutation_effect'] = evidences['mutationEffect']['knownEffect']
-
-                # mutation effect citations
-                for pmid in evidences['mutationEffect']['citations']['pmids']:
-                    oncokbdata['mutation_effect_citations'].append(pmid)
-
-                for abstract in evidences['mutationEffect']['citations']['abstracts']:
-                    abstractStr = abstract['abstract'] + '(' + abstract['link'] + ')'
-                    oncokbdata['mutation_effect_citations'].append(abstractStr)
+                oncokbdata['citations'] = appendoncokbcitations(oncokbdata['citations'], evidences['mutationEffect']['citations']['pmids'] , evidences['mutationEffect']['citations']['abstracts'])
 
             # oncogenic
             oncokbdata['oncogenic'] = evidences['oncogenic']
@@ -891,6 +900,9 @@ def pulloncokb(hugo, proteinchange, alterationtype, consequence, start, end, can
                     oncokbdata[level].append('')
                 else:
                     drugs = treatment['drugs']
+
+                    oncokbdata['citations'] = appendoncokbcitations(oncokbdata['citations'], treatment['pmids'], treatment['abstracts'])
+
                     if len(drugs) == 0:
                         oncokbdata[level].append('[NOT SPECIFIED]')
                     else:
@@ -907,11 +919,11 @@ def pulloncokb(hugo, proteinchange, alterationtype, consequence, start, end, can
     oncokbdata = oncokbcache[key]
     ret = []
     ret.append(oncokbdata['mutation_effect'])
-    ret.append(';'.join(oncokbdata['mutation_effect_citations']))
     ret.append(oncokbdata['oncogenic'])
     for l in levels:
         ret.append(','.join(oncokbdata[l]))
     ret.append(gethighestsensitivitylevel(oncokbdata))
+    ret.append(';'.join(oncokbdata['citations']))
 
     ret = "\t".join(ret)
     return ret
