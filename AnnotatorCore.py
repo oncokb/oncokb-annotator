@@ -137,7 +137,8 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
         outf.write("\tis-a-hotspot")
         outf.write("\tis-a-3d-hotspot")
 
-        # outf.write("\tmutation_effect")
+        outf.write("\tmutation_effect")
+        outf.write("\tmutation_effect_citations")
         outf.write("\toncogenic")
 
         for l in levels:
@@ -230,8 +231,8 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
             _3dhotspot = pull3dhotspots(hugo, hgvs, None, consequence, start, end, cancertype)
             row.append(_3dhotspot)
 
-            oncokblevels = pulloncokb(hugo, hgvs, None, consequence, start, end, cancertype)
-            row.append(oncokblevels)
+            oncokbinfo = pulloncokb(hugo, hgvs, None, consequence, start, end, cancertype)
+            row.append(oncokbinfo)
 
             outf.write('\t'.join(row) + "\n")
 
@@ -247,7 +248,8 @@ def processsv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap
 
         headers = readheaders(reader)
         outf.write(headers['^-$'])
-        # outf.write("\tmutation_effect")
+        outf.write("\tmutation_effect")
+        outf.write("\tmutation_effect_citations")
         outf.write("\toncogenic")
         for l in levels:
             outf.write('\t' + l)
@@ -304,23 +306,23 @@ def processsv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap
                 print row
                 # continue
 
-            oncokblevels = None
+            oncokbinfo = None
             if gene1 == gene2:
-                oncokblevels = pulloncokb(gene1, "Deletion", None, None, None, None, cancertype)
+                oncokbinfo = pulloncokb(gene1, "Deletion", None, None, None, None, cancertype)
             else:
-                oncokblevels = pulloncokb(gene1+'-'+gene2, '', 'structural_variant', 'fusion', None, None, cancertype)
+                oncokbinfo = pulloncokb(gene1+'-'+gene2, '', 'structural_variant', 'fusion', None, None, cancertype)
 
-                # oncokblevels = pulloncokb(gene1, gene1 + '-' + gene2 + " fusion", None, None, None, None, cancertype)
-                # if oncokblevels == unknownvaraint:
-                #     oncokblevels = pulloncokb(gene1, gene2 + '-' + gene1 + " fusion", None, None, None, None,
+                # oncokbinfo = pulloncokb(gene1, gene1 + '-' + gene2 + " fusion", None, None, None, None, cancertype)
+                # if oncokbinfo == unknownvaraint:
+                #     oncokbinfo = pulloncokb(gene1, gene2 + '-' + gene1 + " fusion", None, None, None, None,
                 #                               cancertype)
-                # if oncokblevels == unknownvaraint:
-                #     oncokblevels = pulloncokb(gene2, gene1 + '-' + gene2 + " fusion", None, None, None, None,
+                # if oncokbinfo == unknownvaraint:
+                #     oncokbinfo = pulloncokb(gene2, gene1 + '-' + gene2 + " fusion", None, None, None, None,
                 #                               cancertype)
-                # if oncokblevels == unknownvaraint:
-                #     oncokblevels = pulloncokb(gene2, gene2 + '-' + gene1 + " fusion", None, None, None, None,
+                # if oncokbinfo == unknownvaraint:
+                #     oncokbinfo = pulloncokb(gene2, gene2 + '-' + gene1 + " fusion", None, None, None, None,
                 #                               cancertype)
-            row.append(oncokblevels)
+            row.append(oncokbinfo)
             outf.write('\t'.join(row) + "\n")
 
     outf.close()
@@ -358,7 +360,8 @@ def processcnagisticdata(cnafile, outfile, previousoutfile, defaultCancerType, c
             # quit()
 
         outf.write('SAMPLE_ID\tCANCER_TYPE\tHUGO_SYMBOL\tALTERATION')
-        # outf.write("\tmutation_effect")
+        outf.write("\tmutation_effect")
+        outf.write("\tmutation_effect_citations")
         outf.write("\toncogenic")
         for l in levels:
             outf.write('\t' + l)
@@ -389,12 +392,12 @@ def processcnagisticdata(cnafile, outfile, previousoutfile, defaultCancerType, c
 
                             if sample in cancerTypeMap:
                                 cancertype = cancerTypeMap[sample]
-                            oncokblevels = pulloncokb(hugo, alteration, None, None, None, None, cancertype)
+                            oncokbinfo = pulloncokb(hugo, alteration, None, None, None, None, cancertype)
                             outf.write(sample + "\t")
                             outf.write(cancertype + "\t")
                             outf.write(hugo + "\t")
                             outf.write(alteration + "\t")
-                            outf.write(oncokblevels)
+                            outf.write(oncokbinfo)
                             outf.write('\n')
     outf.close()
 
@@ -759,7 +762,8 @@ def cacheannotated(annotatedfile, defaultCancerType, cancerTypeMap):
             istart = geIndexOfHeader(headers, ['PROTEIN_START'])
             iend = geIndexOfHeader(headers, ['PROTEIN_END'])
             icancertype = geIndexOfHeader(headers, ['ONCOTREE_CODE', 'CANCER_TYPE'])
-            # imutationeffect = headers['MUTATION_EFFECT']
+            imutationeffect = headers['MUTATION_EFFECT']
+            imutationeffectcitations = headers['MUTATION_EFFECT_CITATIONS']
             ioncogenic = headers['ONCOGENIC']
 
             for row in reader:
@@ -782,7 +786,8 @@ def cacheannotated(annotatedfile, defaultCancerType, cancerTypeMap):
                     #            oncokb = row[ioncokb]
 
                     oncokbcache[key] = {}
-                    # oncokbcache[key]['mutation_effect'] = row[imutationeffect]
+                    oncokbcache[key]['mutation_effect'] = row[imutationeffect]
+                    oncokbcache[key]['mutation_effect_citations'] = row[imutationeffectcitations]
                     oncokbcache[key]['oncogenic'] = row[ioncogenic]
                     for l in levels:
                         il = headers[l]
@@ -854,20 +859,26 @@ def pulloncokb(hugo, proteinchange, alterationtype, consequence, start, end, can
         for l in levels:
             oncokbdata[l] = []
 
-        oncokbdata['oncogenic'] = "Unknown"
-        # oncokbdata['mutation_effect'] = "Unknown"
+        oncokbdata['mutation_effect'] = ""
+        oncokbdata['mutation_effect_citations'] = []
+        oncokbdata['oncogenic'] = ""
 
         try:
             evidences = json.load(urllib.urlopen(url))
             # if not evidences['geneExist'] or (not evidences['variantExist'] and not evidences['alleleExist']):
             #     return ''
 
-            # # mutation effect
-            # for e in evidences[0]:
-            #     evidenceType = e['evidenceType']
-            #     if evidenceType == "MUTATION_EFFECT" and e['knownEffect'] is not None:
-            #         oncokbdata['mutation_effect'] = e['knownEffect']
-            #         break
+            # mutation effect
+            if(evidences['mutationEffect'] is not None):
+                oncokbdata['mutation_effect'] = evidences['mutationEffect']['knownEffect']
+
+                # mutation effect citations
+                for pmid in evidences['mutationEffect']['citations']['pmids']:
+                    oncokbdata['mutation_effect_citations'].append(pmid)
+
+                for abstract in evidences['mutationEffect']['citations']['abstracts']:
+                    abstractStr = abstract['abstract'] + '(' + abstract['link'] + ')'
+                    oncokbdata['mutation_effect_citations'].append(abstractStr)
 
             # oncogenic
             oncokbdata['oncogenic'] = evidences['oncogenic']
@@ -895,7 +906,8 @@ def pulloncokb(hugo, proteinchange, alterationtype, consequence, start, end, can
 
     oncokbdata = oncokbcache[key]
     ret = []
-    # ret.append(oncokbdata['mutation_effect'])
+    ret.append(oncokbdata['mutation_effect'])
+    ret.append(';'.join(oncokbdata['mutation_effect_citations']))
     ret.append(oncokbdata['oncogenic'])
     for l in levels:
         ret.append(','.join(oncokbdata[l]))
