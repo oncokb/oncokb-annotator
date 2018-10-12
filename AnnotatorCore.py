@@ -926,6 +926,7 @@ def pulloncokb(hugo, proteinchange, alterationtype, consequence, start, end, can
     ret.append(';'.join(oncokbdata['citations']))
 
     ret = "\t".join(ret)
+    ret = ret.encode('ascii', 'ignore').decode('ascii') # ignore unicode
     return ret
 
 def gethighestsensitivitylevel(oncokbdata):
