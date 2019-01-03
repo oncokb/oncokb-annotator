@@ -134,6 +134,9 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
         reader = csv.reader(infile, delimiter='\t')
 
         headers = readheaders(reader)
+
+        ncols = headers["length"]
+
         outf.write(headers['^-$'])
 
         outf.write("\tis-a-hotspot")
@@ -167,6 +170,8 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
             i = i + 1
             if i % 100 == 0:
                 print i
+
+            row = padrow(row, ncols)
 
             sample = getsampleid(row[isample])
             if sampleidsfilter and sample not in sampleidsfilter:
@@ -202,11 +207,11 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
                 # continue
 
             start = None
-            if istart >= 0 and row[istart] != 'NULL':
+            if istart >= 0 and row[istart] != 'NULL' and row[istart] != '':
                 start = row[istart]
 
             end = None
-            if iend >= 0 and row[iend] != 'NULL':
+            if iend >= 0 and row[iend] != 'NULL' and row[iend] != '':
                 end = row[iend]
 
             if start is None and iproteinpos >= 0 and row[iproteinpos] != "" and row[iproteinpos] != "." and row[iproteinpos] != "-":
@@ -249,6 +254,9 @@ def processsv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap
         reader = csv.reader(infile, delimiter='\t')
 
         headers = readheaders(reader)
+
+        ncols = headers["length"]
+
         outf.write(headers['^-$'])
         outf.write("\tmutation_effect")
         outf.write("\toncogenic")
@@ -270,6 +278,8 @@ def processsv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap
             i = i + 1
             if i % 100 == 0:
                 print i
+
+            row = padrow(row, ncols)
 
             sample = getsampleid(row[isample])
 
@@ -439,6 +449,8 @@ def processclinicaldata(annotatedmutfiles, clinicalfile, outfile):
             reader = csv.reader(mutfile, delimiter='\t')
             headers = readheaders(reader)
 
+            ncols = headers["length"]
+
             igene1 = geIndexOfHeader(headers, ['HUGO_SYMBOL', 'GENE1', 'HUGO_GENE_SYMBOL'])  # fusion
             igene2 = geIndexOfHeader(headers, ['HUGO_SYMBOL', 'GENE2', 'HUGO_GENE_SYMBOL'])  # fusion
 
@@ -460,6 +472,9 @@ def processclinicaldata(annotatedmutfiles, clinicalfile, outfile):
                 exit()
 
             for row in reader:
+
+                row = padrow(row, ncols)
+
                 sample = getsampleid(row[isample])
 
                 oncogenic = ""
@@ -721,7 +736,7 @@ def processmutationdata(mutfile, outfile, clinicaldata):
             sample = row[isample]
             hugo = row[ihugo]
             consequence = row[iconsequence]
-            if consequence == 'NULL':
+            if consequence == 'NULL' or consequence == '':
                 consequence = None
             if consequence in mutationtypeconsequencemap:
                 consequence = '%2B'.join(mutationtypeconsequencemap[consequence])
@@ -732,11 +747,11 @@ def processmutationdata(mutfile, outfile, clinicaldata):
             cancertype = None
 
             start = row[istart]
-            if start == 'NULL':
+            if start == 'NULL' or start == '':
                 start = None
 
             end = row[iend]
-            if end == 'NULL':
+            if end == 'NULL' or end == '':
                 end = None
 
             if sample in clinicaldata:
@@ -866,9 +881,9 @@ def pulloncokb(hugo, proteinchange, alterationtype, consequence, start, end, can
         url += '&tumorType=' + cancertype
         if consequence:
             url += '&consequence=' + consequence
-        if start and start != '\\N' and start != 'NULL':
+        if start and start != '\\N' and start != 'NULL' and start != '':
             url += '&proteinStart=' + str(start)
-        if end and end != '\\N' and end != 'NULL':
+        if end and end != '\\N' and end != 'NULL' and end != '':
             url += '&proteinEnd=' + str(end)
         if alterationtype and alterationtype != 'NULL' and alterationtype != '':
             url += '&alterationType=' + alterationtype
@@ -973,9 +988,21 @@ def readheaders(reader):
     for row in reader:
         if not row[0].startswith("#"):
             headers["^-$"] = '\t'.join(row)  # the whole line
+            headers["length"] = len(row)
             i = 0
             for h in row:
                 headers[h.upper()] = i
                 i = i + 1
             break
     return headers
+
+def padrow(row, n):
+    nr = len(row)
+    if nr==n:
+        return row
+
+    if nr<n:
+        return row + [""]*(n-len(row))
+
+    else: #nr<n
+        return row[0:n]
