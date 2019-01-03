@@ -42,7 +42,9 @@ levels = [
     'LEVEL_3A',
     'LEVEL_3B',
     'LEVEL_4',
-    'LEVEL_R1'
+    'LEVEL_R1',
+    'LEVEL_R2',
+    'LEVEL_R3'
 ]
 
 mutationtypeconsequencemap = {
@@ -897,7 +899,8 @@ def pulloncokb(hugo, proteinchange, alterationtype, consequence, start, end, can
                 level = treatment['level']
 
                 if level not in levels:
-                    oncokbdata[level].append('')
+                    print level+" is ignored"
+                    #oncokbdata[level].append('')
                 else:
                     drugs = treatment['drugs']
 
@@ -911,7 +914,7 @@ def pulloncokb(hugo, proteinchange, alterationtype, consequence, start, end, can
                             drugnames.append(drug['drugName'])
                         oncokbdata[level].append('+'.join(drugnames))
         except:
-            print url
+            print "error when processing "+url
             # sys.exit()
 
         oncokbcache[key] = oncokbdata
