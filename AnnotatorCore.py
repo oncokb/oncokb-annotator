@@ -125,8 +125,9 @@ def inithotspots():
     curatedgenes |= set(_3dhotspots.keys())
 
 
-def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerType, cancerTypeMap, retainonlycuratedgenes):
-    inithotspots()
+def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerType, cancerTypeMap, retainonlycuratedgenes, annotatehotspots):
+    if annotatehotspots:
+        inithotspots()
     if os.path.isfile(previousoutfile):
         cacheannotated(previousoutfile, defaultCancerType, cancerTypeMap)
     outf = open(outfile, 'w+', 1000)
@@ -139,8 +140,9 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
 
         outf.write(headers['^-$'])
 
-        outf.write("\tis-a-hotspot")
-        outf.write("\tis-a-3d-hotspot")
+        if annotatehotspots:
+            outf.write("\tis-a-hotspot")
+            outf.write("\tis-a-3d-hotspot")
 
         outf.write("\tmutation_effect")
         outf.write("\toncogenic")
@@ -232,11 +234,12 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
             if start is not None and end is None:
                 end = start
 
-            hotspot = pullsinglehotspots(hugo, hgvs, None, consequence, start, end, cancertype)
-            row.append(hotspot)
+            if annotatehotspots:
+                hotspot = pullsinglehotspots(hugo, hgvs, None, consequence, start, end, cancertype)
+                row.append(hotspot)
 
-            _3dhotspot = pull3dhotspots(hugo, hgvs, None, consequence, start, end, cancertype)
-            row.append(_3dhotspot)
+                _3dhotspot = pull3dhotspots(hugo, hgvs, None, consequence, start, end, cancertype)
+                row.append(_3dhotspot)
 
             oncokbinfo = pulloncokb(hugo, hgvs, None, consequence, start, end, cancertype)
             row.append(oncokbinfo)

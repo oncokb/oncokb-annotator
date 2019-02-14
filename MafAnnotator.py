@@ -11,16 +11,17 @@ def main(argv):
     outputmaffile = ''
     previousresultfile = ''
     defaultcancertype = 'cancer'
+    annotatehotspots = False
 
     try:
-        opts, args = getopt.getopt(argv, "hi:o:p:c:s:t:u:v:")
+        opts, args = getopt.getopt(argv, "hi:o:p:c:s:t:u:v:a")
     except getopt.GetoptError:
         print 'for help: python MafAnnotator.py -h'
         sys.exit(2)
 
     for opt, arg in opts:
         if opt == '-h':
-            print 'MafAnnotator.py -i <input MAF file> -o <output MAF file> [-p previous results] [-c <input clinical file>] [-s sample list filter] [-t <default tumor type>] [-u oncokb-base-url] [-v cancerhotspots-base-url]'
+            print 'MafAnnotator.py -i <input MAF file> -o <output MAF file> [-p previous results] [-c <input clinical file>] [-s sample list filter] [-t <default tumor type>] [-u oncokb-base-url] [-a]'
             print '  Essential MAF columns (case insensitive):'
             print '    HUGO_SYMBOL: Hugo gene symbol'
             print '    VARIANT_CLASSIFICATION: Translational effect of variant allele'
@@ -37,6 +38,7 @@ def main(argv):
             print '     2) ONCOTREE_CODE exist in MAF'
             print '     3) default tumor type (-t)'
             print '  Default OncoKB base url is http://oncokb.org'
+            print '  use -a to annotate mutational hotspots'
             sys.exit()
         elif opt in ("-i"):
             inputmaffile = arg
@@ -52,6 +54,8 @@ def main(argv):
             defaultcancertype = arg
         elif opt in ("-u"):
             setoncokbbaseurl(arg)
+        elif opt in ("-a"):
+            annotatehotspots = True
         elif opt in ("-v"):
             setcancerhotspotsbaseurl(arg)
 
@@ -65,7 +69,7 @@ def main(argv):
 
     print 'annotating '+inputmaffile+"..."
 
-    processalterationevents(inputmaffile, outputmaffile, previousresultfile, defaultcancertype, cancertypemap, False)
+    processalterationevents(inputmaffile, outputmaffile, previousresultfile, defaultcancertype, cancertypemap, False, annotatehotspots)
 
     print 'done!'
 
@@ -74,6 +78,7 @@ if __name__ == "__main__":
     #     '-i', 'data/example_maf.txt',
     #     '-o', 'data/example_maf.oncokb.txt',
     #     '-c', 'data/example_clinical.txt',
+    #     '-a'
     # ]
     # main(argv)
 
