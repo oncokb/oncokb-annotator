@@ -4,7 +4,7 @@ import sys
 import getopt
 import csv
 import json
-import urllib
+import urllib.request
 import os.path
 import re
 import matplotlib
@@ -33,7 +33,7 @@ def setsampleidsfileterfile(f):
     global sampleidsfilter
     content = [line.rstrip() for line in open(f)]
     sampleidsfilter = set(content)
-    print len(sampleidsfilter)
+    print (len(sampleidsfilter))
 
 levels = [
     'LEVEL_1',
@@ -94,7 +94,7 @@ def getcuratedgenes(genelistfile):
 
 
 def gethotspots(url, type):
-    hotspotsjson = json.load(urllib.urlopen(url))
+    hotspotsjson = json.load(urllib.request.urlopen(url))
     hotspots = {}
     for hs in hotspotsjson:
         gene = hs['hugoSymbol']
@@ -171,7 +171,7 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
         for row in reader:
             i = i + 1
             if i % 100 == 0:
-                print i
+                print (i)
 
             row = padrow(row, ncols)
 
@@ -201,11 +201,11 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
             if sample in cancerTypeMap:
                 cancertype = cancerTypeMap[sample]
             if cancertype == "":
-                print "Cancer type for all samples must be defined\n"
-                print "line "
-                print i
-                print ": "
-                print row
+                print ("Cancer type for all samples must be defined\n")
+                print ("line ")
+                print (i)
+                print (": ")
+                print (row )
                 # continue
 
             start = None
@@ -224,7 +224,7 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
                     if len(poss) == 2:
                         end = int(poss[1])
                 except ValueError:
-                    print "position wrong at line" + str(i) + ": " + row[iproteinpos]
+                    print ("position wrong at line" + str(i) + ": " + row[iproteinpos])
 
             if start is None and consequence == "missense_variant":
                 m = posp.search(hgvs)
@@ -280,7 +280,7 @@ def processsv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap
         for row in reader:
             i = i + 1
             if i % 100 == 0:
-                print i
+                print (i)
 
             row = padrow(row, ncols)
 
@@ -314,11 +314,11 @@ def processsv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap
             if sample in cancerTypeMap:
                 cancertype = cancerTypeMap[sample]
             if cancertype == "":
-                print "Cancer type for all samples must be defined\n"
-                print "line "
-                print i
-                print ": "
-                print row
+                print ("Cancer type for all samples must be defined\n")
+                print ("line ")
+                print (i)
+                print (": ")
+                print (row)
                 # continue
 
             oncokbinfo = None
@@ -367,11 +367,11 @@ def processcnagisticdata(cnafile, outfile, previousoutfile, defaultCancerType, c
             samples.append(getsampleid(rs))
 
         if defaultCancerType == '' and not set(cancerTypeMap.keys()).issuperset(set(samples)):
-            print "Cancer type for all samples must be defined\n"
-            print "samples with cancer type:\n"
-            print cancerTypeMap.keys()
-            print "\nsamples in cna file:\n"
-            print samples
+            print ("Cancer type for all samples must be defined\n")
+            print ("samples with cancer type:\n")
+            print (cancerTypeMap.keys())
+            print ("\nsamples in cna file:\n")
+            print (samples)
             # quit()
 
         outf.write('SAMPLE_ID\tCANCER_TYPE\tHUGO_SYMBOL\tALTERATION')
@@ -386,7 +386,7 @@ def processcnagisticdata(cnafile, outfile, previousoutfile, defaultCancerType, c
         for row in reader:
             i = i + 1
             if i % 100 == 0:
-                print i
+                print (i)
 
             hugo = row[0]
             if retainonlycuratedgenes and hugo not in curatedgenes:
@@ -420,7 +420,7 @@ def processcnagisticdata(cnafile, outfile, previousoutfile, defaultCancerType, c
 def getfirstcolumnofsampleingisticdata(headers):
     header0 = headers[0].lower()
     if header0 != "hugo_symbol" and header0 != "gene symbol":
-        print "Gistic data should start with Hugo_Symbol"
+        print ("Gistic data should start with Hugo_Symbol")
         quit()
 
     header1 = headers[1].lower()
@@ -471,7 +471,7 @@ def processclinicaldata(annotatedmutfiles, clinicalfile, outfile):
             ismutorcna = ihugo != -1 & ihgvs != -1
 
             if not isfusion and not ismutorcna:
-                print "missing proper header"
+                print ("missing proper header")
                 exit()
 
             for row in reader:
@@ -733,7 +733,7 @@ def processmutationdata(mutfile, outfile, clinicaldata):
         i = 0
         for row in reader:
             if i % 100 == 0:
-                print i
+                print (i)
             i = i + 1
 
             sample = row[isample]
@@ -838,7 +838,7 @@ def pullsinglehotspots(hugo, proteinchange, alterationtype, consequence, start, 
                 if i in indelsinglehotspots[hugo]:
                     return "Y"
     except TypeError:
-        print hugo + ":" + str(start) + "-" + str(end)
+        print (hugo + ":" + str(start) + "-" + str(end))
     return ""
 
 
@@ -849,7 +849,7 @@ def pull3dhotspots(hugo, proteinchange, alterationtype, consequence, start, end,
                 if i in _3dhotspots[hugo]:
                     return "Y"
     except TypeError:
-        print hugo + ":" + str(start) + "-" + str(end)
+        print (hugo + ":" + str(start) + "-" + str(end))
     return ""
 
 def appendoncokbcitations(citations, pmids, abstracts):
@@ -900,7 +900,7 @@ def pulloncokb(hugo, proteinchange, alterationtype, consequence, start, end, can
         oncokbdata['oncogenic'] = ""
 
         try:
-            evidences = json.load(urllib.urlopen(url))
+            evidences = json.load(urllib.request.urlopen(url))
             # if not evidences['geneExist'] or (not evidences['variantExist'] and not evidences['alleleExist']):
             #     return ''
 
@@ -917,7 +917,7 @@ def pulloncokb(hugo, proteinchange, alterationtype, consequence, start, end, can
                 level = treatment['level']
 
                 if level not in levels:
-                    print level+" is ignored"
+                    print (level+" is ignored")
                     #oncokbdata[level].append('')
                 else:
                     drugs = treatment['drugs']
@@ -932,7 +932,7 @@ def pulloncokb(hugo, proteinchange, alterationtype, consequence, start, end, can
                             drugnames.append(drug['drugName'])
                         oncokbdata[level].append('+'.join(drugnames))
         except:
-            print "error when processing "+url
+            print ("error when processing "+url)
             # sys.exit()
 
         oncokbcache[key] = oncokbdata

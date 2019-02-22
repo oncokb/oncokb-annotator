@@ -16,17 +16,17 @@ def main(argv):
     try:
         opts, args = getopt.getopt(argv, "hi:o:c:s:n:l:")
     except getopt.GetoptError:
-        print 'for help: python OncoKBPlots.py -h'
+        print ('for help: python OncoKBPlots.py -h')
         sys.exit(2)
 
     for opt, arg in opts:
         if opt == '-h':
-            print 'OncoKBPlots.py -i <annotated clinical file> -o <output PDF file> [-c <categorization column, e.g. CANCER_TYPE>] [-s sample list filter] [-n threshold of # samples in a category] [-l comma separated levels to include]'
-            print '  Essential clinical columns:'
-            print '    SAMPLE_ID: sample ID'
-            print '    HIGHEST_LEVEL: Highest OncoKB levels'
-            print '  Supported levels (-l): '
-            print '    LEVEL_1,LEVEL_2A,LEVEL_2B,LEVEL_3A,LEVEL_3B,LEVEL_4,ONCOGENIC,VUS'
+            print ('OncoKBPlots.py -i <annotated clinical file> -o <output PDF file> [-c <categorization column, e.g. CANCER_TYPE>] [-s sample list filter] [-n threshold of # samples in a category] [-l comma separated levels to include]')
+            print ('  Essential clinical columns:')
+            print ('    SAMPLE_ID: sample ID')
+            print ('    HIGHEST_LEVEL: Highest OncoKB levels')
+            print ('  Supported levels (-l): ')
+            print ('    LEVEL_1,LEVEL_2A,LEVEL_2B,LEVEL_3A,LEVEL_3B,LEVEL_4,ONCOGENIC,VUS')
             sys.exit()
         elif opt in ("-i"):
             annotatedclinicalfile = arg
@@ -42,14 +42,14 @@ def main(argv):
             params["levels"] = arg.split(",")
 
     if annotatedclinicalfile == '' or outputpdffile== '':
-        print 'for help: python OncoKBPlots.py -h'
+        print ('for help: python OncoKBPlots.py -h')
         sys.exit(2)
 
-    print 'annotating ' + annotatedclinicalfile + "..."
+    print ('annotating ' + annotatedclinicalfile + "...")
 
     plotclinicalactionability(annotatedclinicalfile, outputpdffile, params)
 
-    print 'done!'
+    print ('done!')
 
 if __name__ == "__main__":
     # argv = [
