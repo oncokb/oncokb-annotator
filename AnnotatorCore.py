@@ -13,7 +13,8 @@ import matplotlib.pyplot as plt
 
 csv.field_size_limit(sys.maxsize) # for reading large files
 
-oncokbbaseurl = "http://oncokb.org"
+oncokbbaseurl = "https://oncokb.org/api/v1"
+
 def setoncokbbaseurl(u):
     global oncokbbaseurl
     oncokbbaseurl = u
@@ -125,7 +126,8 @@ def inithotspots():
     curatedgenes |= set(_3dhotspots.keys())
 
 
-def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerType, cancerTypeMap, retainonlycuratedgenes, annotatehotspots):
+def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerType, cancerTypeMap,
+                            retainonlycuratedgenes, annotatehotspots):
     if annotatehotspots:
         inithotspots()
     if os.path.isfile(previousoutfile):
@@ -241,7 +243,7 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
                 _3dhotspot = pull3dhotspots(hugo, hgvs, None, consequence, start, end, cancertype)
                 row.append(_3dhotspot)
 
-            oncokbinfo = pulloncokb(hugo, hgvs, None, consequence, start, end, cancertype)
+            oncokbinfo = pull_mutation_info(hugo, hgvs, consequence, start, end, cancertype)
             row.append(oncokbinfo)
 
             outf.write('\t'.join(row) + "\n")
@@ -268,8 +270,6 @@ def processsv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap
         outf.write("\tHighest_level")
         outf.write("\tcitations\n")
 
-        unknownvaraint = pulloncokb("NOT-A-GENE", "Deletion", None, None, None, None, "")
-
         igene1 = geIndexOfHeader(headers, ['GENE1'])
         igene2 = geIndexOfHeader(headers, ['GENE2'])
         ifusion = geIndexOfHeader(headers, ['FUSION'])
@@ -291,18 +291,18 @@ def processsv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap
 
             gene1 = None
             gene2 = None
-            if igene1>=0:
+            if igene1 >= 0:
                 gene1 = row[igene1]
-            if igene2>=0:
+            if igene2 >= 0:
                 gene2 = row[igene2]
-            if igene1<0 and igene2<0 and ifusion>=0:
+            if igene1 < 0 and igene2 < 0 and ifusion >= 0:
                 fusion = row[ifusion]
                 if fusion.endswith(" fusion"):
-                    fusion = fusion[0:len(fusion)-len(" fusion")]
+                    fusion = fusion[0:len(fusion) - len(" fusion")]
                 parts = fusion.split("-")
                 gene1 = parts[0]
                 gene2 = gene1
-                if len(parts)>1 and parts[0]!="intragenic":
+                if len(parts) > 1 and parts[0] != "intragenic" and parts[1] != "intragenic":
                     gene2 = parts[1]
 
             if retainonlycuratedgenes and gene1 not in curatedgenes and gene2 not in curatedgenes:
@@ -321,22 +321,7 @@ def processsv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap
                 print row
                 # continue
 
-            oncokbinfo = None
-            if gene1 == gene2:
-                oncokbinfo = pulloncokb(gene1, "Deletion", None, None, None, None, cancertype)
-            else:
-                oncokbinfo = pulloncokb(gene1+'-'+gene2, '', 'structural_variant', 'fusion', None, None, cancertype)
-
-                # oncokbinfo = pulloncokb(gene1, gene1 + '-' + gene2 + " fusion", None, None, None, None, cancertype)
-                # if oncokbinfo == unknownvaraint:
-                #     oncokbinfo = pulloncokb(gene1, gene2 + '-' + gene1 + " fusion", None, None, None, None,
-                #                               cancertype)
-                # if oncokbinfo == unknownvaraint:
-                #     oncokbinfo = pulloncokb(gene2, gene1 + '-' + gene2 + " fusion", None, None, None, None,
-                #                               cancertype)
-                # if oncokbinfo == unknownvaraint:
-                #     oncokbinfo = pulloncokb(gene2, gene2 + '-' + gene1 + " fusion", None, None, None, None,
-                #                               cancertype)
+            oncokbinfo = pullStructuralVariantInfo(gene1, gene2, 'FUSION', cancertype)
             row.append(oncokbinfo)
             outf.write('\t'.join(row) + "\n")
 
@@ -347,7 +332,6 @@ cnaEventMap = {
     "-2": 'Deletion',
     "-1.5": 'Deletion',
     "-1": 'Loss',
-    "0": 'Diploid',
     "1": 'Gain',
     "2": 'Amplification'
 }
@@ -397,8 +381,8 @@ def processcnagisticdata(cnafile, outfile, previousoutfile, defaultCancerType, c
                 if rawsample in headers:
                     cna = row[headers[rawsample]]
                     if cna in cnaEventMap:
-                        alteration = cnaEventMap[cna]
-                        if alteration == "Amplification" or alteration == "Deletion":
+                        cna_type = cnaEventMap[cna]
+                        if cna_type is not None:
                             cancertype = defaultCancerType
                             sample = getsampleid(rawsample)
 
@@ -407,11 +391,11 @@ def processcnagisticdata(cnafile, outfile, previousoutfile, defaultCancerType, c
 
                             if sample in cancerTypeMap:
                                 cancertype = cancerTypeMap[sample]
-                            oncokbinfo = pulloncokb(hugo, alteration, None, None, None, None, cancertype)
+                            oncokbinfo = pull_cna_info(hugo, cna_type, cancertype)
                             outf.write(sample + "\t")
                             outf.write(cancertype + "\t")
                             outf.write(hugo + "\t")
-                            outf.write(alteration + "\t")
+                            outf.write(cna_type + "\t")
                             outf.write(oncokbinfo)
                             outf.write('\n')
     outf.close()
@@ -712,7 +696,8 @@ def plotclinicalactionability(annotatedclinicalfile, outfile, parameters):
         plt.subplots_adjust(left=0.2, bottom=0.3)
         # plt.yticks(np.arange(0, 81, 10))
         plt.legend(plts, legends, fontsize=6, bbox_to_anchor=(1.01, 1), loc="upper left")
-        plt.gcf().text(0.90, 0.1, "Generated by OncoKB\n[Chakravarty et al., JCO PO 2017]", fontsize=6, horizontalalignment='right', verticalalignment='bottom')
+        plt.gcf().text(0.90, 0.1, "Generated by OncoKB\n[Chakravarty et al., JCO PO 2017]", fontsize=6,
+                       horizontalalignment='right', verticalalignment='bottom')
 
         # plt.show()
         f.savefig(outfile, bbox_inches='tight')
@@ -759,7 +744,7 @@ def processmutationdata(mutfile, outfile, clinicaldata):
 
             if sample in clinicaldata:
                 cancertype = clinicaldata[sample]
-            oncokbevidences = pulloncokb(hugo, hgvs, None, consequence, start, end, cancertype)
+            oncokbevidences = pull_mutation_info(hugo, hgvs, consequence, start, end, cancertype)
             annotatedrow = [hugo, consequence, start, end, hgvs, sample, cancertype, oncokbevidences]
             outf.write('\t'.join(annotatedrow) + "\n")
 
@@ -869,28 +854,51 @@ def appendoncokbcitations(citations, pmids, abstracts):
 
     return citations
 
-def pulloncokb(hugo, proteinchange, alterationtype, consequence, start, end, cancertype):
-    if hugo not in curatedgenes and alterationtype and alterationtype.lower() != 'fusion' and alterationtype.lower() != 'structural_variant':
-        return ""
 
-    key = '-'.join([hugo, proteinchange, cancertype])
+def pull_mutation_info(hugo, protein_change, consequence, start, end, cancer_type):
+    url = oncokbbaseurl + '/annotate/mutations/byProteinChange?'
+    url += 'hugoSymbol=' + hugo
+    url += '&alteration=' + protein_change
+    url += '&tumorType=' + cancer_type
+    if consequence:
+        url += '&consequence=' + consequence
+    if start and start != '\\N' and start != 'NULL' and start != '':
+        url += '&proteinStart=' + str(start)
+    if end and end != '\\N' and end != 'NULL' and end != '':
+        url += '&proteinEnd=' + str(end)
+    key = '-'.join([hugo, protein_change, cancer_type])
+    return pulloncokb(key, url)
+
+
+def pull_cna_info(hugo, copy_name_alteration_type, cancer_type):
+    url = oncokbbaseurl + '/annotate/copyNumberAlterations?'
+    url += 'hugoSymbol=' + hugo
+    url += '&copyNameAlterationType=' + copy_name_alteration_type.upper()
+    url += '&tumorType=' + cancer_type
+    key = '-'.join([hugo, copy_name_alteration_type, cancer_type])
+    return pulloncokb(key, url)
+
+
+def pullStructuralVariantInfo(gene1, gene2, structural_variant_type, cancer_type):
+    # Assume all structural variants in the file are functional fusions
+    is_functional_fusion = True
+    if gene1 == gene2:
+        is_functional_fusion = False
+        structural_variant_type = 'DELETION'
+
+    is_functional_fusion_str = 'true' if is_functional_fusion else 'false'
+    url = oncokbbaseurl + '/annotate/structuralVariants?'
+    url += 'hugoSymbolA=' + gene1
+    url += '&hugoSymbolB=' + gene2
+    url += '&structuralVariantType=' + structural_variant_type
+    url += '&isFunctionalFusion=' + is_functional_fusion_str
+    url += '&tumorType=' + cancer_type
+    key = '-'.join([gene1, gene2, structural_variant_type, is_functional_fusion_str, cancer_type])
+    return pulloncokb(key, url);
+
+
+def pulloncokb(key, url):
     if key not in oncokbcache:
-        # url = 'http://dashi-dev.cbio.mskcc.org:8080/oncokb/api/indicator.json?source=cbioportal'
-        # url = 'http://localhost:8080/oncokb/api/indicator.json?source=cbioportal'
-        # url = 'http://dashi.cbio.mskcc.org:38080/internal/legacy-api/indicator.json?source=cbioportal'
-        url = oncokbbaseurl+'/legacy-api/indicator.json?source=cbioportal'
-        url += '&hugoSymbol=' + hugo
-        url += '&alteration=' + proteinchange
-        url += '&tumorType=' + cancertype
-        if consequence:
-            url += '&consequence=' + consequence
-        if start and start != '\\N' and start != 'NULL' and start != '':
-            url += '&proteinStart=' + str(start)
-        if end and end != '\\N' and end != 'NULL' and end != '':
-            url += '&proteinEnd=' + str(end)
-        if alterationtype and alterationtype != 'NULL' and alterationtype != '':
-            url += '&alterationType=' + alterationtype
-
         oncokbdata = {}
         for l in levels:
             oncokbdata[l] = []
@@ -905,9 +913,11 @@ def pulloncokb(hugo, proteinchange, alterationtype, consequence, start, end, can
             #     return ''
 
             # mutation effect
-            if(evidences['mutationEffect'] is not None):
+            if (evidences['mutationEffect'] is not None):
                 oncokbdata['mutation_effect'] = evidences['mutationEffect']['knownEffect']
-                oncokbdata['citations'] = appendoncokbcitations(oncokbdata['citations'], evidences['mutationEffect']['citations']['pmids'] , evidences['mutationEffect']['citations']['abstracts'])
+                oncokbdata['citations'] = appendoncokbcitations(oncokbdata['citations'],
+                                                                evidences['mutationEffect']['citations']['pmids'],
+                                                                evidences['mutationEffect']['citations']['abstracts'])
 
             # oncogenic
             oncokbdata['oncogenic'] = evidences['oncogenic']
@@ -917,12 +927,13 @@ def pulloncokb(hugo, proteinchange, alterationtype, consequence, start, end, can
                 level = treatment['level']
 
                 if level not in levels:
-                    print level+" is ignored"
-                    #oncokbdata[level].append('')
+                    print level + " is ignored"
+                    # oncokbdata[level].append('')
                 else:
                     drugs = treatment['drugs']
 
-                    oncokbdata['citations'] = appendoncokbcitations(oncokbdata['citations'], treatment['pmids'], treatment['abstracts'])
+                    oncokbdata['citations'] = appendoncokbcitations(oncokbdata['citations'], treatment['pmids'],
+                                                                    treatment['abstracts'])
 
                     if len(drugs) == 0:
                         oncokbdata[level].append('[NOT SPECIFIED]')
@@ -932,7 +943,7 @@ def pulloncokb(hugo, proteinchange, alterationtype, consequence, start, end, can
                             drugnames.append(drug['drugName'])
                         oncokbdata[level].append('+'.join(drugnames))
         except:
-            print "error when processing "+url
+            print "error when processing " + url
             # sys.exit()
 
         oncokbcache[key] = oncokbdata
@@ -947,7 +958,7 @@ def pulloncokb(hugo, proteinchange, alterationtype, consequence, start, end, can
     ret.append(';'.join(oncokbdata['citations']))
 
     ret = "\t".join(ret)
-    ret = ret.encode('ascii', 'ignore').decode('ascii') # ignore unicode
+    ret = ret.encode('ascii', 'ignore').decode('ascii')  # ignore unicode
     return ret
 
 def gethighestsensitivitylevel(oncokbdata):
@@ -955,7 +966,7 @@ def gethighestsensitivitylevel(oncokbdata):
     if "LEVEL_R1" in oncokbdata:
         r1 = set(oncokbdata["LEVEL_R1"])
     for l in levels:
-        if l.startswith("LEVEL_R") or l not in oncokbdata or oncokbdata[l]=='':
+        if l.startswith("LEVEL_R") or l not in oncokbdata or oncokbdata[l] == '':
             continue
         if not r1.issuperset(set(oncokbdata[l])):
             return l
@@ -1001,11 +1012,11 @@ def readheaders(reader):
 
 def padrow(row, n):
     nr = len(row)
-    if nr==n:
+    if nr == n:
         return row
 
-    if nr<n:
-        return row + [""]*(n-len(row))
+    if nr < n:
+        return row + [""] * (n - len(row))
 
-    else: #nr<n
+    else:  # nr<n
         return row[0:n]
