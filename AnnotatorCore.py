@@ -302,7 +302,7 @@ def processsv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap
                 parts = fusion.split("-")
                 gene1 = parts[0]
                 gene2 = gene1
-                if len(parts) > 1 and parts[0] != "intragenic" and parts[1] != "intragenic":
+                if len(parts) > 1 and parts[1] != "intragenic":
                     gene2 = parts[1]
 
             if retainonlycuratedgenes and gene1 not in curatedgenes and gene2 not in curatedgenes:
@@ -332,6 +332,7 @@ cnaEventMap = {
     "-2": 'Deletion',
     "-1.5": 'Deletion',
     "-1": 'Loss',
+    "0": 'Diploid',
     "1": 'Gain',
     "2": 'Amplification'
 }
@@ -382,7 +383,7 @@ def processcnagisticdata(cnafile, outfile, previousoutfile, defaultCancerType, c
                     cna = row[headers[rawsample]]
                     if cna in cnaEventMap:
                         cna_type = cnaEventMap[cna]
-                        if cna_type is not None:
+                        if cna_type == "Amplification" or cna_type == "Deletion":
                             cancertype = defaultCancerType
                             sample = getsampleid(rawsample)
 
