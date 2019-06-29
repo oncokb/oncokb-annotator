@@ -13,11 +13,11 @@ import matplotlib.pyplot as plt
 
 csv.field_size_limit(sys.maxsize) # for reading large files
 
-oncokbbaseurl = "https://oncokb.org/api/v1"
+oncokbapiurl = "https://oncokb.org/api/v1"
 
 def setoncokbbaseurl(u):
-    global oncokbbaseurl
-    oncokbbaseurl = u
+    global oncokbapiurl
+    oncokbapiurl = u.rstrip('/') + '/api/v1'
 
 cancerhotspotsbaseurl = "http://www.cancerhotspots.org"
 def setcancerhotspotsbaseurl(u):
@@ -857,7 +857,7 @@ def appendoncokbcitations(citations, pmids, abstracts):
 
 
 def pull_mutation_info(hugo, protein_change, consequence, start, end, cancer_type):
-    url = oncokbbaseurl + '/annotate/mutations/byProteinChange?'
+    url = oncokbapiurl + '/annotate/mutations/byProteinChange?'
     url += 'hugoSymbol=' + hugo
     url += '&alteration=' + protein_change
     url += '&tumorType=' + cancer_type
@@ -872,7 +872,7 @@ def pull_mutation_info(hugo, protein_change, consequence, start, end, cancer_typ
 
 
 def pull_cna_info(hugo, copy_name_alteration_type, cancer_type):
-    url = oncokbbaseurl + '/annotate/copyNumberAlterations?'
+    url = oncokbapiurl + '/annotate/copyNumberAlterations?'
     url += 'hugoSymbol=' + hugo
     url += '&copyNameAlterationType=' + copy_name_alteration_type.upper()
     url += '&tumorType=' + cancer_type
@@ -888,7 +888,7 @@ def pullStructuralVariantInfo(gene1, gene2, structural_variant_type, cancer_type
         structural_variant_type = 'DELETION'
 
     is_functional_fusion_str = 'true' if is_functional_fusion else 'false'
-    url = oncokbbaseurl + '/annotate/structuralVariants?'
+    url = oncokbapiurl + '/annotate/structuralVariants?'
     url += 'hugoSymbolA=' + gene1
     url += '&hugoSymbolB=' + gene2
     url += '&structuralVariantType=' + structural_variant_type
