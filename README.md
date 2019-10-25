@@ -12,6 +12,13 @@ Example input files are under [data](data). An example script is here: [example.
 
 We recommend processing MAF files by [vcf2maf](https://github.com/mskcc/vcf2maf/) with [MSK override isoforms](https://github.com/mskcc/vcf2maf/blob/master/data/isoform_overrides_at_mskcc) before using the `MafAnnotator` here.
 
+## UPDATE: API token required
+#### OncoKB API
+When you run `MafAnnotator.py`, `FusionAnnotator.py` and `CnaAnnotator.py`, you need a token before access the OncoKB data via its web API. Please go to [OncoKB Data Access](https://oncokb.org/dataAccess) to learn how to get a OncoKB API token and specify your token  in the command line after you have that.
+```
+python ${FILE_NAME.py} -i ${INPUT_FILE} -o ${OUTPUT_FILE} -b ${ONCOKB_API_TOKEN}
+``` 
+
 ## Columns added in the annotation files
 | Column          	| Possible Values                                                                                                                                                            	 	 	| Description                                                                                                                                                                                                                      	|
 |-----------------	|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------	|
