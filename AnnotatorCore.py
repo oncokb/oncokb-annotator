@@ -1,10 +1,8 @@
 #!/usr/bin/python
 
 import sys
-import getopt
 import csv
-import json
-import urllib
+import requests
 import os.path
 import re
 import matplotlib
@@ -15,10 +13,15 @@ from datetime import date
 csv.field_size_limit(sys.maxsize) # for reading large files
 
 oncokbapiurl = "https://oncokb.org/api/v1"
+oncokbapibearertoken = ""
 
 def setoncokbbaseurl(u):
     global oncokbapiurl
     oncokbapiurl = u.rstrip('/') + '/api/v1'
+
+def setoncokbapitoken(t):
+    global oncokbapibearertoken
+    oncokbapibearertoken = t.strip()
 
 cancerhotspotsbaseurl = "http://www.cancerhotspots.org"
 def setcancerhotspotsbaseurl(u):
@@ -109,17 +112,23 @@ def generateReadme(outfile):
     outf.close()
 
 def gethotspots(url, type):
-    hotspotsjson = json.load(urllib.urlopen(url))
     hotspots = {}
-    for hs in hotspotsjson:
-        gene = hs['hugoSymbol']
-        start = hs['aminoAcidPosition']['start']
-        end = hs['aminoAcidPosition']['end']
-        if type is None or hs['type'] == type:
-            if gene not in hotspots:
-                hotspots[gene] = set()
-            for i in range(start, end + 1):
-                hotspots[gene].add(i)
+    response = requests.get(url)
+    if response.status_code == 200:
+        hotspotsjson = response.json()
+
+        for hs in hotspotsjson:
+            gene = hs['hugoSymbol']
+            start = hs['aminoAcidPosition']['start']
+            end = hs['aminoAcidPosition']['end']
+            if type is None or hs['type'] == type:
+                if gene not in hotspots:
+                    hotspots[gene] = set()
+                for i in range(start, end + 1):
+                    hotspots[gene].add(i)
+    else:
+        print "error when processing %s" % url
+        print "reason: %s" % response.reason
     return hotspots
 
 missensesinglehotspots = None
@@ -920,40 +929,49 @@ def pulloncokb(key, url):
         oncokbdata['oncogenic'] = ""
 
         try:
-            evidences = json.load(urllib.urlopen(url))
-            # if not evidences['geneExist'] or (not evidences['variantExist'] and not evidences['alleleExist']):
-            #     return ''
+            headers = {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer %s' % oncokbapibearertoken
+            }
+            response = requests.get(url, headers=headers)
+            if response.status_code == 200:
+                evidences = response.json()
+                # if not evidences['geneExist'] or (not evidences['variantExist'] and not evidences['alleleExist']):
+                #     return ''
 
-            # mutation effect
-            if (evidences['mutationEffect'] is not None):
-                oncokbdata['mutation_effect'] = evidences['mutationEffect']['knownEffect']
-                oncokbdata['citations'] = appendoncokbcitations(oncokbdata['citations'],
-                                                                evidences['mutationEffect']['citations']['pmids'],
-                                                                evidences['mutationEffect']['citations']['abstracts'])
+                # mutation effect
+                if (evidences['mutationEffect'] is not None):
+                    oncokbdata['mutation_effect'] = evidences['mutationEffect']['knownEffect']
+                    oncokbdata['citations'] = appendoncokbcitations(oncokbdata['citations'],
+                                                                    evidences['mutationEffect']['citations']['pmids'],
+                                                                    evidences['mutationEffect']['citations']['abstracts'])
 
-            # oncogenic
-            oncokbdata['oncogenic'] = evidences['oncogenic']
+                # oncogenic
+                oncokbdata['oncogenic'] = evidences['oncogenic']
 
-            # get treatment
-            for treatment in evidences['treatments']:
-                level = treatment['level']
+                # get treatment
+                for treatment in evidences['treatments']:
+                    level = treatment['level']
 
-                if level not in levels:
-                    print level + " is ignored"
-                    # oncokbdata[level].append('')
-                else:
-                    drugs = treatment['drugs']
-
-                    oncokbdata['citations'] = appendoncokbcitations(oncokbdata['citations'], treatment['pmids'],
-                                                                    treatment['abstracts'])
-
-                    if len(drugs) == 0:
-                        oncokbdata[level].append('[NOT SPECIFIED]')
+                    if level not in levels:
+                        print level + " is ignored"
+                        # oncokbdata[level].append('')
                     else:
-                        drugnames = []
-                        for drug in drugs:
-                            drugnames.append(drug['drugName'])
-                        oncokbdata[level].append('+'.join(drugnames))
+                        drugs = treatment['drugs']
+
+                        oncokbdata['citations'] = appendoncokbcitations(oncokbdata['citations'], treatment['pmids'],
+                                                                        treatment['abstracts'])
+
+                        if len(drugs) == 0:
+                            oncokbdata[level].append('[NOT SPECIFIED]')
+                        else:
+                            drugnames = []
+                            for drug in drugs:
+                                drugnames.append(drug['drugName'])
+                            oncokbdata[level].append('+'.join(drugnames))
+            else:
+                print "error when processing %s" % url
+                print "reason: %s" % response.reason
         except:
             print "error when processing " + url
             # sys.exit()
