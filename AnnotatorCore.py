@@ -10,6 +10,7 @@ import re
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+from datetime import date
 
 csv.field_size_limit(sys.maxsize) # for reading large files
 
@@ -92,7 +93,21 @@ def getcuratedgenes(genelistfile):
     return genelist
 
 
+def getOncokbInfo():
+    ret = ['The data is generated on ' + date.today().strftime('%m/%d/%Y')]
+    try:
+        info = json.load(urllib.urlopen(oncokbapiurl + "/info"))
+        ret.append('\n\nOncoKB data version: ' + info['dataVersion']['version'])
+        ret.append('\nThis version is released on ' + info['dataVersion']['date'])
+    except:
+        print "error when fetch OncoKB info"
+    return ''.join(ret)
 
+
+def generateReadme(outfile):
+    outf = open(outfile + '.readme', 'w+', 1000)
+    outf.write(getOncokbInfo())
+    outf.close()
 
 def gethotspots(url, type):
     hotspotsjson = json.load(urllib.urlopen(url))
@@ -250,6 +265,7 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
 
     outf.close()
 
+    generateReadme(outfile)
 
 def processsv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap, retainonlycuratedgenes):
     if os.path.isfile(previousoutfile):
@@ -327,6 +343,7 @@ def processsv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap
 
     outf.close()
 
+    generateReadme(outfile)
 
 cnaEventMap = {
     "-2": 'Deletion',
@@ -400,6 +417,7 @@ def processcnagisticdata(cnafile, outfile, previousoutfile, defaultCancerType, c
                             outf.write(oncokbinfo)
                             outf.write('\n')
     outf.close()
+    generateReadme(outfile)
 
 
 def getfirstcolumnofsampleingisticdata(headers):
@@ -558,6 +576,8 @@ def processclinicaldata(annotatedmutfiles, clinicalfile, outfile):
 
     outf.close()
 
+    generateReadme(outfile)
+
 def plotclinicalactionability(annotatedclinicalfile, outfile, parameters):
     if os.path.isfile(outfile):
         os.remove(outfile)
@@ -702,6 +722,7 @@ def plotclinicalactionability(annotatedclinicalfile, outfile, parameters):
 
         # plt.show()
         f.savefig(outfile, bbox_inches='tight')
+        generateReadme(outfile)
 
 def processmutationdata(mutfile, outfile, clinicaldata):
     outf = open(outfile, 'w+')
