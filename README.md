@@ -14,7 +14,7 @@ We recommend processing MAF files by [vcf2maf](https://github.com/mskcc/vcf2maf/
 
 ## UPDATE: API token required
 #### OncoKB API
-When you run `MafAnnotator.py`, `FusionAnnotator.py` and `CnaAnnotator.py`, you need a token before access the OncoKB data via its web API. Please go to [OncoKB Data Access](https://oncokb.org/dataAccess) to learn how to get a OncoKB API token and specify your token  in the command line after you have that.
+When you run `MafAnnotator.py`, `FusionAnnotator.py` and `CnaAnnotator.py`, you need a token before accessing the OncoKB data via its web API. Please go to [OncoKB Data Access](https://oncokb.org/dataAccess) to learn how to get a OncoKB API token and specify your token  in the command line after you have that.
 ```
 python ${FILE_NAME.py} -i ${INPUT_FILE} -o ${OUTPUT_FILE} -b ${ONCOKB_API_TOKEN}
 ``` 
