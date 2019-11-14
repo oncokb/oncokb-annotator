@@ -105,7 +105,7 @@ def getOncokbInfo():
 
 
 def generateReadme(outfile):
-    outf = open(outfile + '.readme', 'w+', 1000)
+    outf = open(outfile, 'w+', 1000)
     outf.write(getOncokbInfo())
     outf.close()
 
@@ -265,8 +265,6 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
 
     outf.close()
 
-    generateReadme(outfile)
-
 def processsv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap, retainonlycuratedgenes):
     if os.path.isfile(previousoutfile):
         cacheannotated(previousoutfile, defaultCancerType, cancerTypeMap)
@@ -343,8 +341,6 @@ def processsv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap
 
     outf.close()
 
-    generateReadme(outfile)
-
 cnaEventMap = {
     "-2": 'Deletion',
     "-1.5": 'Deletion',
@@ -417,8 +413,6 @@ def processcnagisticdata(cnafile, outfile, previousoutfile, defaultCancerType, c
                             outf.write(oncokbinfo)
                             outf.write('\n')
     outf.close()
-    generateReadme(outfile)
-
 
 def getfirstcolumnofsampleingisticdata(headers):
     header0 = headers[0].lower()
@@ -576,8 +570,6 @@ def processclinicaldata(annotatedmutfiles, clinicalfile, outfile):
 
     outf.close()
 
-    generateReadme(outfile)
-
 def plotclinicalactionability(annotatedclinicalfile, outfile, parameters):
     if os.path.isfile(outfile):
         os.remove(outfile)
@@ -722,7 +714,6 @@ def plotclinicalactionability(annotatedclinicalfile, outfile, parameters):
 
         # plt.show()
         f.savefig(outfile, bbox_inches='tight')
-        generateReadme(outfile)
 
 def processmutationdata(mutfile, outfile, clinicaldata):
     outf = open(outfile, 'w+')
