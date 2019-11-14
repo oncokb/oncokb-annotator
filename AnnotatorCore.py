@@ -58,6 +58,18 @@ levels = [
     'LEVEL_R3'
 ]
 
+dxLevels = [
+    'LEVEL_Dx1',
+    'LEVEL_Dx2',
+    'LEVEL_Dx3'
+]
+
+pxLevels = [
+    'LEVEL_Px1',
+    'LEVEL_Px2',
+    'LEVEL_Px3'
+]
+
 mutationtypeconsequencemap = {
     '3\'Flank': ['any'],
     '5\'Flank ': ['any'],
@@ -199,6 +211,14 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
 
         outf.write("\tcitations")
 
+        for l in dxLevels:
+            outf.write('\t' + l)
+        outf.write("\tHIGHEST_DX_LEVEL")
+
+        for l in pxLevels:
+            outf.write('\t' + l)
+        outf.write("\tHIGHEST_PX_LEVEL")
+
         outf.write("\n")
 
         ihugo = geIndexOfHeader(headers, ['HUGO_SYMBOL', 'HUGO_GENE_SYMBOL'])
@@ -322,7 +342,15 @@ def processsv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap
         for l in levels:
             outf.write('\t' + l)
         outf.write("\tHighest_level")
-        outf.write("\tcitations\n")
+        outf.write("\tcitations")
+
+        for l in dxLevels:
+            outf.write('\t' + l)
+        outf.write("\tHIGHEST_DX_LEVEL")
+
+        for l in pxLevels:
+            outf.write('\t' + l)
+        outf.write("\tHIGHEST_PX_LEVEL\n")
 
         igene1 = geIndexOfHeader(headers, ['GENE1'])
         igene2 = geIndexOfHeader(headers, ['GENE2'])
@@ -389,9 +417,6 @@ def processcnagisticdata(cnafile, outfile, previousoutfile, defaultCancerType, c
         reader = csv.reader(infile, delimiter='\t')
         headers = readheaders(reader)
         startofsamples = getfirstcolumnofsampleingisticdata(headers['^-$'].split('\t'))
-        # Get the header again without upper case the sample id
-        infile.seek(0)
-        headers = readheaders(reader, startofsamples)
         rawsamples = headers['^-$'].split('\t')[startofsamples:]
         samples = []
         for rs in rawsamples:
@@ -407,7 +432,13 @@ def processcnagisticdata(cnafile, outfile, previousoutfile, defaultCancerType, c
         for l in levels:
             outf.write('\t' + l)
         outf.write("\tHighest_level")
-        outf.write("\tcitations\n")
+        outf.write("\tcitations")
+        for l in dxLevels:
+            outf.write('\t' + l)
+        outf.write("\tHIGHEST_DX_LEVEL")
+        for l in pxLevels:
+            outf.write('\t' + l)
+        outf.write("\tHIGHEST_PX_LEVEL\n")
 
         i = 0
         for row in reader:
@@ -467,9 +498,14 @@ def file_len(fname):
 
 def processclinicaldata(annotatedmutfiles, clinicalfile, outfile):
     samplelevels = {}
+    sampledxlevels = {}
+    samplepxlevels = {}
     sampleleveltreatments = {}
     sampledrivers = {}
+    samplemutationswithdiagnosis = {}
+    samplemutationswithprognosis = {}
     sampleactionablecount = {}
+    samplealterationcount = {}
     for annotatedmutfile in annotatedmutfiles:
         with open(annotatedmutfile, 'rU') as mutfile:
             reader = csv.reader(mutfile, delimiter='\t')
@@ -479,10 +515,11 @@ def processclinicaldata(annotatedmutfiles, clinicalfile, outfile):
 
             igene1 = geIndexOfHeader(headers, ['HUGO_SYMBOL', 'GENE1', 'HUGO_GENE_SYMBOL'])  # fusion
             igene2 = geIndexOfHeader(headers, ['HUGO_SYMBOL', 'GENE2', 'HUGO_GENE_SYMBOL'])  # fusion
+            ifusion = geIndexOfHeader(headers, ['FUSION'])
 
             ihugo = geIndexOfHeader(headers, ['HUGO_SYMBOL', 'HUGO_GENE_SYMBOL'])
             iconsequence = geIndexOfHeader(headers, ['VARIANT_CLASSIFICATION', 'MUTATION_TYPE'])
-            ihgvs = geIndexOfHeader(headers, ['ALTERATION', 'HGVSP_SHORT', 'AMINO_ACID_CHANGE', 'AA_CHANGE', 'FUSION'])
+            ihgvs = geIndexOfHeader(headers, ['ALTERATION', 'HGVSP_SHORT', 'AMINO_ACID_CHANGE', 'AA_CHANGE'])
             isample = geIndexOfHeader(headers, ['SAMPLE_ID', 'TUMOR_SAMPLE_BARCODE'])
             istart = geIndexOfHeader(headers, ['PROTEIN_START'])
             iend = geIndexOfHeader(headers, ['PROTEIN_END'])
@@ -490,7 +527,7 @@ def processclinicaldata(annotatedmutfiles, clinicalfile, outfile):
             # imutationeffect = headers['MUTATION_EFFECT']
             ioncogenic = headers['ONCOGENIC']
 
-            isfusion = igene1 != -1 & igene2 != -1
+            isfusion = (igene1 != -1 & igene2 != -1) or ifusion != -1
             ismutorcna = ihugo != -1 & ihgvs != -1
 
             if not isfusion and not ismutorcna:
@@ -508,9 +545,22 @@ def processclinicaldata(annotatedmutfiles, clinicalfile, outfile):
                     oncogenic = row[ioncogenic].lower()
                 if sample not in samplelevels:
                     samplelevels[sample] = {}
+                    sampledxlevels[sample] = []
+                    samplepxlevels[sample] = []
                     sampleleveltreatments[sample] = {}
                     sampledrivers[sample] = []
                     sampleactionablecount[sample] = 0
+
+                if sample not in samplemutationswithdiagnosis:
+                    samplemutationswithdiagnosis[sample] = []
+
+                if sample not in samplemutationswithprognosis:
+                    samplemutationswithprognosis[sample] = []
+
+                if sample not in samplealterationcount:
+                    samplealterationcount[sample] = 1
+                else:
+                    samplealterationcount[sample] += 1
 
                 hugo = row[ihugo]
                 alteration = row[ihgvs]
@@ -521,10 +571,13 @@ def processclinicaldata(annotatedmutfiles, clinicalfile, outfile):
                 if ismutorcna:
                     variant = hugo + " " + alteration
                 elif isfusion:
-                    if gene1 == gene2:
-                        variant = gene1 + " intragenic deletion"
+                    if ifusion != -1:
+                        variant = row[ifusion]
                     else:
-                        variant = gene1 + "-" + gene2 + " fusion"
+                        if gene1 == gene2:
+                            variant = gene1 + " intragenic deletion"
+                        else:
+                            variant = gene1 + "-" + gene2 + " fusion"
 
                 if oncogenic == "oncogenic" or oncogenic == "likely oncogenic" or oncogenic == "predicted oncogenic":
                     sampledrivers[sample].append(variant)
@@ -541,6 +594,32 @@ def processclinicaldata(annotatedmutfiles, clinicalfile, outfile):
                         if not l.startswith('LEVEL_R'):
                             sampleactionablecount[sample] += 1
 
+                for l in dxLevels:
+                    il = headers[l]
+                    if il < len(row) and row[il] != '':
+                        if l not in samplelevels[sample]:
+                            samplelevels[sample][l] = []
+                        samplelevels[sample][l].append(row[il] + "(" + variant + ")")
+
+                for l in pxLevels:
+                    il = headers[l]
+                    if il < len(row) and row[il] != '':
+                        if l not in samplelevels[sample]:
+                            samplelevels[sample][l] = []
+                        samplelevels[sample][l].append(row[il] + "(" + variant + ")")
+
+                ihighestdxlevel = geIndexOfHeader(headers, ['HIGHEST_DX_LEVEL'])
+                if ihighestdxlevel != -1:
+                    if row[ihighestdxlevel] != '':
+                        samplemutationswithdiagnosis[sample].append(variant)
+                        sampledxlevels[sample].append(row[ihighestdxlevel])
+
+                ihighestpxlevel = geIndexOfHeader(headers, ['HIGHEST_PX_LEVEL'])
+                if ihighestpxlevel != -1:
+                    if row[ihighestpxlevel] != '':
+                        samplemutationswithprognosis[sample].append(variant)
+                        samplepxlevels[sample].append(row[ihighestpxlevel])
+
     outf = open(outfile, 'w+')
 
     # export to anntoated file
@@ -550,7 +629,15 @@ def processclinicaldata(annotatedmutfiles, clinicalfile, outfile):
         outf.write(headers['^-$'])
         for l in levels:
             outf.write('\t' + l)
-        outf.write('\tHIGHEST_LEVEL\toncogenic_mutations\t#actionable_mutations\t#oncogenic_mutations\n')
+        outf.write('\tHIGHEST_LEVEL')
+        for l in dxLevels:
+            outf.write('\t' + l)
+        outf.write('\tHIGHEST_DX_LEVEL')
+        for l in pxLevels:
+            outf.write('\t' + l)
+        outf.write('\tHIGHEST_PX_LEVEL')
+
+        outf.write('\toncogenic_mutations\t#actionable_mutations\t#mutations_with_diagnosis\t#mutations_with_prognosis\t#oncogenic_mutations\t#all_alterations\n')
         isample = headers['SAMPLE_ID']
 
         for row in reader:
@@ -567,8 +654,14 @@ def processclinicaldata(annotatedmutfiles, clinicalfile, outfile):
                     outf.write(";".join(samplelevels[sample][l]))
 
             highestlevel = ''
+            highestdxlevel = ''
+            highestpxlevel = ''
             if sample in sampleleveltreatments:
                 highestlevel = gethighestsensitivitylevel(sampleleveltreatments[sample])
+            if sample in sampledxlevels:
+                highestdxlevel = gethighestDxPxlevel(dxLevels, sampledxlevels[sample])
+            if sample in samplepxlevels:
+                highestpxlevel = gethighestDxPxlevel(pxLevels, samplepxlevels[sample])
             # if highestlevel == '':
             #     if sample in sampledrivers and len(sampledrivers[sample])>0:
             #         highestlevel = 'Oncogenic, no level'
@@ -576,26 +669,52 @@ def processclinicaldata(annotatedmutfiles, clinicalfile, outfile):
             #         highestlevel = "VUS"
             outf.write('\t' + highestlevel)
 
+            for l in dxLevels:
+                outf.write('\t')
+                if sample in samplelevels and l in samplelevels[sample]:
+                    outf.write(";".join(samplelevels[sample][l]))
+
+            outf.write('\t' + highestdxlevel)
+
+            for l in pxLevels:
+                outf.write('\t')
+                if sample in samplelevels and l in samplelevels[sample]:
+                    outf.write(";".join(samplelevels[sample][l]))
+            outf.write('\t' + highestpxlevel)
+
 
             actionablecount = 0
             if sample in sampleactionablecount:
                 actionablecount = sampleactionablecount[sample]
 
+            alterationcount = 0
+            if sample in samplealterationcount:
+                alterationcount = samplealterationcount[sample]
+
             drivercount = 0
+            diagnosiscount = 0
+            prognosiscount = 0
             drivermutations = ""
             if sample in sampledrivers:
                 drivercount = len(sampledrivers[sample])
                 drivermutations = ";".join(sampledrivers[sample])
+            if sample in samplemutationswithdiagnosis:
+                diagnosiscount = len(samplemutationswithdiagnosis[sample])
+            if sample in samplemutationswithprognosis:
+                prognosiscount = len(samplemutationswithprognosis[sample])
 
             outf.write('\t' + drivermutations)
             outf.write('\t' + str(actionablecount))
+            outf.write('\t' + str(diagnosiscount))
+            outf.write('\t' + str(prognosiscount))
             outf.write('\t' + str(drivercount))
+            outf.write('\t' + str(alterationcount))
 
             outf.write('\n')
 
     outf.close()
 
-def plotclinicalactionability(annotatedclinicalfile, outfile, parameters):
+def plotclinicalactionability(ax, annotatedclinicalfile, outfile, parameters):
     if os.path.isfile(outfile):
         os.remove(outfile)
 
@@ -650,6 +769,83 @@ def plotclinicalactionability(annotatedclinicalfile, outfile, parameters):
                 levelcatsamplecount[exlevel][cat] = 0
             levelcatsamplecount[exlevel][cat] += 1
 
+
+    # plot
+    catarray = [] # cancer types
+    catactionabilityarray = [] # actionabiligy percentages per cancer type
+    catoncogenicarray = [] # actionabiligy percentages per cancer type
+    for cat in catsamplecount:
+        if catsamplecount[cat] >= parameters["thresholdcat"]:
+            catarray.append(cat)
+            catactionabilityarray.append(catactionablesamplecount[cat] * 100.0 / catsamplecount[cat])
+            catoncogenicarray.append(oncogenicsamplecount[cat] * 100.0 / catsamplecount[cat])
+
+    ncat = len(catarray)
+    order = reversed(sorted(range(ncat),key=lambda x:(catactionabilityarray[x],catoncogenicarray[x])))
+    drawplot(ax, 'OncoKB Actionability', extlevels, levelcatsamplecount, catarray, catsamplecount, order, parameters["thresholdcat"])
+
+def plotimplications(ax, header, title, levels, annotatedclinicalfile, outfile, parameters):
+    if os.path.isfile(outfile):
+        os.remove(outfile)
+
+    extlevels = levels
+    if "levels" in parameters:
+        extlevels = parameters["levels"]
+
+    with open(annotatedclinicalfile, 'rU') as clinfile:
+        reader = csv.reader(clinfile, delimiter='\t')
+        headers = readheaders(reader)
+        isample = headers['SAMPLE_ID']
+        ilevel = headers[header]
+        icat = headers[parameters["catogerycolumn"].upper()]
+
+        catsamplecount = {}
+        catactionablesamplecount = {}
+        levelcatsamplecount = {}
+
+        for row in reader:
+            sample = row[isample]
+            if sampleidsfilter and sample not in sampleidsfilter:
+                continue
+
+            cat = row[icat]
+            if cat not in catsamplecount:
+                catsamplecount[cat] = 0
+            catsamplecount[cat] += 1
+
+            if cat not in catactionablesamplecount:
+                catactionablesamplecount[cat] = 0
+
+            level = row[ilevel]
+
+            exlevel = level
+
+            if level in extlevels:
+                catactionablesamplecount[cat] += 1
+            else:
+                exlevel = "Other"
+
+            if exlevel not in levelcatsamplecount:
+                levelcatsamplecount[exlevel] = {}
+            if cat not in levelcatsamplecount[exlevel]:
+                levelcatsamplecount[exlevel][cat] = 0
+            levelcatsamplecount[exlevel][cat] += 1
+
+
+    # plot
+    catarray = [] # cancer types
+    catactionabilityarray = [] # actionabiligy percentages per cancer type
+    for cat in catsamplecount:
+        if catsamplecount[cat] >= parameters["thresholdcat"]:
+            catarray.append(cat)
+            catactionabilityarray.append(catactionablesamplecount[cat] * 100.0 / catsamplecount[cat])
+
+    ncat = len(catarray)
+    order = reversed(sorted(range(ncat),key=lambda x:(catactionabilityarray[x])))
+    drawplot(ax, title, extlevels, levelcatsamplecount, catarray, catsamplecount, order, parameters["thresholdcat"])
+
+def drawplot(ax, title, extlevels, levelcatsamplecount, catarray, catsamplecount, order, thresholdcat):
+
     # level colors
     levelcolors = {
         'LEVEL_1': '#33A02C',
@@ -660,6 +856,15 @@ def plotclinicalactionability(annotatedclinicalfile, outfile, parameters):
         'LEVEL_R1': '#EE3424',
         'LEVEL_R2': '#F79A92',
         'LEVEL_R3': '#FCD6D3',
+
+        'LEVEL_Dx1': '#33A02C',
+        'LEVEL_Dx2': '#1F78B4',
+        'LEVEL_Dx3': '#984EA3',
+
+        'LEVEL_Px1': '#33A02C',
+        'LEVEL_Px2': '#1F78B4',
+        'LEVEL_Px3': '#984EA3',
+
         'ONCOGENIC': '#ffdab9',
         'VUS': '#d1d1d1',
         'Other': 'grey'
@@ -675,30 +880,25 @@ def plotclinicalactionability(annotatedclinicalfile, outfile, parameters):
         'LEVEL_R1': 'Level R1',
         'LEVEL_R2': 'Level R2',
         'LEVEL_R3': 'Level R3',
+
+        'LEVEL_Dx1': 'Level Dx1',
+        'LEVEL_Dx2': 'Level Dx2',
+        'LEVEL_Dx3': 'Level Dx3',
+
+        'LEVEL_Px1': 'Level Px1',
+        'LEVEL_Px2': 'Level Px2',
+        'LEVEL_Px3': 'Level Px3',
+
         'ONCOGENIC': 'Oncogenic, no level',
         'VUS': 'VUS',
         'Other': 'Other'
     }
 
-    # plot
-    catarray = [] # cancer types
-    catactionabilityarray = [] # actionabiligy percentages per cancer type
-    catoncogenicarray = [] # actionabiligy percentages per cancer type
-    for cat in catsamplecount:
-        if catsamplecount[cat] >= parameters["thresholdcat"]:
-            catarray.append(cat)
-            catactionabilityarray.append(catactionablesamplecount[cat] * 100.0 / catsamplecount[cat])
-            catoncogenicarray.append(oncogenicsamplecount[cat] * 100.0 / catsamplecount[cat])
-
     ncat = len(catarray)
     if ncat > 0:
-        # sort categories (cancer type) based on actionability and then oncogenic frequency
-        order = reversed(sorted(range(ncat),key=lambda x:(catactionabilityarray[x],catoncogenicarray[x])))
         catarray = [catarray[i] for i in order]
 
         ind = range(ncat)
-
-        f = plt.figure()
 
         legends = []
         plts = []
@@ -710,33 +910,28 @@ def plotclinicalactionability(annotatedclinicalfile, outfile, parameters):
             levelcancerperc = [0] * ncat
             for k in ind:
                 cat = catarray[k]
-                if catsamplecount[cat] < parameters["thresholdcat"]:
+                if catsamplecount[cat] < thresholdcat:
                     continue
                 if cat in levelcatsamplecount[level]:
                     levelcancerperc[k] = levelcatsamplecount[level][cat] * 100.0 / catsamplecount[cat]
 
             width = 0.75
-            plts = [plt.bar(ind, levelcancerperc, width, color=levelcolors[level], bottom=accumlevelcancerperc)] + plts
+            plts = [ax.bar(ind, levelcancerperc, width, color=levelcolors[level], bottom=accumlevelcancerperc)] + plts
             legends = [levellegend[level]] + legends
             accumlevelcancerperc = list(map(sum, zip(accumlevelcancerperc,levelcancerperc)))
 
         ax = plt.gca()
         ax.set_axisbelow(True)
         ax.set_aspect(0.1)
-        # ax.yaxis.grid(linestyle="dotted", color="lightgray") # horizontal lines
-        plt.margins(0.01)
-        plt.tick_params(axis='y', which='major', labelsize=6)
-        plt.ylabel('% of samples')
-        plt.title('OncoKB Actionability')
-        plt.xticks([i+0.5 for i in ind], catarray, rotation=60, ha="right", fontsize=6)
-        plt.subplots_adjust(left=0.2, bottom=0.3)
-        # plt.yticks(np.arange(0, 81, 10))
-        plt.legend(plts, legends, fontsize=6, bbox_to_anchor=(1.01, 1), loc="upper left")
-        plt.gcf().text(0.90, 0.1, "Generated by OncoKB\n[Chakravarty et al., JCO PO 2017]", fontsize=6,
-                       horizontalalignment='right', verticalalignment='bottom')
 
-        # plt.show()
-        f.savefig(outfile, bbox_inches='tight')
+        ax.tick_params(axis='y', which='major', labelsize=6)
+        ax.set_ylabel('% of samples', fontsize=6)
+        ax.set_title(title, fontsize=8)
+        ax.set_xticks([i+0.5 for i in ind])
+        ax.set_xticklabels(catarray, rotation=60, ha="right", fontsize=4)
+        # plt.yticks(np.arange(0, 81, 10))
+        ax.legend(plts, legends, fontsize=6, bbox_to_anchor=(1.01, 1), loc="upper left")
+
 
 def processmutationdata(mutfile, outfile, clinicaldata):
     outf = open(outfile, 'w+')
@@ -914,6 +1109,25 @@ def pull_cna_info(hugo, copy_name_alteration_type, cancer_type):
     key = '-'.join([hugo, copy_name_alteration_type, cancer_type])
     return pulloncokb(key, url)
 
+def gettumortypename(tumortype):
+    if 'code' in tumortype and tumortype['code'] is not None and tumortype['code'] != '':
+        return tumortype['code']
+    elif 'name' in tumortype and tumortype['name'] is not None and tumortype['name'] != '':
+        return tumortype['name']
+    else:
+        return tumortype['mainType']['name']
+
+
+def getimplications(oncokbdata, levels, implications):
+    for implication in implications:
+        level = implication['levelOfEvidence']
+
+        if level is not None:
+            if level not in levels:
+                print level + " is ignored"
+            else:
+                if 'tumorType' in implication:
+                    oncokbdata[level].append(gettumortypename(implication['tumorType']))
 
 def pullStructuralVariantInfo(gene1, gene2, structural_variant_type, cancer_type):
     # Assume all structural variants in the file are functional fusions
@@ -937,6 +1151,10 @@ def pulloncokb(key, url):
     if key not in oncokbcache:
         oncokbdata = {}
         for l in levels:
+            oncokbdata[l] = []
+        for l in dxLevels:
+            oncokbdata[l] = []
+        for l in pxLevels:
             oncokbdata[l] = []
 
         oncokbdata['mutation_effect'] = ""
@@ -980,6 +1198,15 @@ def pulloncokb(key, url):
                             for drug in drugs:
                                 drugnames.append(drug['drugName'])
                             oncokbdata[level].append('+'.join(drugnames))
+
+                if evidences['diagnosticImplications'] is not None:
+                    getimplications(oncokbdata, dxLevels, evidences['diagnosticImplications'])
+
+                if evidences['prognosticImplications'] is not None:
+                    getimplications(oncokbdata, pxLevels, evidences['prognosticImplications'])
+
+                oncokbdata['highestDiagnosticImplicationLevel'] = evidences['highestDiagnosticImplicationLevel']
+                oncokbdata['highestPrognosticImplicationLevel'] = evidences['highestPrognosticImplicationLevel']
             else:
                 log.error("error when processing %s\nreason: %s" % (url, response.reason))
         except:
@@ -997,6 +1224,14 @@ def pulloncokb(key, url):
     ret.append(gethighestsensitivitylevel(oncokbdata))
     ret.append(';'.join(oncokbdata['citations']))
 
+    for l in dxLevels:
+        ret.append(','.join(oncokbdata[l]))
+    ret.append(gethighestDxPxlevel(dxLevels, [oncokbdata['highestDiagnosticImplicationLevel']]))
+
+    for l in pxLevels:
+        ret.append(','.join(oncokbdata[l]))
+    ret.append(gethighestDxPxlevel(pxLevels, [oncokbdata['highestPrognosticImplicationLevel']]))
+
     ret = "\t".join(ret)
     ret = ret.encode('ascii', 'ignore').decode('ascii')  # ignore unicode
     return ret
@@ -1012,6 +1247,12 @@ def gethighestsensitivitylevel(oncokbdata):
             return l
     return ""
 
+def gethighestDxPxlevel(levels, oncokbdata):
+    for l in levels:
+        if l not in oncokbdata:
+            continue
+        return l
+    return ""
 
 def gettreatments(evidence):
     treatments = []
@@ -1037,7 +1278,7 @@ def readCancerTypes(clinicalFile, data):
     return data
 
 
-def readheaders(reader, caseinsensitiveIndex=None):
+def readheaders(reader):
     headers = {}
     for row in reader:
         if not row[0].startswith("#"):
@@ -1045,8 +1286,8 @@ def readheaders(reader, caseinsensitiveIndex=None):
             headers["length"] = len(row)
             i = 0
             for h in row:
-                header = h if caseinsensitiveIndex is not None and i >= caseinsensitiveIndex else h.upper()
-                headers[header] = i
+                headers[h.upper()] = i
+                headers[h] = i
                 i = i + 1
             break
     return headers
