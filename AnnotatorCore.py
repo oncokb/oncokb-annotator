@@ -94,11 +94,10 @@ def getcuratedgenes(genelistfile):
 
 
 def getOncokbInfo():
-    ret = ['The data is generated on ' + date.today().strftime('%m/%d/%Y')]
+    ret = ['Files annotated on ' + date.today().strftime('%m/%d/%Y') + "\nOncoKB API URL: "+oncokbapiurl]
     try:
         info = json.load(urllib.urlopen(oncokbapiurl + "/info"))
-        ret.append('\n\nOncoKB data version: ' + info['dataVersion']['version'])
-        ret.append('\nThis version is released on ' + info['dataVersion']['date'])
+        ret.append('\nOncoKB data version: ' + info['dataVersion']['version']+', released on ' + info['dataVersion']['date'])
     except:
         print "error when fetch OncoKB info"
     return ''.join(ret)
