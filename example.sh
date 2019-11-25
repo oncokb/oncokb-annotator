@@ -15,4 +15,4 @@ python FusionAnnotator.py -i $IF -o $OF -c $IC -b $TOKEN
 python CnaAnnotator.py -i $ICNA -o $OCNA -c $IC -b $TOKEN
 python ClinicalDataAnnotator.py -i $IC -o $OC -a $OMAF,$OCNA,$OF
 python OncoKBPlots.py -i $OC -o $OCPDF -c ONCOTREE_CODE #-n 10
-python GenarateReadMe.py -o $README
+python GenerateReadMe.py -o $README
