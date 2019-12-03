@@ -1,3 +1,6 @@
+
+## UPDATE: API token required, please see OncoKB API section for more information
+
 # oncokb-annotator <a href="https://ascopubs.org/doi/full/10.1200/PO.17.00011"><img src="https://img.shields.io/badge/DOI-10.1200%2FPO.17.00011-1c75cd" /></a>  
 
 Annotates variants in MAF with OncoKB annotation.
@@ -13,9 +16,9 @@ Example input files are under [data](data). An example script is here: [example.
 
 We recommend processing MAF files by [vcf2maf](https://github.com/mskcc/vcf2maf/) with [MSK override isoforms](https://github.com/mskcc/vcf2maf/blob/master/data/isoform_overrides_at_mskcc) before using the `MafAnnotator` here.
 
-## UPDATE: API token required
-#### OncoKB API
-When you run `MafAnnotator.py`, `FusionAnnotator.py` and `CnaAnnotator.py`, you need a token before accessing the OncoKB data via its web API. Please go to [OncoKB Data Access](https://oncokb.org/dataAccess) to learn how to get a OncoKB API token and specify your token  in the command line after you have that.
+## OncoKB API
+When you run `MafAnnotator.py`, `FusionAnnotator.py` and `CnaAnnotator.py`, you need a token before accessing the OncoKB data via its web API. Please visit [OncoKB Data Access Page](https://www.oncokb.org/dataAccess) for more information about how to register an account and get an OncoKB API token.  
+With the token listed under [OncoKB Account Settings Page](https://www.oncokb.org/account/settings), you could use itin the following format.
 ```
 python ${FILE_NAME.py} -i ${INPUT_FILE} -o ${OUTPUT_FILE} -b ${ONCOKB_API_TOKEN}
 ``` 
