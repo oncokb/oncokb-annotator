@@ -1,4 +1,5 @@
-# oncokb-annotator
+# oncokb-annotator <a href="https://ascopubs.org/doi/full/10.1200/PO.17.00011"><img src="https://img.shields.io/badge/DOI-10.1200%2FPO.17.00011-1c75cd" /></a>  
+
 Annotates variants in MAF with OncoKB annotation.
 
 Please try 
