@@ -12,7 +12,7 @@ from datetime import date
 
 csv.field_size_limit(sys.maxsize) # for reading large files
 
-oncokbapiurl = "https://beta.oncokb.org/api/v1"
+oncokbapiurl = "https://www.oncokb.org/api/v1"
 oncokbapibearertoken = ""
 
 def setoncokbbaseurl(u):
