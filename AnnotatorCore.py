@@ -4,11 +4,15 @@ import sys
 import csv
 import requests
 import os.path
+import logging
 import re
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from datetime import date
+
+logging.basicConfig(level=logging.INFO)
+log = logging.getLogger('AnnotatorCore')
 
 csv.field_size_limit(sys.maxsize) # for reading large files
 
@@ -38,7 +42,7 @@ def setsampleidsfileterfile(f):
     global sampleidsfilter
     content = [line.rstrip() for line in open(f)]
     sampleidsfilter = set(content)
-    print len(sampleidsfilter)
+    log.info(len(sampleidsfilter))
 
 levels = [
     'LEVEL_1',
@@ -98,10 +102,10 @@ def getcuratedgenes(genelistfile):
 def getOncokbInfo():
     ret = ['Files annotated on ' + date.today().strftime('%m/%d/%Y') + "\nOncoKB API URL: "+oncokbapiurl]
     try:
-        info = json.load(urllib.urlopen(oncokbapiurl + "/info"))
+        info = requests.get(oncokbapiurl + "/info").json()
         ret.append('\nOncoKB data version: ' + info['dataVersion']['version']+', released on ' + info['dataVersion']['date'])
     except:
-        print "error when fetch OncoKB info"
+        log.error("error when fetch OncoKB info")
     return ''.join(ret)
 
 
@@ -126,8 +130,8 @@ def gethotspots(url, type):
                 for i in range(start, end + 1):
                     hotspots[gene].add(i)
     else:
-        print "error when processing %s" % url
-        print "reason: %s" % response.reason
+        log.error("error when processing %s \n" % url +
+                  "reason: %s" % response.reason)
     return hotspots
 
 missensesinglehotspots = None
@@ -195,7 +199,7 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
         for row in reader:
             i = i + 1
             if i % 100 == 0:
-                print i
+                log.info(i)
 
             row = padrow(row, ncols)
 
@@ -225,11 +229,7 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
             if sample in cancerTypeMap:
                 cancertype = cancerTypeMap[sample]
             if cancertype == "":
-                print "Cancer type for all samples must be defined\n"
-                print "line "
-                print i
-                print ": "
-                print row
+                log.info("Cancer type for all samples must be defined\nline %s: %s" % (i, row))
                 # continue
 
             start = None
@@ -248,7 +248,7 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
                     if len(poss) == 2:
                         end = int(poss[1])
                 except ValueError:
-                    print "position wrong at line" + str(i) + ": " + row[iproteinpos]
+                    log.info("position wrong at line %s: %s" % (str(i), row[iproteinpos]))
 
             if start is None and consequence == "missense_variant":
                 m = posp.search(hgvs)
@@ -301,7 +301,7 @@ def processsv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap
         for row in reader:
             i = i + 1
             if i % 100 == 0:
-                print i
+                log.info(i)
 
             row = padrow(row, ncols)
 
@@ -335,11 +335,7 @@ def processsv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap
             if sample in cancerTypeMap:
                 cancertype = cancerTypeMap[sample]
             if cancertype == "":
-                print "Cancer type for all samples must be defined\n"
-                print "line "
-                print i
-                print ": "
-                print row
+                log.info("Cancer type for all samples must be defined\nline %s: %s" % (i, row))
                 # continue
 
             oncokbinfo = pullStructuralVariantInfo(gene1, gene2, 'FUSION', cancertype)
@@ -372,11 +368,7 @@ def processcnagisticdata(cnafile, outfile, previousoutfile, defaultCancerType, c
             samples.append(getsampleid(rs))
 
         if defaultCancerType == '' and not set(cancerTypeMap.keys()).issuperset(set(samples)):
-            print "Cancer type for all samples must be defined\n"
-            print "samples with cancer type:\n"
-            print cancerTypeMap.keys()
-            print "\nsamples in cna file:\n"
-            print samples
+            log.info("Cancer type for all samples must be defined samples with cancer type: %s \nsamples in cna file: %s" % (cancerTypeMap.keys(), samples))
             # quit()
 
         outf.write('SAMPLE_ID\tCANCER_TYPE\tHUGO_SYMBOL\tALTERATION')
@@ -391,7 +383,7 @@ def processcnagisticdata(cnafile, outfile, previousoutfile, defaultCancerType, c
         for row in reader:
             i = i + 1
             if i % 100 == 0:
-                print i
+                log.info(i)
 
             hugo = row[0]
             if retainonlycuratedgenes and hugo not in curatedgenes:
@@ -424,7 +416,7 @@ def processcnagisticdata(cnafile, outfile, previousoutfile, defaultCancerType, c
 def getfirstcolumnofsampleingisticdata(headers):
     header0 = headers[0].lower()
     if header0 != "hugo_symbol" and header0 != "gene symbol":
-        print "Gistic data should start with Hugo_Symbol"
+        log.info("Gistic data should start with Hugo_Symbol")
         quit()
 
     header1 = headers[1].lower()
@@ -451,7 +443,6 @@ def processclinicaldata(annotatedmutfiles, clinicalfile, outfile):
     sampledrivers = {}
     sampleactionablecount = {}
     for annotatedmutfile in annotatedmutfiles:
-        # print annotatedmutfile
         with open(annotatedmutfile, 'rU') as mutfile:
             reader = csv.reader(mutfile, delimiter='\t')
             headers = readheaders(reader)
@@ -475,7 +466,7 @@ def processclinicaldata(annotatedmutfiles, clinicalfile, outfile):
             ismutorcna = ihugo != -1 & ihgvs != -1
 
             if not isfusion and not ismutorcna:
-                print "missing proper header"
+                log.error("missing proper header")
                 exit()
 
             for row in reader:
@@ -540,7 +531,6 @@ def processclinicaldata(annotatedmutfiles, clinicalfile, outfile):
             if sampleidsfilter and sample not in sampleidsfilter:
                 continue
 
-            # print row
             outf.write('\t'.join(row))
 
             for l in levels:
@@ -700,9 +690,9 @@ def plotclinicalactionability(annotatedclinicalfile, outfile, parameters):
             width = 0.75
             plts = [plt.bar(ind, levelcancerperc, width, color=levelcolors[level], bottom=accumlevelcancerperc)] + plts
             legends = [levellegend[level]] + legends
-            accumlevelcancerperc = map(sum, zip(accumlevelcancerperc,levelcancerperc))
+            accumlevelcancerperc = list(map(sum, zip(accumlevelcancerperc,levelcancerperc)))
 
-        ax = plt.axes()
+        ax = plt.gca()
         ax.set_axisbelow(True)
         ax.set_aspect(0.1)
         # ax.yaxis.grid(linestyle="dotted", color="lightgray") # horizontal lines
@@ -736,7 +726,7 @@ def processmutationdata(mutfile, outfile, clinicaldata):
         i = 0
         for row in reader:
             if i % 100 == 0:
-                print i
+                log.info(i)
             i = i + 1
 
             sample = row[isample]
@@ -841,7 +831,7 @@ def pullsinglehotspots(hugo, proteinchange, alterationtype, consequence, start, 
                 if i in indelsinglehotspots[hugo]:
                     return "Y"
     except TypeError:
-        print hugo + ":" + str(start) + "-" + str(end)
+        log.error("%s: %s-%s" % (hugo, str(start), str(end)))
     return ""
 
 
@@ -852,7 +842,7 @@ def pull3dhotspots(hugo, proteinchange, alterationtype, consequence, start, end,
                 if i in _3dhotspots[hugo]:
                     return "Y"
     except TypeError:
-        print hugo + ":" + str(start) + "-" + str(end)
+        log.error("%s: %s-%s" % (hugo, str(start), str(end)))
     return ""
 
 def appendoncokbcitations(citations, pmids, abstracts):
@@ -951,7 +941,7 @@ def pulloncokb(key, url):
                     level = treatment['level']
 
                     if level not in levels:
-                        print level + " is ignored"
+                        log.info("%s is ignored" % level)
                         # oncokbdata[level].append('')
                     else:
                         drugs = treatment['drugs']
@@ -967,10 +957,9 @@ def pulloncokb(key, url):
                                 drugnames.append(drug['drugName'])
                             oncokbdata[level].append('+'.join(drugnames))
             else:
-                print "error when processing %s" % url
-                print "reason: %s" % response.reason
+                log.error("error when processing %s\nreason: %s" % (url, response.reason))
         except:
-            print "error when processing " + url
+            log.error("error when processing %s " % url)
             # sys.exit()
 
         oncokbcache[key] = oncokbdata

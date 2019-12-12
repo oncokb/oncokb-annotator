@@ -1,42 +1,34 @@
 #!/usr/bin/python
 
-import sys
-import getopt
+import argparse
 from AnnotatorCore import *
+import logging
+logging.basicConfig(level=logging.INFO)
+log = logging.getLogger('GenerateReadMe')
+
 
 def main(argv):
-
-    outputfile = ''
-
-    try:
-        opts, args = getopt.getopt(argv, "ho:u:")
-    except getopt.GetoptError:
-        print 'for help: python GenerateReadMe.py -h'
+    if argv.help:
+        log.info('\nGenerateReadMe.py -o <output README file> [-u oncokb-base-url]\n'
+                 '  Default OncoKB base url is http://oncokb.org')
+        sys.exit()
+    if argv.output_file == '':
+        log.info('for help: python GenerateReadMe.py -h')
         sys.exit(2)
+    if argv.oncokb_api_url:
+        setoncokbbaseurl(argv.oncokb_api_url)
 
-    for opt, arg in opts:
-        if opt == '-h':
-            print 'GenerateReadMe.py -o <output README file> [-u oncokb-base-url]'
-            print '  Default OncoKB base url is http://oncokb.org'
-            sys.exit()
-        elif opt in ("-o"):
-            outputfile = arg
-        elif opt in ("-u"):
-            setoncokbbaseurl(arg)
+    generateReadme(argv.output_file)
+    log.info('done!')
 
-    if outputfile=='':
-        print 'for help: python GenerateReadMe.py -h'
-        sys.exit(2)
-
-    generateReadme(outputfile)
-
-    print 'done!'
 
 if __name__ == "__main__":
-    # argv = [
-    #     '-o', 'data/README.txt'
-    # ]
-    # main(argv)
+    parser = argparse.ArgumentParser(add_help=False)
+    # ArgumentParser doesn't accept "store_true" and "type=" at the same time.
+    parser.add_argument('-h', dest='help', action="store_true", default=False)
+    parser.add_argument('-o', dest='output_file', default='', type=str)
+    parser.add_argument('-u', dest='oncokb_api_url', default='', type=str)
+    parser.set_defaults(func=main)
 
-    # print sys.argv[1:]
-    main(sys.argv[1:])
+    args = parser.parse_args()
+    args.func(args)

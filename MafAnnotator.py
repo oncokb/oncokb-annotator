@@ -1,33 +1,37 @@
 #!/usr/bin/python
 
-import sys
 import argparse
 from AnnotatorCore import *
+import logging
+logging.basicConfig(level=logging.INFO)
+log = logging.getLogger('MafAnnotator')
 
 
 def main(argv):
     if argv.help:
-        print 'MafAnnotator.py -i <input MAF file> -o <output MAF file> [-p previous results] [-c <input clinical file>] [-s sample list filter] [-t <default tumor type>] [-u oncokb-base-url] [-b oncokb_api_bear_token] [-a]'
-        print '  Essential MAF columns (case insensitive):'
-        print '    HUGO_SYMBOL: Hugo gene symbol'
-        print '    VARIANT_CLASSIFICATION: Translational effect of variant allele'
-        print '    TUMOR_SAMPLE_BARCODE: sample ID'
-        print '    AMINO_ACID_CHANGE: amino acid change'
-        print '    PROTEIN_START: protein start'
-        print '    PROTEIN_END: protein end'
-        print '    PROTEIN_POSITION: can be used instead of PROTEIN_START and PROTEIN_END (in the output of vcf2map)'
-        print '  Essential clinical columns:'
-        print '    SAMPLE_ID: sample ID'
-        print '    ONCOTREE_CODE: tumor type code from oncotree (oncotree.mskcc.org)'
-        print '  Cancer type will be assigned based on the following priority:'
-        print '     1) ONCOTREE_CODE in clinical data file'
-        print '     2) ONCOTREE_CODE exist in MAF'
-        print '     3) default tumor type (-t)'
-        print '  Default OncoKB base url is http://oncokb.org'
-        print '  use -a to annotate mutational hotspots'
+        log.info('\n'
+            'MafAnnotator.py -i <input MAF file> -o <output MAF file> [-p previous results] [-c <input clinical file>] '
+            '[-s sample list filter] [-t <default tumor type>] [-u oncokb-base-url] [-b oncokb_api_bear_token] [-a]\n'
+            'Essential MAF columns (case insensitive):\n'
+            '    HUGO_SYMBOL: Hugo gene symbol\n'
+            '    VARIANT_CLASSIFICATION: Translational effect of variant allele\n'
+            '    TUMOR_SAMPLE_BARCODE: sample ID\n'
+            '    AMINO_ACID_CHANGE: amino acid change\n'
+            '    PROTEIN_START: protein start\n'
+            '    PROTEIN_END: protein end\n'
+            '    PROTEIN_POSITION: can be used instead of PROTEIN_START and PROTEIN_END (in the output of vcf2map)\n'
+            'Essential clinical columns:\n'
+            '    SAMPLE_ID: sample ID\n'
+            '    ONCOTREE_CODE: tumor type code from oncotree (oncotree.mskcc.org)\n'
+            'Cancer type will be assigned based on the following priority:\n'
+            '    1) ONCOTREE_CODE in clinical data file\n'
+            '    2) ONCOTREE_CODE exist in MAF\n'
+            '    3) default tumor type (-t)\n'
+            'Default OncoKB base url is http://oncokb.org.\n'
+            'Use -a to annotate mutational hotspots\n')
         sys.exit()
     if argv.input_file == '' or argv.output_file == '' or argv.oncokb_api_bearer_token == '':
-        print 'for help: python MafAnnotator.py -h'
+        log.info('For help: python MafAnnotator.py -h')
         sys.exit(2)
 
     if argv.sample_ids_filter:
@@ -43,10 +47,10 @@ def main(argv):
     if argv.input_clinical_file:
         readCancerTypes(argv.input_clinical_file, cancertypemap)
 
-    print 'annotating %s ...' % argv.input_file
+    log.info('annotating %s ...' % argv.input_file)
     processalterationevents(argv.input_file, argv.output_file, argv.previous_result_file, argv.default_cancer_type, cancertypemap, False, argv.annotate_hotspots)
 
-    print 'done!'
+    log.info('done!')
 
 
 if __name__ == "__main__":
