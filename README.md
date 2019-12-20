@@ -18,9 +18,15 @@ Example input files are under [data](data). An example script is here: [example.
 We recommend processing MAF files by [vcf2maf](https://github.com/mskcc/vcf2maf/) with [MSK override isoforms](https://github.com/mskcc/vcf2maf/blob/master/data/isoform_overrides_at_mskcc) before using the `MafAnnotator` here.
 
 ## Levels of Evidence
-We recently updated our [Levels of Evidence](news...). 
-The core changes are Level 2A has been changed to Level 2 and Level 2B has been merged to Level 3B.
-If you want to annotate your files with previous Levels of Evidence, please checkout to branch levels-v1.
+Introducing [Simplified OncoKB Levels of Evidence](https://www.oncokb.org/levels):
+- New Level 2, defined as “Standard care biomarker recommended by the NCCN or other expert panels predictive of response to an FDA-approved drug in this indication” (formerly Level 2A).
+- Unified Level 3B, defined as “Standard care or investigational biomarker predictive of response to an FDA-approved or investigational drug in another indication” (combination of previous Levels 2B and 3B).
+
+We have implemented these changes for 2 reasons:
+- To be consistent with the [Joint Consensus Recommendation by AMP, ASCO and CAP](https://www.sciencedirect.com/science/article/pii/S1525157816302239?via%3Dihub) and the [ESMO Scale for Clinical Actionability of molecular Targets (ESCAT)](https://academic.oup.com/annonc/article/29/9/1895/5076792?searchresult=1)
+- To reflect the clinical data that demonstrates patients with investigational predictive biomarkers for a specific tumor type based on compelling clinical evidence (currently Level 3A) are more likely to experience clinical benefit compared to patients with predictive biomarkers that are considered standard care in a different tumor type (previously Level 2B, now combined into Level 3B).
+
+If you want to annotate your files with previous Levels of Evidence, please `git checkout v1`.
 
 ## OncoKB API
 When you run `MafAnnotator.py`, `FusionAnnotator.py` and `CnaAnnotator.py`, you need a token before accessing the OncoKB data via its web API. Please visit [OncoKB Data Access Page](https://www.oncokb.org/dataAccess) for more information about how to register an account and get an OncoKB API token.  
