@@ -16,7 +16,7 @@ def main(argv):
         print '    SAMPLE_ID: sample ID'
         print '    HIGHEST_LEVEL: Highest OncoKB levels'
         print '  Supported levels (-l): '
-        print '    LEVEL_1,LEVEL_2A,LEVEL_2B,LEVEL_3A,LEVEL_3B,LEVEL_4,ONCOGENIC,VUS'
+        print '    LEVEL_1,LEVEL_2,LEVEL_3A,LEVEL_3B,LEVEL_4,ONCOGENIC,VUS'
         sys.exit()
     if argv.input_file == '' or argv.output_file == '':
         print 'for help: python OncoKBPlots.py -h'
