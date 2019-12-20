@@ -1,4 +1,8 @@
 
+## UPDATE: This branch still uses the old version of Levels of Evidence
+
+## UPDATE: We recently updated our Levels of Evidence, please see [Levels of Evidence Page](https://www.oncokb.org/news#12202019) for more information
+
 ## UPDATE: API token required, please see OncoKB API section for more information
 
 # oncokb-annotator <a href="https://ascopubs.org/doi/full/10.1200/PO.17.00011"><img src="https://img.shields.io/badge/DOI-10.1200%2FPO.17.00011-1c75cd" /></a>  
