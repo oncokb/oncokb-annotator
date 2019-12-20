@@ -1,7 +1,7 @@
 
 ## UPDATE: This branch still uses the old version of Levels of Evidence
 
-## UPDATE: We recently updated our Levels of Evidence, please see [Levels of Evidence Page](https://www.oncokb.org/news#12202019) for more information
+## UPDATE: Introducing Simplified OncoKB Levels of Evidence V2, refer to the [News 12/20/2019](https://www.oncokb.org/news#12202019) for more information
 
 ## UPDATE: API token required, please see OncoKB API section for more information
 
