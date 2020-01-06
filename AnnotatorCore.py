@@ -650,7 +650,7 @@ def plotclinicalactionability(annotatedclinicalfile, outfile, parameters):
     # level legend
     levellegend = {
         'LEVEL_1': 'Level 1',
-        'LEVEL_2': 'Level 2A',
+        'LEVEL_2': 'Level 2',
         'LEVEL_3A': 'Level 3A',
         'LEVEL_3B': 'Level 3B',
         'LEVEL_4': 'Level 4',
