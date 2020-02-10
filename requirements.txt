@@ -1,2 +1,5 @@
+# for python2
 matplotlib==2.2.4
+# for python3
+# matplotlib==3.1.2
 requests==2.11.1

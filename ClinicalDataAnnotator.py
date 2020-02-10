@@ -1,28 +1,30 @@
 #!/usr/bin/python
 
-import sys
 import argparse
 from AnnotatorCore import *
-
+import logging
+logging.basicConfig(level=logging.INFO)
+log = logging.getLogger('ClinicalDataAnnotator')
 
 def main(argv):
     if argv.help:
-        print 'ClinicalDataAnnotator.py -i <input clinical file> -o <output clinical file> -a <annotated alteration files, separate by ,> [-s sample list filter]'
-        print '  Essential clinical columns:'
-        print '    SAMPLE_ID: sample ID'
+        log.info('\n'
+        'ClinicalDataAnnotator.py -i <input clinical file> -o <output clinical file> -a <annotated alteration files, separate by ,> [-s sample list filter]\n'
+        '  Essential clinical columns:\n'
+        '    SAMPLE_ID: sample ID')
         sys.exit()
     if argv.sample_ids_filter:
         setsampleidsfileterfile(argv.sample_ids_filter)
 
     annotated_alteration_files = re.split(',|, ', argv.annotated_alteration_files)
     if argv.input_file == '' or argv.output_file == '' or len(annotated_alteration_files) == 0:
-        print 'for help: python ClinicalDataAnnotator.py -h'
+        log.info('for help: python ClinicalDataAnnotator.py -h')
         sys.exit(2)
 
-    print 'annotating %s ...' % argv.input_file
+    log.info('annotating %s ...' % argv.input_file)
     processclinicaldata(annotated_alteration_files, argv.input_file, argv.output_file)
 
-    print 'done!'
+    log.info('done!')
 
 
 if __name__ == "__main__":
