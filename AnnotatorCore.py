@@ -12,6 +12,9 @@ import matplotlib.pyplot as plt
 from datetime import date
 
 logging.basicConfig(level=logging.INFO)
+logging.getLogger("requests").setLevel(logging.WARNING)
+logging.getLogger("urllib3").setLevel(logging.WARNING)
+
 log = logging.getLogger('AnnotatorCore')
 
 csv.field_size_limit(sys.maxsize) # for reading large files
