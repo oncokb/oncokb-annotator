@@ -1,5 +1,6 @@
 # oncokb output data
 data/*.oncokb.*
+data/example_README.txt
 process
 
 # Byte-compiled / optimized / DLL files

@@ -16,7 +16,7 @@ def main(argv):
             '    HUGO_SYMBOL: Hugo gene symbol\n'
             '    VARIANT_CLASSIFICATION: Translational effect of variant allele\n'
             '    TUMOR_SAMPLE_BARCODE: sample ID\n'
-            '    AMINO_ACID_CHANGE: amino acid change\n'
+            '    HGVSP_SHORT: protein change in HGVSP format\n'
             '    PROTEIN_START: protein start\n'
             '    PROTEIN_END: protein end\n'
             '    PROTEIN_POSITION: can be used instead of PROTEIN_START and PROTEIN_END (in the output of vcf2map)\n'
