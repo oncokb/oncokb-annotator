@@ -15,7 +15,7 @@ Please try
 
 Example input files are under [data](data). An example script is here: [example.sh](example.sh)
 
-We recommend processing MAF files by [vcf2maf](https://github.com/mskcc/vcf2maf/) with [MSK override isoforms](https://github.com/mskcc/vcf2maf/blob/master/data/isoform_overrides_at_mskcc) before using the `MafAnnotator` here.
+We recommend processing VCF files by [vcf2maf](https://github.com/mskcc/vcf2maf/) with [MSK override isoforms](https://github.com/mskcc/vcf2maf/blob/master/data/isoform_overrides_at_mskcc) before using the `MafAnnotator` here.
 
 ## Levels of Evidence
 Introducing [Simplified OncoKB Levels of Evidence](https://www.oncokb.org/levels):
