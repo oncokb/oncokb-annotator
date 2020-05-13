@@ -10,7 +10,7 @@ log = logging.getLogger('GenerateReadMe')
 def main(argv):
     if argv.help:
         log.info('\nGenerateReadMe.py -o <output README file> [-u oncokb-base-url]\n'
-                 '  Default OncoKB base url is http://oncokb.org')
+                 '  Default OncoKB base url is https://www.oncokb.org')
         sys.exit()
     if argv.output_file == '':
         log.info('for help: python GenerateReadMe.py -h')
