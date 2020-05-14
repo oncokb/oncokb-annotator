@@ -1,0 +1,34 @@
+name-template: 'v$NEXT_MINOR_VERSION'
+tag-template: 'v$NEXT_MINOR_VERSION'
+categories:
+  - title: '🧬 Features'
+    labels:
+      - 'feature'
+  - title: '🐛 Bug Fixes'
+    labels:
+      - 'fix'
+  - title: '🏎 Performance Tweaks'
+    labels:
+      - 'performance'
+  - title: '🎨 Style Tweaks'
+    labels:
+      - 'style tweak'
+  - title: '📘 Documentation'
+    labels:
+      - 'documentation'
+  - title: '🧹 Cleanup'
+    labels:
+      - 'cleanup'
+  - title: '👷‍♀️ Testing, Configuration & Deployment'
+    labels:
+      - 'devops'
+  - title: '🧰 Maintenance'
+    labels:
+      - 'chore'
+      - 'dependencies'
+change-template: '- $TITLE @$AUTHOR (#$NUMBER)'
+template: |
+  ## Changes
+  $CHANGES
+  ## 🕵️‍♀️ Full commit logs
+  - https://github.com/oncokb/oncokb/compare/$PREVIOUS_TAG...v$NEXT_MINOR_VERSION
