@@ -11,7 +11,7 @@ def main(argv):
     if argv.help:
         log.info('\n'
         'CnaAnnotator.py -i <input CNA file> -o <output CNA file> [-p previous results] [-c <input clinical file>] [-s sample list filter] [-t <default tumor type>] [-u oncokb-base-url] [-b oncokb_api_bear_token]\n'
-        '  Input CNA file should follow the GISTIC output (https://cbioportal.readthedocs.io/en/latest/File-Formats.html#discrete-copy-number-data)\n'
+        '  Input CNA file should follow the GISTIC output (https://docs.cbioportal.org/5.1-data-loading/data-loading/file-formats#data-file-1)\n'
         '  Essential clinical columns:\n'
         '    SAMPLE_ID: sample ID\n'
         '  Cancer type will be assigned based on the following priority:\n'

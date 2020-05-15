@@ -375,6 +375,9 @@ def processcnagisticdata(cnafile, outfile, previousoutfile, defaultCancerType, c
         reader = csv.reader(infile, delimiter='\t')
         headers = readheaders(reader)
         startofsamples = getfirstcolumnofsampleingisticdata(headers['^-$'].split('\t'))
+        # Get the header again without upper case the sample id
+        infile.seek(0)
+        headers = readheaders(reader, startofsamples)
         rawsamples = headers['^-$'].split('\t')[startofsamples:]
         samples = []
         for rs in rawsamples:
@@ -403,7 +406,6 @@ def processcnagisticdata(cnafile, outfile, previousoutfile, defaultCancerType, c
                 continue
 
             for rawsample in rawsamples:
-                rawsample = rawsample.upper()
                 if rawsample in headers:
                     cna = row[headers[rawsample]]
                     if cna in cnaEventMap:
@@ -1026,7 +1028,7 @@ def readCancerTypes(clinicalFile, data):
     return data
 
 
-def readheaders(reader):
+def readheaders(reader, caseinsensitiveIndex=None):
     headers = {}
     for row in reader:
         if not row[0].startswith("#"):
@@ -1034,7 +1036,8 @@ def readheaders(reader):
             headers["length"] = len(row)
             i = 0
             for h in row:
-                headers[h.upper()] = i
+                header = h if caseinsensitiveIndex is not None and i >= caseinsensitiveIndex else h.upper()
+                headers[header] = i
                 i = i + 1
             break
     return headers
