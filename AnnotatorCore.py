@@ -93,15 +93,6 @@ def getsampleid(rawsampleid):
     return rawsampleid
 
 
-def getcuratedgenes(genelistfile):
-    genelist = set()
-    with open(genelistfile, 'rU') as infile:
-        reader = csv.reader(infile, delimiter='\t')
-        for row in reader:
-            genelist.add(row[1])
-    return genelist
-
-
 def getOncokbInfo():
     ret = ['Files annotated on ' + date.today().strftime('%m/%d/%Y') + "\nOncoKB API URL: "+oncokbapiurl]
     try:
@@ -137,10 +128,33 @@ def gethotspots(url, type):
                   "reason: %s" % response.reason)
     return hotspots
 
+
+def makeoncokbrequest(url):
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer %s' % oncokbapibearertoken
+    }
+    return requests.get(url, headers=headers)
+
+
+def getcuratedgenes():
+    global curatedgenes
+    url = oncokbapiurl + "/utils/allCuratedGenes.json"
+    response = makeoncokbrequest(url)
+    if response.status_code == 200:
+        curatedgenesjson = response.json()
+
+        for curatedgene in curatedgenesjson:
+            if curatedgene['hugoSymbol'] is not None:
+                curatedgenes.append(curatedgene['hugoSymbol'])
+    else:
+        log.error("error when processing %s \n" % url +
+                  "reason: %s" % response.reason)
+
 missensesinglehotspots = None
 indelsinglehotspots = None
 _3dhotspots = None
-curatedgenes = getcuratedgenes(os.path.join(os.path.dirname(__file__), 'data/curated_genes.txt'))
+curatedgenes = []
 
 def inithotspots():
     global missensesinglehotspots
@@ -211,8 +225,6 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
                 continue
 
             hugo = row[ihugo]
-            if retainonlycuratedgenes and hugo not in curatedgenes:
-                continue
 
             consequence = None
             if iconsequence >= 0 and row[iconsequence] != 'NULL':
@@ -268,8 +280,10 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
                 _3dhotspot = pull3dhotspots(hugo, hgvs, None, consequence, start, end, cancertype)
                 row.append(_3dhotspot)
 
-            oncokbinfo = pull_mutation_info(hugo, hgvs, consequence, start, end, cancertype)
-            row.append(oncokbinfo)
+
+            if not retainonlycuratedgenes or hugo in curatedgenes:
+                oncokbinfo = pull_mutation_info(hugo, hgvs, consequence, start, end, cancertype)
+                row.append(oncokbinfo)
 
             outf.write('\t'.join(row) + "\n")
 
@@ -339,8 +353,7 @@ def processsv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap
                 fusion = row[ifusion]
                 gene1, gene2 = getgenesfromfusion(fusion, nameregex)
 
-            if retainonlycuratedgenes and gene1 not in curatedgenes and gene2 not in curatedgenes:
-                continue
+
 
             cancertype = defaultCancerType
             if icancertype >= 0:
@@ -349,10 +362,11 @@ def processsv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap
                 cancertype = cancerTypeMap[sample]
             if cancertype == "":
                 log.info("Cancer type for all samples must be defined\nline %s: %s" % (i, row))
-                # continue
+                # continueor
 
-            oncokbinfo = pullStructuralVariantInfo(gene1, gene2, 'FUSION', cancertype)
-            row.append(oncokbinfo)
+            if not retainonlycuratedgenes or gene1 in curatedgenes or gene2 in curatedgenes:
+                oncokbinfo = pullStructuralVariantInfo(gene1, gene2, 'FUSION', cancertype)
+                row.append(oncokbinfo)
             outf.write('\t'.join(row) + "\n")
 
     outf.close()
@@ -402,8 +416,6 @@ def processcnagisticdata(cnafile, outfile, previousoutfile, defaultCancerType, c
                 log.info(i)
 
             hugo = row[0]
-            if retainonlycuratedgenes and hugo not in curatedgenes:
-                continue
 
             for rawsample in rawsamples:
                 if rawsample in headers:
@@ -419,12 +431,13 @@ def processcnagisticdata(cnafile, outfile, previousoutfile, defaultCancerType, c
 
                             if sample in cancerTypeMap:
                                 cancertype = cancerTypeMap[sample]
-                            oncokbinfo = pull_cna_info(hugo, cna_type, cancertype)
                             outf.write(sample + "\t")
                             outf.write(cancertype + "\t")
                             outf.write(hugo + "\t")
                             outf.write(cna_type + "\t")
-                            outf.write(oncokbinfo)
+                            if not retainonlycuratedgenes or hugo in curatedgenes:
+                                oncokbinfo = pull_cna_info(hugo, cna_type, cancertype)
+                                outf.write(oncokbinfo)
                             outf.write('\n')
     outf.close()
 
@@ -931,11 +944,7 @@ def pulloncokb(key, url):
         oncokbdata['oncogenic'] = ""
 
         try:
-            headers = {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer %s' % oncokbapibearertoken
-            }
-            response = requests.get(url, headers=headers)
+            response = makeoncokbrequest(url)
             if response.status_code == 200:
                 evidences = response.json()
                 # if not evidences['geneExist'] or (not evidences['variantExist'] and not evidences['alleleExist']):

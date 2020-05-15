@@ -28,6 +28,7 @@ def main(argv):
     if argv.oncokb_api_url:
         setoncokbbaseurl(argv.oncokb_api_url)
     setoncokbapitoken(argv.oncokb_api_bearer_token)
+    getcuratedgenes()
 
     cancertypemap = {}
     if argv.input_clinical_file:
@@ -35,7 +36,7 @@ def main(argv):
 
     log.info('annotating %s ...' % argv.input_file)
     processcnagisticdata(argv.input_file, argv.output_file, argv.previous_result_file, argv.default_cancer_type,
-                         cancertypemap, False)
+                         cancertypemap, True)
 
     log.info('done!')
 
