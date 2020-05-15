@@ -47,6 +47,13 @@ def setsampleidsfileterfile(f):
     sampleidsfilter = set(content)
     log.info(len(sampleidsfilter))
 
+
+GENE_IN_ONCOKB_HEADER = 'Gene in OncoKB'
+VARIANT_IN_ONCOKB_HEADER = 'Variant in OncoKB'
+
+GENE_IN_ONCOKB_DEFAULT = 'False'
+VARIANT_IN_ONCOKB_DEFAULT = 'False'
+
 levels = [
     'LEVEL_1',
     'LEVEL_2',
@@ -189,6 +196,9 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
             outf.write("\tis-a-hotspot")
             outf.write("\tis-a-3d-hotspot")
 
+        outf.write("\t" + GENE_IN_ONCOKB_HEADER)
+        outf.write("\t" + VARIANT_IN_ONCOKB_HEADER)
+
         outf.write("\tmutation_effect")
         outf.write("\toncogenic")
 
@@ -284,6 +294,9 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
             if not retainonlycuratedgenes or hugo in curatedgenes:
                 oncokbinfo = pull_mutation_info(hugo, hgvs, consequence, start, end, cancertype)
                 row.append(oncokbinfo)
+            else:
+                # Include Gene in OncoKB and Variant in OncoKB
+                row.append(GENE_IN_ONCOKB_DEFAULT + '\t' + VARIANT_IN_ONCOKB_DEFAULT)
 
             outf.write('\t'.join(row) + "\n")
 
@@ -317,6 +330,8 @@ def processsv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap
         ncols = headers["length"]
 
         outf.write(headers['^-$'])
+        outf.write("\t" + GENE_IN_ONCOKB_HEADER)
+        outf.write("\t" + VARIANT_IN_ONCOKB_HEADER)
         outf.write("\tmutation_effect")
         outf.write("\toncogenic")
         for l in levels:
@@ -367,6 +382,9 @@ def processsv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap
             if not retainonlycuratedgenes or gene1 in curatedgenes or gene2 in curatedgenes:
                 oncokbinfo = pullStructuralVariantInfo(gene1, gene2, 'FUSION', cancertype)
                 row.append(oncokbinfo)
+            else:
+                # Include Gene in OncoKB and Variant in OncoKB
+                row.append(GENE_IN_ONCOKB_DEFAULT + '\t' + VARIANT_IN_ONCOKB_DEFAULT)
             outf.write('\t'.join(row) + "\n")
 
     outf.close()
@@ -402,6 +420,8 @@ def processcnagisticdata(cnafile, outfile, previousoutfile, defaultCancerType, c
             # quit()
 
         outf.write('SAMPLE_ID\tCANCER_TYPE\tHUGO_SYMBOL\tALTERATION')
+        outf.write("\t"+GENE_IN_ONCOKB_HEADER)
+        outf.write("\t"+VARIANT_IN_ONCOKB_HEADER)
         outf.write("\tmutation_effect")
         outf.write("\toncogenic")
         for l in levels:
@@ -438,6 +458,9 @@ def processcnagisticdata(cnafile, outfile, previousoutfile, defaultCancerType, c
                             if not retainonlycuratedgenes or hugo in curatedgenes:
                                 oncokbinfo = pull_cna_info(hugo, cna_type, cancertype)
                                 outf.write(oncokbinfo)
+                            else:
+                                # Include Gene in OncoKB and Variant in OncoKB
+                                outf.write(GENE_IN_ONCOKB_DEFAULT + '\t' + VARIANT_IN_ONCOKB_DEFAULT)
                             outf.write('\n')
     outf.close()
 
@@ -806,6 +829,8 @@ def cacheannotated(annotatedfile, defaultCancerType, cancerTypeMap):
             imutationeffect = headers['MUTATION_EFFECT']
             icitations = headers['CITATIONS']
             ioncogenic = headers['ONCOGENIC']
+            igeneannotated = headers[GENE_IN_ONCOKB_HEADER]
+            ivariantannotated = headers[VARIANT_IN_ONCOKB_HEADER]
 
             for row in reader:
                 try:
@@ -827,6 +852,8 @@ def cacheannotated(annotatedfile, defaultCancerType, cancerTypeMap):
                     #            oncokb = row[ioncokb]
 
                     oncokbcache[key] = {}
+                    oncokbcache[key][GENE_IN_ONCOKB_HEADER] = row[igeneannotated]
+                    oncokbcache[key][VARIANT_IN_ONCOKB_HEADER] = row[ivariantannotated]
                     oncokbcache[key]['mutation_effect'] = row[imutationeffect]
                     oncokbcache[key]['citations'] = row[icitations]
                     oncokbcache[key]['oncogenic'] = row[ioncogenic]
@@ -939,6 +966,8 @@ def pulloncokb(key, url):
         for l in levels:
             oncokbdata[l] = []
 
+        oncokbdata[GENE_IN_ONCOKB_HEADER] = GENE_IN_ONCOKB_DEFAULT
+        oncokbdata[VARIANT_IN_ONCOKB_HEADER] = VARIANT_IN_ONCOKB_DEFAULT
         oncokbdata['mutation_effect'] = ""
         oncokbdata['citations'] = []
         oncokbdata['oncogenic'] = ""
@@ -947,6 +976,14 @@ def pulloncokb(key, url):
             response = makeoncokbrequest(url)
             if response.status_code == 200:
                 evidences = response.json()
+
+                # oncogenic
+                oncokbdata[GENE_IN_ONCOKB_HEADER] = GENE_IN_ONCOKB_DEFAULT if evidences['geneExist'] is None else str(evidences['geneExist'])
+                oncokbdata[VARIANT_IN_ONCOKB_HEADER] = VARIANT_IN_ONCOKB_DEFAULT if evidences['variantExist'] is None else str(evidences['variantExist'])
+
+                # oncogenic
+                oncokbdata['oncogenic'] = evidences['oncogenic']
+
                 # if not evidences['geneExist'] or (not evidences['variantExist'] and not evidences['alleleExist']):
                 #     return ''
 
@@ -990,6 +1027,8 @@ def pulloncokb(key, url):
 
     oncokbdata = oncokbcache[key]
     ret = []
+    ret.append(oncokbdata[GENE_IN_ONCOKB_HEADER])
+    ret.append(oncokbdata[VARIANT_IN_ONCOKB_HEADER])
     ret.append(oncokbdata['mutation_effect'])
     ret.append(oncokbdata['oncogenic'])
     for l in levels:
