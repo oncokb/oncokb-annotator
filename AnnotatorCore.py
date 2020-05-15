@@ -275,7 +275,23 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
 
     outf.close()
 
-def processsv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap, retainonlycuratedgenes):
+
+def getgenesfromfusion(fusion, nameregex=None):
+    GENES_REGEX = "([A-Za-z\d]+-[A-Za-z\d]+)" if nameregex is None else nameregex
+    searchresult = re.search(GENES_REGEX, fusion, flags=re.IGNORECASE)
+    gene1=None
+    gene2=None
+    if searchresult:
+        parts = searchresult.group(1).split("-")
+        gene1 = parts[0]
+        gene2 = gene1
+        if len(parts) > 1 and parts[1] != "intragenic":
+            gene2 = parts[1]
+    else:
+        gene1=gene2=fusion
+    return gene1, gene2
+
+def processsv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap, retainonlycuratedgenes, nameregex):
     if os.path.isfile(previousoutfile):
         cacheannotated(previousoutfile, defaultCancerType, cancerTypeMap)
     outf = open(outfile, 'w+')
@@ -321,13 +337,7 @@ def processsv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap
                 gene2 = row[igene2]
             if igene1 < 0 and igene2 < 0 and ifusion >= 0:
                 fusion = row[ifusion]
-                if fusion.endswith(" fusion"):
-                    fusion = fusion[0:len(fusion) - len(" fusion")]
-                parts = fusion.split("-")
-                gene1 = parts[0]
-                gene2 = gene1
-                if len(parts) > 1 and parts[1] != "intragenic":
-                    gene2 = parts[1]
+                gene1, gene2 = getgenesfromfusion(fusion, nameregex)
 
             if retainonlycuratedgenes and gene1 not in curatedgenes and gene2 not in curatedgenes:
                 continue

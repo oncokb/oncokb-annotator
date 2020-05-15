@@ -27,7 +27,7 @@ def main(argv):
             '    1) ONCOTREE_CODE in clinical data file\n'
             '    2) ONCOTREE_CODE exist in MAF\n'
             '    3) default tumor type (-t)\n'
-            'Default OncoKB base url is http://oncokb.org.\n'
+            'Default OncoKB base url is https://www.oncokb.org.\n'
             'Use -a to annotate mutational hotspots\n')
         sys.exit()
     if argv.input_file == '' or argv.output_file == '' or argv.oncokb_api_bearer_token == '':
