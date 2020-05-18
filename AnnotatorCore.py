@@ -389,17 +389,25 @@ def processsv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap
 
     outf.close()
 
-cnaEventMap = {
-    "-2": 'Deletion',
-    "-1.5": 'Deletion',
-    "-1": 'Loss',
-    "0": 'Diploid',
-    "1": 'Gain',
-    "2": 'Amplification'
-}
 
+def processcnagisticdata(cnafile, outfile, previousoutfile, defaultCancerType, cancerTypeMap, retainonlycuratedgenes, annotate_gain_loss=False):
+    CNA_AMPLIFICATION_TXT = 'Amplification'
+    CNA_DELETION_TXT = 'Deletion'
+    CNA_LOSS_TXT = 'Loss'
+    CNA_GAIN_TXT = 'Gain'
 
-def processcnagisticdata(cnafile, outfile, previousoutfile, defaultCancerType, cancerTypeMap, retainonlycuratedgenes):
+    cnaEventMap = {
+        "-2": CNA_DELETION_TXT,
+        "-1.5": CNA_DELETION_TXT,
+        "2": CNA_AMPLIFICATION_TXT
+    }
+
+    if annotate_gain_loss:
+        cnaEventMap.update({
+            "-1": CNA_LOSS_TXT,
+            "1": CNA_GAIN_TXT
+        })
+
     if os.path.isfile(previousoutfile):
         cacheannotated(previousoutfile, defaultCancerType, cancerTypeMap)
     outf = open(outfile, 'w+', 1000)
@@ -442,7 +450,7 @@ def processcnagisticdata(cnafile, outfile, previousoutfile, defaultCancerType, c
                     cna = row[headers[rawsample]]
                     if cna in cnaEventMap:
                         cna_type = cnaEventMap[cna]
-                        if cna_type == "Amplification" or cna_type == "Deletion":
+                        if cna_type is not None:
                             cancertype = defaultCancerType
                             sample = getsampleid(rawsample)
 
