@@ -2,7 +2,7 @@
 ## UPDATE: We recently updated our Level of Evidence, please see [Levels of Evidence section](#levels-of-evidence) for more information
 ## UPDATE: API token required, please see [OncoKB API section](#oncokb-api) for more information
 
-# oncokb-annotator <a href="https://ascopubs.org/doi/full/10.1200/PO.17.00011"><img src="https://img.shields.io/badge/DOI-10.1200%2FPO.17.00011-1c75cd" /></a>  
+# oncokb-annotator <a href="https://ascopubs.org/doi/full/10.1200/PO.17.00011"><img src="https://img.shields.io/badge/DOI-10.1200%2FPO.17.00011-1c75cd" /></a>
 
 Annotates variants in MAF with OncoKB annotation. Supports both python2 and python3.
 
@@ -50,3 +50,8 @@ python ${FILE_NAME.py} -i ${INPUT_FILE} -o ${OUTPUT_FILE} -b ${ONCOKB_API_TOKEN}
   vcf2maf is designed to work with all Ensembl releases and reference genomes, that is the reason the subversion is not included. 
 
   Within MSK, we are using GRCh37 which corresponding to the Ensembl release 75. You can get the full list of versioned transcript IDs here http://grch37.ensembl.org/biomart/martview/40d921c6ab6956144cf6fb2e9a8ca093?VIRTUALSCHEMANAME=default&ATTRIBUTES=hsapiens_gene_ensembl.default.feature_page.ensembl_transcript_id_version&FILTERS=&VISIBLEPANEL=attributepanel.  
+  
+## Questions?
+The best way is to send an email to contact@oncokb.org so all our team members can help.
+We are also available on [![Gitter](https://img.shields.io/gitter/room/oncokb/public-chat)](https://gitter.im/oncokb/public-chat).
+
