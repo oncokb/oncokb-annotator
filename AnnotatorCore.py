@@ -10,7 +10,6 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from datetime import date
-
 logging.basicConfig(level=logging.INFO)
 logging.getLogger("requests").setLevel(logging.WARNING)
 logging.getLogger("urllib3").setLevel(logging.WARNING)
@@ -175,6 +174,40 @@ def inithotspots():
     curatedgenes |= set(indelsinglehotspots.keys())
     curatedgenes |= set(_3dhotspots.keys())
 
+conversiondict = {'Ala': 'A',
+                  'Asx': 'B',
+                  'Cys': 'C',
+                  'Asp': 'D',
+                  'Glu': 'E',
+                  'Phe': 'F',
+                  'Gly': 'G',
+                  'His': 'H',
+                  'Ile': 'I',
+                  'Lys': 'K',
+                  'Leu': 'L',
+                  'Met': 'M',
+                  'Asn': 'N',
+                  'Pro': 'P',
+                  'Gln': 'Q',
+                  'Arg': 'R',
+                  'Ser': 'S',
+                  'Thr': 'T',
+                  'Val': 'V',
+                  'Trp': 'W',
+                  'Tyr': 'Y',
+                  'Glx': 'Z'
+                  }
+conversionlist = conversiondict.keys()
+def conversion(hgvs):
+    threecharactersearch = re.findall('[a-zA-Z]{3}', hgvs, flags=re.IGNORECASE)
+    if threecharactersearch:
+        if any(letters.lower() in hgvs.lower() for letters in conversionlist):
+            return replace_all(hgvs)
+    return hgvs
+def replace_all(hgvs):
+    # Author: Thomas Gläßle
+    pattern = re.compile('|'.join(conversionlist), re.IGNORECASE)
+    return pattern.sub(lambda m: conversiondict[m.group().capitalize()], hgvs)
 
 def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerType, cancerTypeMap,
                             retainonlycuratedgenes, annotatehotspots):
@@ -213,7 +246,7 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
 
         ihugo = geIndexOfHeader(headers, ['HUGO_SYMBOL', 'HUGO_GENE_SYMBOL'])
         iconsequence = geIndexOfHeader(headers, ['VARIANT_CLASSIFICATION', 'MUTATION_TYPE'])
-        ihgvs = geIndexOfHeader(headers, ['ALTERATION', 'HGVSP_SHORT', 'AMINO_ACID_CHANGE', 'FUSION'])
+        ihgvs = geIndexOfHeader(headers, ['ALTERATION', 'HGVSP_SHORT', 'HGVSP', 'AMINO_ACID_CHANGE', 'FUSION'])
         isample = geIndexOfHeader(headers, ['SAMPLE_ID', 'TUMOR_SAMPLE_BARCODE'])
         istart = geIndexOfHeader(headers, ['PROTEIN_START'])
         iend = geIndexOfHeader(headers, ['PROTEIN_END'])
@@ -256,6 +289,8 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
             if cancertype == "":
                 log.info("Cancer type for all samples must be defined\nline %s: %s" % (i, row))
                 # continue
+
+            hgvs = conversion(hgvs)
 
             start = None
             if istart >= 0 and row[istart] != 'NULL' and row[istart] != '':
@@ -513,7 +548,7 @@ def processclinicaldata(annotatedmutfiles, clinicalfile, outfile):
 
             ihugo = geIndexOfHeader(headers, ['HUGO_SYMBOL', 'HUGO_GENE_SYMBOL'])
             iconsequence = geIndexOfHeader(headers, ['VARIANT_CLASSIFICATION', 'MUTATION_TYPE'])
-            ihgvs = geIndexOfHeader(headers, ['ALTERATION', 'HGVSP_SHORT', 'AMINO_ACID_CHANGE', 'AA_CHANGE', 'FUSION'])
+            ihgvs = geIndexOfHeader(headers, ['ALTERATION', 'HGVSP_SHORT', 'HGVSP', 'AMINO_ACID_CHANGE', 'AA_CHANGE', 'FUSION'])
             isample = geIndexOfHeader(headers, ['SAMPLE_ID', 'TUMOR_SAMPLE_BARCODE'])
             istart = geIndexOfHeader(headers, ['PROTEIN_START'])
             iend = geIndexOfHeader(headers, ['PROTEIN_END'])
@@ -777,7 +812,7 @@ def processmutationdata(mutfile, outfile, clinicaldata):
 
         ihugo = headers['Hugo_Symbol']
         iconsequence = headers['Consequence']
-        ihgvs = headers['HGVSp_Short']
+        ihgvs = headers['HGVSp_Short', 'HGVSp']
         isample = headers['Tumor_Sample_Barcode']
         istart = headers['protein_start']
         iend = headers['protein_end']
@@ -829,7 +864,7 @@ def cacheannotated(annotatedfile, defaultCancerType, cancerTypeMap):
 
             ihugo = geIndexOfHeader(headers, ['HUGO_SYMBOL', 'HUGO_GENE_SYMBOL'])
             iconsequence = geIndexOfHeader(headers, ['VARIANT_CLASSIFICATION', 'MUTATION_TYPE'])
-            ihgvs = geIndexOfHeader(headers, ['ALTERATION', 'HGVSP_SHORT', 'AMINO_ACID_CHANGE', 'AA_CHANGE', 'FUSION'])
+            ihgvs = geIndexOfHeader(headers, ['ALTERATION', 'HGVSP_SHORT', 'HGVSP', 'AMINO_ACID_CHANGE', 'AA_CHANGE', 'FUSION'])
             isample = geIndexOfHeader(headers, ['SAMPLE_ID', 'TUMOR_SAMPLE_BARCODE'])
             istart = geIndexOfHeader(headers, ['PROTEIN_START'])
             iend = geIndexOfHeader(headers, ['PROTEIN_END'])
