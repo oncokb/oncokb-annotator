@@ -1,0 +1,13 @@
+HUGO_SYMBOL	SAMPLE_ID	ALTERATION
+Other Biomarkers	TCGA-A6-2672-01	MSI-H
+Other Biomarkers	TCGA-A6-2672-01	Microsatellite Instability-High
+Other Biomarkers	TCGA-AG-A002-01	TMB-H
+Other Biomarkers	TCGA-AG-A002-01	Tumor Mutational Burden-High
+EGFR	TCGA-FAKE-01	vIII
+EGFR	TCGA-FAKE-02	vV
+FLT3	TCGA-FAKE-01	Internal tandem duplication
+FLT3	TCGA-FAKE-02	ITD
+BRAF	TCGA-FAKE-01	Kinase Domain Duplication
+BRAF	TCGA-FAKE-03	KDD
+EGFR	TCGA-FAKE-01	C-terminal domain
+EGFR	TCGA-FAKE-02	CTD
