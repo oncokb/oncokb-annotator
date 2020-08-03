@@ -13,7 +13,7 @@ on:
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   # This workflow contains a single job called "build"
-  test:
+  main:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
@@ -26,5 +26,5 @@ jobs:
     - name: main
       uses: cclauss/GitHub-Action-for-pytest@0.5.0
       with:
-        args: pytest
+        args: pip3 install -r requirements.txt --user && pippytest
 
