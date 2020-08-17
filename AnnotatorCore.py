@@ -145,7 +145,15 @@ def gethotspots(url, type):
     return hotspots
 
 
-def makeoncokbrequest(url):
+def makeoncokbpostrequest(url, body):
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer %s' % oncokbapibearertoken
+    }
+    return requests.post(url, headers=headers, body=body)
+
+
+def makeoncokbgetrequest(url):
     headers = {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer %s' % oncokbapibearertoken
@@ -156,7 +164,7 @@ def makeoncokbrequest(url):
 def getcuratedgenes():
     global curatedgenes
     url = oncokbapiurl + "/utils/allCuratedGenes.json"
-    response = makeoncokbrequest(url)
+    response = makeoncokbgetrequest(url)
     if response.status_code == 200:
         curatedgenesjson = response.json()
 
@@ -266,10 +274,13 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
         posp = re.compile('[0-9]+')
 
         i = 0
+        queries = []
         for row in reader:
             i = i + 1
-            if i % 100 == 0:
-                log.info(i)
+            if i % 5 == 0:
+                log.info(queries)
+                pull_mutation_info(queries)
+                queries = []
 
             row = padrow(row, ncols)
 
@@ -335,15 +346,11 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
                 _3dhotspot = pull3dhotspots(hugo, hgvs, None, consequence, start, end, cancertype)
                 row.append(_3dhotspot)
 
+            query = Query(hugo, hgvs, consequence, start, end, cancertype)
+            queries.append(query)
 
-            if not retainonlycuratedgenes or hugo in curatedgenes:
-                oncokbinfo = pull_mutation_info(hugo, hgvs, consequence, start, end, cancertype)
-                row.append(oncokbinfo)
-            else:
-                # Include Gene in OncoKB and Variant in OncoKB
-                row.append(GENE_IN_ONCOKB_DEFAULT + '\t' + VARIANT_IN_ONCOKB_DEFAULT)
 
-            outf.write('\t'.join(row) + "\n")
+
 
     outf.close()
 
@@ -393,7 +400,7 @@ def processsv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap
         i = 0
         for row in reader:
             i = i + 1
-            if i % 100 == 0:
+            if i % 5 == 0:
                 log.info(i)
 
             row = padrow(row, ncols)
@@ -485,7 +492,7 @@ def processcnagisticdata(cnafile, outfile, previousoutfile, defaultCancerType, c
         i = 0
         for row in reader:
             i = i + 1
-            if i % 100 == 0:
+            if i % 5 == 0:
                 log.info(i)
 
             hugo = row[0]
@@ -829,8 +836,9 @@ def processmutationdata(mutfile, outfile, clinicaldata):
 
         i = 0
         for row in reader:
-            if i % 100 == 0:
-                log.info(i)
+            if i % 5 == 0:
+                log.info(queries)
+                queries = []
             i = i + 1
 
             sample = row[isample]
@@ -971,19 +979,25 @@ def appendoncokbcitations(citations, pmids, abstracts):
     return citations
 
 
-def pull_mutation_info(hugo, protein_change, consequence, start, end, cancer_type):
-    url = oncokbapiurl + '/annotate/mutations/byProteinChange?'
-    url += 'hugoSymbol=' + hugo
-    url += '&alteration=' + protein_change
-    url += '&tumorType=' + cancer_type
-    if consequence:
-        url += '&consequence=' + consequence
-    if start and start != '\\N' and start != 'NULL' and start != '':
-        url += '&proteinStart=' + str(start)
-    if end and end != '\\N' and end != 'NULL' and end != '':
-        url += '&proteinEnd=' + str(end)
-    key = '-'.join([hugo, protein_change, cancer_type])
-    return pulloncokb(key, url)
+class Gene:
+    def __init__(self, hugo):
+        self.hugoSymbol = hugo
+class Query:
+    def __init__(self, hugo, hgvs, consequence, start, end, cancertype):
+        self.gene = Gene(hugo)
+        self.proteinChange = hgvs
+        self.consequence = consequence
+        self.proteinStart = start
+        self.proteinEnd = end
+        self.tumorType = cancertype
+
+
+def pull_mutation_info(queries):
+    url = 'https://www.oncokb.org/api/v1/annotate/mutations/byProteinChange'
+    req = requests.post(url, body=queries)
+    #   for req in queries:
+    #       queries.append(Query)
+    return pulloncokb(url)
 
 
 def pull_cna_info(hugo, copy_name_alteration_type, cancer_type):
@@ -992,7 +1006,7 @@ def pull_cna_info(hugo, copy_name_alteration_type, cancer_type):
     url += '&copyNameAlterationType=' + copy_name_alteration_type.upper()
     url += '&tumorType=' + cancer_type
     key = '-'.join([hugo, copy_name_alteration_type, cancer_type])
-    return pulloncokb(key, url)
+    return pulloncokb(url)
 
 
 def pullStructuralVariantInfo(gene1, gene2, structural_variant_type, cancer_type):
@@ -1010,75 +1024,72 @@ def pullStructuralVariantInfo(gene1, gene2, structural_variant_type, cancer_type
     url += '&isFunctionalFusion=' + is_functional_fusion_str
     url += '&tumorType=' + cancer_type
     key = '-'.join([gene1, gene2, structural_variant_type, is_functional_fusion_str, cancer_type])
-    return pulloncokb(key, url);
+    return pulloncokb(url);
 
 
-def pulloncokb(key, url):
-    if key not in oncokbcache:
-        oncokbdata = {}
-        for l in levels:
-            oncokbdata[l] = []
+def pulloncokb(url):
+    oncokbdata = {}
+    for l in levels:
+        oncokbdata[l] = []
 
-        oncokbdata[GENE_IN_ONCOKB_HEADER] = GENE_IN_ONCOKB_DEFAULT
-        oncokbdata[VARIANT_IN_ONCOKB_HEADER] = VARIANT_IN_ONCOKB_DEFAULT
-        oncokbdata['mutation_effect'] = ""
-        oncokbdata['citations'] = []
-        oncokbdata['oncogenic'] = ""
+    oncokbdata[GENE_IN_ONCOKB_HEADER] = GENE_IN_ONCOKB_DEFAULT
+    oncokbdata[VARIANT_IN_ONCOKB_HEADER] = VARIANT_IN_ONCOKB_DEFAULT
+    oncokbdata['mutation_effect'] = ""
+    oncokbdata['citations'] = []
+    oncokbdata['oncogenic'] = ""
 
-        try:
-            response = makeoncokbrequest(url)
-            if response.status_code == 200:
-                evidences = response.json()
+    try:
+        response = makeoncokbgetrequest(url)
+        if response.status_code == 200:
+            evidences = response.json()
 
-                # oncogenic
-                oncokbdata[GENE_IN_ONCOKB_HEADER] = GENE_IN_ONCOKB_DEFAULT if evidences['geneExist'] is None else str(evidences['geneExist'])
-                oncokbdata[VARIANT_IN_ONCOKB_HEADER] = VARIANT_IN_ONCOKB_DEFAULT if evidences['variantExist'] is None else str(evidences['variantExist'])
+            # oncogenic
+            oncokbdata[GENE_IN_ONCOKB_HEADER] = GENE_IN_ONCOKB_DEFAULT if evidences['geneExist'] is None else str(evidences['geneExist'])
+            oncokbdata[VARIANT_IN_ONCOKB_HEADER] = VARIANT_IN_ONCOKB_DEFAULT if evidences['variantExist'] is None else str(evidences['variantExist'])
 
-                # oncogenic
-                oncokbdata['oncogenic'] = evidences['oncogenic']
+            # oncogenic
+            oncokbdata['oncogenic'] = evidences['oncogenic']
 
-                # if not evidences['geneExist'] or (not evidences['variantExist'] and not evidences['alleleExist']):
-                #     return ''
+            # if not evidences['geneExist'] or (not evidences['variantExist'] and not evidences['alleleExist']):
+            #     return ''
 
-                # mutation effect
-                if (evidences['mutationEffect'] is not None):
-                    oncokbdata['mutation_effect'] = evidences['mutationEffect']['knownEffect']
-                    oncokbdata['citations'] = appendoncokbcitations(oncokbdata['citations'],
-                                                                    evidences['mutationEffect']['citations']['pmids'],
-                                                                    evidences['mutationEffect']['citations']['abstracts'])
+            # mutation effect
+            if (evidences['mutationEffect'] is not None):
+                oncokbdata['mutation_effect'] = evidences['mutationEffect']['knownEffect']
+                oncokbdata['citations'] = appendoncokbcitations(oncokbdata['citations'],
+                                                                evidences['mutationEffect']['citations']['pmids'],
+                                                                evidences['mutationEffect']['citations']['abstracts'])
 
-                # oncogenic
-                oncokbdata['oncogenic'] = evidences['oncogenic']
+            # oncogenic
+            oncokbdata['oncogenic'] = evidences['oncogenic']
 
-                # get treatment
-                for treatment in evidences['treatments']:
-                    level = treatment['level']
+            # get treatment
+            for treatment in evidences['treatments']:
+                level = treatment['level']
 
-                    if level not in levels:
-                        log.info("%s is ignored" % level)
-                        # oncokbdata[level].append('')
+                if level not in levels:
+                    log.info("%s is ignored" % level)
+                    # oncokbdata[level].append('')
+                else:
+                    drugs = treatment['drugs']
+
+                    oncokbdata['citations'] = appendoncokbcitations(oncokbdata['citations'], treatment['pmids'],
+                                                                    treatment['abstracts'])
+
+                    if len(drugs) == 0:
+                        oncokbdata[level].append('[NOT SPECIFIED]')
                     else:
-                        drugs = treatment['drugs']
+                        drugnames = []
+                        for drug in drugs:
+                            drugnames.append(drug['drugName'])
+                        oncokbdata[level].append('+'.join(drugnames))
+        else:
+            log.error("error when processing %s\nreason: %s" % (url, response.reason))
+    except:
+        log.error("error when processing %s " % url)
+        # sys.exit()
 
-                        oncokbdata['citations'] = appendoncokbcitations(oncokbdata['citations'], treatment['pmids'],
-                                                                        treatment['abstracts'])
 
-                        if len(drugs) == 0:
-                            oncokbdata[level].append('[NOT SPECIFIED]')
-                        else:
-                            drugnames = []
-                            for drug in drugs:
-                                drugnames.append(drug['drugName'])
-                            oncokbdata[level].append('+'.join(drugnames))
-            else:
-                log.error("error when processing %s\nreason: %s" % (url, response.reason))
-        except:
-            log.error("error when processing %s " % url)
-            # sys.exit()
-
-        oncokbcache[key] = oncokbdata
-
-    oncokbdata = oncokbcache[key]
     ret = []
     ret.append(oncokbdata[GENE_IN_ONCOKB_HEADER])
     ret.append(oncokbdata[VARIANT_IN_ONCOKB_HEADER])
