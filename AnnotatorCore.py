@@ -282,10 +282,16 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
             i = i + 1
             if i % 5 == 0:
                 log.info(queries)
-                pull_mutation_info(queries)
+                annotations = pull_mutation_info(queries)
                 log.info(rows)
                 queries = []
                 rows = []
+                for index, annotation in enumerate(annotations):
+                    annotation = annotations[index]
+                    row = rows[index]
+                    row.append(annotation)
+                outf.write('\t'.join(row) + "\n")
+                print(index, annotation, rows[index])
 
             row = padrow(row, ncols)
 
@@ -351,9 +357,12 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
                 _3dhotspot = pull3dhotspots(hugo, hgvs, None, consequence, start, end, cancertype)
                 row.append(_3dhotspot)
 
+
+
             query = Query(hugo, hgvs, consequence, start, end, cancertype)
             queries.append(query)
             rows.append(row)
+
 
 
 
