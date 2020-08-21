@@ -1,5 +1,5 @@
 #!/usr/bin/python
-
+import json
 import sys
 import csv
 import requests
@@ -150,7 +150,7 @@ def makeoncokbpostrequest(url, body):
         'Content-Type': 'application/json',
         'Authorization': 'Bearer %s' % oncokbapibearertoken
     }
-    return requests.post(url, headers=headers, body=body)
+    return requests.post(url, headers=headers, data=json.dumps(body, default=lambda o: o.__dict__))
 
 
 def makeoncokbgetrequest(url):
@@ -230,6 +230,13 @@ def replace_all(hgvs):
     return pattern.sub(lambda m: conversiondict[m.group().capitalize()], hgvs)
 
 
+def fetch_and_write_annotation(queries, rows, outf):
+    annotations = pull_mutation_info(queries)
+    for index, annotation in enumerate(annotations):
+        row = rows[index]
+        row.append(annotation)
+        outf.write('\t'.join(row) + "\n")
+
 def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerType, cancerTypeMap,
                             retainonlycuratedgenes, annotatehotspots):
     if annotatehotspots:
@@ -278,20 +285,13 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
 
         i = 0
         queries = []
+        rows = []
         for row in reader:
             i = i + 1
             if i % 5 == 0:
-                log.info(queries)
-                annotations = pull_mutation_info(queries)
-                log.info(rows)
+                fetch_and_write_annotation(queries, rows, outf)
                 queries = []
                 rows = []
-                for index, annotation in enumerate(annotations):
-                    annotation = annotations[index]
-                    row = rows[index]
-                    row.append(annotation)
-                outf.write('\t'.join(row) + "\n")
-                print(index, annotation, rows[index])
 
             row = padrow(row, ncols)
 
@@ -357,15 +357,12 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
                 _3dhotspot = pull3dhotspots(hugo, hgvs, None, consequence, start, end, cancertype)
                 row.append(_3dhotspot)
 
-
-
             query = Query(hugo, hgvs, consequence, start, end, cancertype)
             queries.append(query)
             rows.append(row)
 
-
-
-
+        if(len(queries) != 0):
+            fetch_and_write_annotation(queries, rows, outf)
 
 
     outf.close()
@@ -1108,8 +1105,6 @@ def process_oncokb_annotation(annotation):
                     for drug in drugs:
                         drugnames.append(drug['drugName'])
                     oncokbdata[level].append('+'.join(drugnames))
-
-        log.error("error when processing %s\nreason: %s" % (annotation))
     except:
         log.error("error when processing %s " % annotation)
         # sys.exit()
