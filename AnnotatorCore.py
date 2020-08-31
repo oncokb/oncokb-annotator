@@ -103,6 +103,8 @@ PROTEIN_POSITION_HEADERS = ['PROTEIN_POSITION']
 CANCER_TYPE_HEADERS = ['ONCOTREE_CODE', 'CANCER_TYPE']
 FUSION_HEADERS = ['FUSION']
 
+POST_QUERIES_THRESHOLD = 5
+
 def getsampleid(rawsampleid):
     if rawsampleid.startswith("TCGA"):
         return rawsampleid[:15]
@@ -150,6 +152,7 @@ def makeoncokbpostrequest(url, body):
         'Content-Type': 'application/json',
         'Authorization': 'Bearer %s' % oncokbapibearertoken
     }
+    print(url, json.dumps(body, default=lambda o: o.__dict__))
     return requests.post(url, headers=headers, data=json.dumps(body, default=lambda o: o.__dict__))
 
 
@@ -230,11 +233,11 @@ def replace_all(hgvs):
     return pattern.sub(lambda m: conversiondict[m.group().capitalize()], hgvs)
 
 
-def fetch_and_write_annotation(queries, rows, outf):
-    annotations = pull_mutation_info(queries)
+def append_annotation_to_file(outf, rows, annotations):
     for index, annotation in enumerate(annotations):
         row = rows[index]
-        row.append(annotation)
+        if annotation is not None:
+            row.append(annotation)
         outf.write('\t'.join(row) + "\n")
 
 def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerType, cancerTypeMap,
@@ -288,10 +291,9 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
         rows = []
         for row in reader:
             i = i + 1
-            if i % 5 == 0:
-                fetch_and_write_annotation(queries, rows, outf)
-                queries = []
-                rows = []
+
+            if i % 100 == 0:
+                log.info(i)
 
             row = padrow(row, ncols)
 
@@ -357,12 +359,19 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
                 _3dhotspot = pull3dhotspots(hugo, hgvs, None, consequence, start, end, cancertype)
                 row.append(_3dhotspot)
 
-            query = Query(hugo, hgvs, consequence, start, end, cancertype)
+            query = ProtinChangeQuery(hugo, hgvs, consequence, start, end, cancertype)
             queries.append(query)
             rows.append(row)
 
-        if(len(queries) != 0):
-            fetch_and_write_annotation(queries, rows, outf)
+            if len(queries) == POST_QUERIES_THRESHOLD:
+                annotations = pull_mutation_info(queries)
+                append_annotation_to_file(outf, rows, annotations)
+                queries = []
+                rows = []
+
+        if len(queries) > 0:
+            annotations = pull_mutation_info(queries)
+            append_annotation_to_file(outf, rows, annotations)
 
 
     outf.close()
@@ -411,9 +420,11 @@ def processsv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap
         icancertype = geIndexOfHeader(headers, CANCER_TYPE_HEADERS)
 
         i = 0
+        queries = []
+        rows = []
         for row in reader:
             i = i + 1
-            if i % 5 == 0:
+            if i % 100 == 0:
                 log.info(i)
 
             row = padrow(row, ncols)
@@ -433,8 +444,6 @@ def processsv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap
                 fusion = row[ifusion]
                 gene1, gene2 = getgenesfromfusion(fusion, nameregex)
 
-
-
             cancertype = defaultCancerType
             if icancertype >= 0:
                 cancertype = row[icancertype]
@@ -444,14 +453,24 @@ def processsv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap
                 log.info("Cancer type for all samples must be defined\nline %s: %s" % (i, row))
                 # continueor
 
-            if not retainonlycuratedgenes or gene1 in curatedgenes or gene2 in curatedgenes:
-                oncokbinfo = pullStructuralVariantInfo(gene1, gene2, 'FUSION', cancertype)
-                row.append(oncokbinfo)
-            else:
-                # Include Gene in OncoKB and Variant in OncoKB
-                row.append(GENE_IN_ONCOKB_DEFAULT + '\t' + VARIANT_IN_ONCOKB_DEFAULT)
-            outf.write('\t'.join(row) + "\n")
 
+            if not retainonlycuratedgenes or gene1 in curatedgenes or gene2 in curatedgenes:
+                queries.append(StructuralVariantQuery(gene1, gene2, 'FUSION', cancertype))
+                rows.append(row)
+
+                if len(queries) == POST_QUERIES_THRESHOLD:
+                    annotations = pull_structural_variant_info(queries)
+                    append_annotation_to_file(outf, rows, annotations)
+                    queries = []
+                    rows = []
+            else:
+                # Include default Gene in OncoKB and Variant in OncoKB
+                row.append(GENE_IN_ONCOKB_DEFAULT + '\t' + VARIANT_IN_ONCOKB_DEFAULT)
+                outf.write('\t'.join(row) + "\n")
+
+        if len(queries) > 0:
+            annotations = pull_structural_variant_info(queries)
+            append_annotation_to_file(outf, rows, annotations)
     outf.close()
 
 
@@ -503,9 +522,11 @@ def processcnagisticdata(cnafile, outfile, previousoutfile, defaultCancerType, c
         outf.write("\tcitations\n")
 
         i = 0
+        rows = []
+        queries = []
         for row in reader:
             i = i + 1
-            if i % 5 == 0:
+            if i % 100 == 0:
                 log.info(i)
 
             hugo = row[0]
@@ -524,17 +545,25 @@ def processcnagisticdata(cnafile, outfile, previousoutfile, defaultCancerType, c
 
                             if sample in cancerTypeMap:
                                 cancertype = cancerTypeMap[sample]
-                            outf.write(sample + "\t")
-                            outf.write(cancertype + "\t")
-                            outf.write(hugo + "\t")
-                            outf.write(cna_type + "\t")
+
                             if not retainonlycuratedgenes or hugo in curatedgenes:
-                                oncokbinfo = pull_cna_info(hugo, cna_type, cancertype)
-                                outf.write(oncokbinfo)
+                                rows.append([sample, cancertype, hugo, cna_type])
+                                queries.append(CNAQuery(hugo, cna_type, cancertype))
+
+                                if len(queries) == POST_QUERIES_THRESHOLD:
+                                    annotations = pull_cna_info(queries)
+                                    append_annotation_to_file(outf, rows, annotations)
+                                    rows = []
+                                    queries = []
                             else:
                                 # Include Gene in OncoKB and Variant in OncoKB
-                                outf.write(GENE_IN_ONCOKB_DEFAULT + '\t' + VARIANT_IN_ONCOKB_DEFAULT)
-                            outf.write('\n')
+                                append_annotation_to_file(outf, [[sample, cancertype, hugo, cna_type]],
+                                                          [[GENE_IN_ONCOKB_DEFAULT, VARIANT_IN_ONCOKB_DEFAULT]])
+
+        if len(queries) > 0:
+            annotations = pull_cna_info(queries)
+            append_annotation_to_file(outf, rows, annotations)
+
     outf.close()
 
 def getfirstcolumnofsampleingisticdata(headers):
@@ -995,7 +1024,8 @@ def appendoncokbcitations(citations, pmids, abstracts):
 class Gene:
     def __init__(self, hugo):
         self.hugoSymbol = hugo
-class Query:
+
+class ProtinChangeQuery:
     def __init__(self, hugo, hgvs, consequence, start, end, cancertype):
         self.gene = Gene(hugo)
         self.proteinChange = hgvs
@@ -1004,56 +1034,123 @@ class Query:
         self.proteinEnd = end
         self.tumorType = cancertype
 
+class CNAQuery:
+    def __init__(self, hugo, cnatype, cancertype):
+        self.gene = Gene(hugo)
+        self.copyNameAlterationType = cnatype.upper()
+        self.tumorType = cancertype
+
+class StructuralVariantQuery:
+    def __init__(self, hugoA, hugoB, structural_variant_type, cancertype):
+
+        # Assume all structural variants in the file are functional fusions
+        is_functional_fusion = True
+        if hugoA == hugoB:
+            is_functional_fusion = False
+            structural_variant_type = 'DELETION'
+
+        self.geneA = Gene(hugoA)
+        self.geneB = Gene(hugoB)
+        self.functionalFusion = is_functional_fusion
+        self.structuralVariantType = structural_variant_type.upper()
+        self.tumorType = cancertype
+
 
 def pull_mutation_info(queries):
     url = 'https://www.oncokb.org/api/v1/annotate/mutations/byProteinChange'
-    response = makeoncokbpostrequest(url, body=queries)
-    annotation = process_response(response)
+    response = makeoncokbpostrequest(url, queries)
+    annotation = []
+    if response.status_code == 200:
+        annotation = response.json()
+    else:
+        for query in queries:
+            geturl = url + '?'
+            geturl += 'hugoSymbol=' + query.gene.hugoSymbol
+            geturl += '&alteration=' + query.proteinChange
+            geturl += '&tumorType=' + query.tumorType
+            if query.consequence:
+                geturl += '&consequence=' + query.consequence
+            if query.proteinStart and query.proteinStart != '\\N' and query.proteinStart != 'NULL' and query.proteinStart != '':
+                geturl += '&proteinStart=' + str(query.proteinStart)
+            if query.proteinEnd and query.proteinEnd != '\\N' and query.proteinEnd != 'NULL' and query.proteinEnd != '':
+                geturl += '&proteinEnd=' + str(query.proteinEnd)
+            getresponse = makeoncokbgetrequest(geturl)
+            if getresponse.status_code == 200:
+                annotation.append(getresponse.json())
+            else:
+                # if the api call fails, we should still push a None into the list
+                # to keep the same length of the queries
+                annotation.push(None)
+
     processed_annotation = []
     for query_annotation in annotation:
         processed_annotation.append(process_oncokb_annotation(query_annotation))
     return processed_annotation
 
 
-def pull_cna_info(hugo, copy_name_alteration_type, cancer_type):
+def pull_cna_info(queries):
     url = oncokbapiurl + '/annotate/copyNumberAlterations?'
-    url += 'hugoSymbol=' + hugo
-    url += '&copyNameAlterationType=' + copy_name_alteration_type.upper()
-    url += '&tumorType=' + cancer_type
-    key = '-'.join([hugo, copy_name_alteration_type, cancer_type])
-    response = makeoncokbgetrequest(url)
-    annotation = process_response(response)
-    return process_oncokb_annotation(annotation)
 
-
-def pullStructuralVariantInfo(gene1, gene2, structural_variant_type, cancer_type):
-    # Assume all structural variants in the file are functional fusions
-    is_functional_fusion = True
-    if gene1 == gene2:
-        is_functional_fusion = False
-        structural_variant_type = 'DELETION'
-
-    is_functional_fusion_str = 'true' if is_functional_fusion else 'false'
-    url = oncokbapiurl + '/annotate/structuralVariants?'
-    url += 'hugoSymbolA=' + gene1
-    url += '&hugoSymbolB=' + gene2
-    url += '&structuralVariantType=' + structural_variant_type
-    url += '&isFunctionalFusion=' + is_functional_fusion_str
-    url += '&tumorType=' + cancer_type
-    key = '-'.join([gene1, gene2, structural_variant_type, is_functional_fusion_str, cancer_type])
-    response = makeoncokbgetrequest(url)
-    annotation = process_response(response)
-    return process_oncokb_annotation(annotation)
-
-
-def process_response(response):
+    response = makeoncokbpostrequest(url, queries)
+    annotation = []
     if response.status_code == 200:
-        return response.json()
+        annotation = response.json()
     else:
-        return None
+        for query in queries:
+            geturl = url + '?'
+            geturl += 'hugoSymbol=' + query.gene.hugoSymbol
+            geturl += '&copyNameAlterationType=' + query.copyNameAlterationType
+            geturl += '&tumorType=' + query.tumorType
+            getresponse = makeoncokbgetrequest(geturl)
+            if getresponse.status_code == 200:
+                annotation.append(getresponse.json())
+            else:
+                # if the api call fails, we should still push a None into the list
+                # to keep the same length of the queries
+                annotation.push(None)
+
+    processed_annotation = []
+    for query_annotation in annotation:
+        processed_annotation.append(process_oncokb_annotation(query_annotation))
+    return processed_annotation
+
+
+
+def pull_structural_variant_info(queries):
+    url = oncokbapiurl + '/annotate/structuralVariants'
+
+    response = makeoncokbpostrequest(url, queries)
+    annotation = []
+    if response.status_code == 200:
+        annotation = response.json()
+    else:
+        for query in queries:
+            geturl = url + '?'
+            geturl += 'hugoSymbolA=' + query.geneA.hugoSymbol
+            geturl += '&hugoSymbolB=' + query.geneB.hugoSymbol
+            geturl += '&structuralVariantType=' + query.structuralVariantType
+            geturl += '&isFunctionalFusion=' + query.isFunctionalFusion
+            geturl += '&tumorType=' + query.tumorType
+
+            getresponse = makeoncokbgetrequest(geturl)
+            if getresponse.status_code == 200:
+                annotation.append(getresponse.json())
+            else:
+                # if the api call fails, we should still push a None into the list
+                # to keep the same length of the queries
+                annotation.push(None)
+
+    processed_annotation = []
+    for query_annotation in annotation:
+        processed_annotation.append(process_oncokb_annotation(query_annotation))
+    return processed_annotation
+
 
 
 def process_oncokb_annotation(annotation):
+    if annotation is None:
+        return None
+
     oncokbdata = {}
     for l in levels:
         oncokbdata[l] = []
