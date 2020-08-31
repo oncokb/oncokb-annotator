@@ -10,13 +10,17 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from datetime import date
+import ctypes as ct
+
 logging.basicConfig(level=logging.INFO)
 logging.getLogger("requests").setLevel(logging.WARNING)
 logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 log = logging.getLogger('AnnotatorCore')
 
-csv.field_size_limit(sys.maxsize) # for reading large files
+csv.field_size_limit(int(ct.c_ulong(-1).value // 2)) # Deal with overflow problem on Windows, https://stackoverflow.com/questions/15063936/csv-error-field-larger-than-field-limit-131072
+sizeLimit = csv.field_size_limit()
+csv.field_size_limit(sizeLimit) # for reading large files
 
 oncokbapiurl = "https://www.oncokb.org/api/v1"
 oncokbapibearertoken = ""
