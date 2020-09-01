@@ -152,7 +152,6 @@ def makeoncokbpostrequest(url, body):
         'Content-Type': 'application/json',
         'Authorization': 'Bearer %s' % oncokbapibearertoken
     }
-    print(url, json.dumps(body, default=lambda o: o.__dict__))
     return requests.post(url, headers=headers, data=json.dumps(body, default=lambda o: o.__dict__))
 
 
@@ -234,6 +233,9 @@ def replace_all(hgvs):
 
 
 def append_annotation_to_file(outf, rows, annotations):
+    if len(rows) != len(annotations):
+        log.error('The length of the rows and annotations do not match')
+
     for index, annotation in enumerate(annotations):
         row = rows[index]
         if annotation is not None:
@@ -359,7 +361,7 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
                 _3dhotspot = pull3dhotspots(hugo, hgvs, None, consequence, start, end, cancertype)
                 row.append(_3dhotspot)
 
-            query = ProtinChangeQuery(hugo, hgvs, consequence, start, end, cancertype)
+            query = ProteinChangeQuery(hugo, hgvs, consequence, start, end, cancertype)
             queries.append(query)
             rows.append(row)
 
@@ -878,9 +880,8 @@ def processmutationdata(mutfile, outfile, clinicaldata):
 
         i = 0
         for row in reader:
-            if i % 5 == 0:
-                log.info(queries)
-                queries = []
+            if i % 100 == 0:
+                log.info(i)
             i = i + 1
 
             sample = row[isample]
@@ -1025,10 +1026,11 @@ class Gene:
     def __init__(self, hugo):
         self.hugoSymbol = hugo
 
-class ProtinChangeQuery:
-    def __init__(self, hugo, hgvs, consequence, start, end, cancertype):
+
+class ProteinChangeQuery:
+    def __init__(self, hugo, hgvs, cancertype, consequence=None, start=None, end=None):
         self.gene = Gene(hugo)
-        self.proteinChange = hgvs
+        self.alteration = hgvs
         self.consequence = consequence
         self.proteinStart = start
         self.proteinEnd = end
@@ -1066,7 +1068,7 @@ def pull_mutation_info(queries):
         for query in queries:
             geturl = url + '?'
             geturl += 'hugoSymbol=' + query.gene.hugoSymbol
-            geturl += '&alteration=' + query.proteinChange
+            geturl += '&alteration=' + query.alteration
             geturl += '&tumorType=' + query.tumorType
             if query.consequence:
                 geturl += '&consequence=' + query.consequence
@@ -1080,7 +1082,7 @@ def pull_mutation_info(queries):
             else:
                 # if the api call fails, we should still push a None into the list
                 # to keep the same length of the queries
-                annotation.push(None)
+                annotation.append(None)
 
     processed_annotation = []
     for query_annotation in annotation:
@@ -1107,7 +1109,7 @@ def pull_cna_info(queries):
             else:
                 # if the api call fails, we should still push a None into the list
                 # to keep the same length of the queries
-                annotation.push(None)
+                annotation.append(None)
 
     processed_annotation = []
     for query_annotation in annotation:
@@ -1129,7 +1131,7 @@ def pull_structural_variant_info(queries):
             geturl += 'hugoSymbolA=' + query.geneA.hugoSymbol
             geturl += '&hugoSymbolB=' + query.geneB.hugoSymbol
             geturl += '&structuralVariantType=' + query.structuralVariantType
-            geturl += '&isFunctionalFusion=' + query.isFunctionalFusion
+            geturl += '&isFunctionalFusion=' + str(query.functionalFusion).upper() if type(query.functionalFusion) is bool else query.functionalFusion
             geturl += '&tumorType=' + query.tumorType
 
             getresponse = makeoncokbgetrequest(geturl)
@@ -1138,7 +1140,7 @@ def pull_structural_variant_info(queries):
             else:
                 # if the api call fails, we should still push a None into the list
                 # to keep the same length of the queries
-                annotation.push(None)
+                annotation.append(None)
 
     processed_annotation = []
     for query_annotation in annotation:
