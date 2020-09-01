@@ -19,6 +19,11 @@ def get_annotation_from_string(content_str):
 
 
 def test_check_atypical_alts():
+
+    setoncokbapitoken(os.environ["ONCOKB_API_TOKEN"])
+    
+    log.info('test-----------', os.environ["ONCOKB_API_TOKEN"], '------')
+
     queries = [
         ProteinChangeQuery('Other Biomarkers', 'MSI-H', 'Colorectal Cancer'),
         ProteinChangeQuery('Other Biomarkers', 'MSI-H', 'Leukemia')
