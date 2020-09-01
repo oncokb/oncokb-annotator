@@ -7,7 +7,7 @@ on:
   push:
     branches: [ master ]
   pull_request_target:
-    branches: [ master, change-to-post ]
+    types: [opened, edited]
 
 jobs:
   build:
