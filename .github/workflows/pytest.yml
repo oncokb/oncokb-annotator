@@ -36,6 +36,6 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
       env:
-        ONCOKB_API_TOKEN: ${{ secrets.ONCOKB_BOT_API_KEY }}
+        ONCOKB_API_TOKEN: ${{ secrets.ONCOKB_BOT_API_TOKEN }}
       run: |
         pytest
