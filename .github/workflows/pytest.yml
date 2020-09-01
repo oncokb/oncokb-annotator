@@ -5,7 +5,7 @@ name: Run all python tests
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, change-to-post ]
   pull_request:
     branches: [ master, change-to-post ]
 
