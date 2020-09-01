@@ -1,8 +1,9 @@
 #!/usr/bin/python
 
 from AnnotatorCore import *
+import os
 
-setoncokbapitoken(os.getenv("ONCOKB_API_TOKEN"))
+setoncokbapitoken(os.environ("ONCOKB_API_TOKEN"))
 
 log.info('test-----------', os.getenv("ONCOKB_API_TOKEN"), '------')
 
