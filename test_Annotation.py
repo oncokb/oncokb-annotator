@@ -14,7 +14,7 @@ UNKNOWN = 'Unknown'
 
 
 def get_annotation_from_string(content_str):
-    return content_str.split('\t')
+    return [] if content_str is None else content_str.split('\t')
 
 
 def test_check_atypical_alts():
