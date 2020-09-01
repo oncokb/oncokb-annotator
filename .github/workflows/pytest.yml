@@ -6,8 +6,8 @@ name: Run all python tests
 on:
   push:
     branches: [ master ]
-  pull_request_target:
-    types: [opened, edited]
+  pull_request:
+    branches: [ master, change-to-post ]
 
 jobs:
   build:

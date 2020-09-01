@@ -1,9 +1,11 @@
 #!/usr/bin/python
+import pytest
 
 from AnnotatorCore import *
 import os
 
-setoncokbapitoken(os.environ["ONCOKB_API_TOKEN"])
+ONCOKB_API_TOKEN = os.environ["ONCOKB_API_TOKEN"]
+setoncokbapitoken(ONCOKB_API_TOKEN)
 
 log.info('test-----------', os.environ["ONCOKB_API_TOKEN"], '------')
 
@@ -18,12 +20,8 @@ def get_annotation_from_string(content_str):
     return [] if content_str is None else content_str.split('\t')
 
 
+@pytest.mark.skipif(ONCOKB_API_TOKEN in (None, ''), reason="oncokb api token required")
 def test_check_atypical_alts():
-
-    setoncokbapitoken(os.environ["ONCOKB_API_TOKEN"])
-    
-    log.info('test-----------', os.environ["ONCOKB_API_TOKEN"], '------')
-
     queries = [
         ProteinChangeQuery('Other Biomarkers', 'MSI-H', 'Colorectal Cancer'),
         ProteinChangeQuery('Other Biomarkers', 'MSI-H', 'Leukemia')
@@ -45,6 +43,7 @@ def test_check_atypical_alts():
     assert annotation[HIGHEST_LEVEL_INDEX] == ''
 
 
+@pytest.mark.skipif(ONCOKB_API_TOKEN in (None, ''), reason="oncokb api token required")
 def test_check_fusions():
     queries = [
         StructuralVariantQuery('ALK', 'EML4', 'FUSION', 'NSCLC'),
@@ -67,6 +66,7 @@ def test_check_fusions():
     assert annotation[HIGHEST_LEVEL_INDEX] == 'LEVEL_3B'
 
 
+@pytest.mark.skipif(ONCOKB_API_TOKEN in (None, ''), reason="oncokb api token required")
 def test_cna():
     queries = [
         CNAQuery('BRCA2', 'DELETION', 'Ovarian Cancer'),
