@@ -4,7 +4,7 @@ from AnnotatorCore import *
 
 setoncokbapitoken(os.getenv("ONCOKB_API_TOKEN"))
 
-print('test-----------', os.getenv("ONCOKB_API_TOKEN"), '------')
+log.info('test-----------', os.getenv("ONCOKB_API_TOKEN"), '------')
 
 VARIANT_EXISTS_INDEX = 1
 MUTATION_EFFECT_INDEX = 2
