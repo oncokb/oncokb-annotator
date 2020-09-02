@@ -103,7 +103,7 @@ PROTEIN_POSITION_HEADERS = ['PROTEIN_POSITION']
 CANCER_TYPE_HEADERS = ['ONCOTREE_CODE', 'CANCER_TYPE']
 FUSION_HEADERS = ['FUSION']
 
-POST_QUERIES_THRESHOLD = 5
+POST_QUERIES_THRESHOLD = 100
 
 def getsampleid(rawsampleid):
     if rawsampleid.startswith("TCGA"):
@@ -361,9 +361,14 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
                 _3dhotspot = pull3dhotspots(hugo, hgvs, None, consequence, start, end, cancertype)
                 row.append(_3dhotspot)
 
-            query = ProteinChangeQuery(hugo, hgvs, consequence, start, end, cancertype)
-            queries.append(query)
-            rows.append(row)
+            if not retainonlycuratedgenes or hugo in curatedgenes:
+                query = ProteinChangeQuery(hugo, hgvs, cancertype, consequence, start, end)
+                queries.append(query)
+                rows.append(row)
+            else:
+                # Include Gene in OncoKB and Variant in OncoKB
+                row.append(GENE_IN_ONCOKB_DEFAULT + '\t' + VARIANT_IN_ONCOKB_DEFAULT)
+                outf.write('\t'.join(row) + "\n")
 
             if len(queries) == POST_QUERIES_THRESHOLD:
                 annotations = pull_mutation_info(queries)
@@ -560,7 +565,7 @@ def processcnagisticdata(cnafile, outfile, previousoutfile, defaultCancerType, c
                             else:
                                 # Include Gene in OncoKB and Variant in OncoKB
                                 append_annotation_to_file(outf, [[sample, cancertype, hugo, cna_type]],
-                                                          [[GENE_IN_ONCOKB_DEFAULT, VARIANT_IN_ONCOKB_DEFAULT]])
+                                                          [GENE_IN_ONCOKB_DEFAULT + '\t' + VARIANT_IN_ONCOKB_DEFAULT])
 
         if len(queries) > 0:
             annotations = pull_cna_info(queries)
