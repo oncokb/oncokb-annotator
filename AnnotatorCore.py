@@ -51,8 +51,8 @@ def setsampleidsfileterfile(f):
     log.info(len(sampleidsfilter))
 
 
-GENE_IN_ONCOKB_HEADER = 'Gene in OncoKB'
-VARIANT_IN_ONCOKB_HEADER = 'Variant in OncoKB'
+GENE_IN_ONCOKB_HEADER = 'GENE_IN_ONCOKB'
+VARIANT_IN_ONCOKB_HEADER = 'VARIANT_IN_ONCOKB'
 
 GENE_IN_ONCOKB_DEFAULT = 'False'
 VARIANT_IN_ONCOKB_DEFAULT = 'False'
@@ -246,15 +246,15 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
         outf.write("\t" + GENE_IN_ONCOKB_HEADER)
         outf.write("\t" + VARIANT_IN_ONCOKB_HEADER)
 
-        outf.write("\tmutation_effect")
-        outf.write("\toncogenic")
+        outf.write("\tMUTATION_EFFECT")
+        outf.write("\tONCOGENIC")
 
         for l in levels:
             outf.write('\t' + l)
 
-        outf.write("\tHighest_level")
+        outf.write("\tHIGHEST_LEVEL")
 
-        outf.write("\tcitations")
+        outf.write("\tCITATIONS")
 
         outf.write("\n")
 
@@ -301,7 +301,7 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
             if sample in cancerTypeMap:
                 cancertype = cancerTypeMap[sample]
             if cancertype == "":
-                log.info("Cancer type for all samples must be defined\nline %s: %s" % (i, row))
+                log.info("Cancer type for the sample should be defined for a more accurate result\nline %s: %s\n" % (i, row))
                 # continue
 
             hgvs = conversion(hgvs)
@@ -381,12 +381,12 @@ def processsv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap
         outf.write(headers['^-$'])
         outf.write("\t" + GENE_IN_ONCOKB_HEADER)
         outf.write("\t" + VARIANT_IN_ONCOKB_HEADER)
-        outf.write("\tmutation_effect")
-        outf.write("\toncogenic")
+        outf.write("\tMUTATION_EFFECT")
+        outf.write("\tONCOGENIC")
         for l in levels:
             outf.write('\t' + l)
-        outf.write("\tHighest_level")
-        outf.write("\tcitations\n")
+        outf.write("\tHIGHEST_LEVEL")
+        outf.write("\tCITATIONS\n")
 
         igene1 = geIndexOfHeader(headers, ['GENE1'])
         igene2 = geIndexOfHeader(headers, ['GENE2'])
@@ -425,7 +425,7 @@ def processsv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap
             if sample in cancerTypeMap:
                 cancertype = cancerTypeMap[sample]
             if cancertype == "":
-                log.info("Cancer type for all samples must be defined\nline %s: %s" % (i, row))
+                log.info("Cancer type for the sample should be defined for a more accurate result\nline %s: %s\n" % (i, row))
                 # continueor
 
             if not retainonlycuratedgenes or gene1 in curatedgenes or gene2 in curatedgenes:
@@ -473,18 +473,19 @@ def processcnagisticdata(cnafile, outfile, previousoutfile, defaultCancerType, c
             samples.append(getsampleid(rs))
 
         if defaultCancerType == '' and not set(cancerTypeMap.keys()).issuperset(set(samples)):
-            log.info("Cancer type for all samples must be defined samples with cancer type: %s \nsamples in cna file: %s" % (cancerTypeMap.keys(), samples))
-            # quit()
+            log.info(
+                "Cancer type for all samples should be defined for a more accurate result\nsamples in cna file: %s\n" % (
+                    samples))
 
         outf.write('SAMPLE_ID\tCANCER_TYPE\tHUGO_SYMBOL\tALTERATION')
         outf.write("\t"+GENE_IN_ONCOKB_HEADER)
         outf.write("\t"+VARIANT_IN_ONCOKB_HEADER)
-        outf.write("\tmutation_effect")
-        outf.write("\toncogenic")
+        outf.write("\tMUTATION_EFFECT")
+        outf.write("\tONCOGENIC")
         for l in levels:
             outf.write('\t' + l)
-        outf.write("\tHighest_level")
-        outf.write("\tcitations\n")
+        outf.write("\tHIGHEST_LEVEL")
+        outf.write("\tCITATIONS\n")
 
         i = 0
         for row in reader:
@@ -630,7 +631,7 @@ def processclinicaldata(annotatedmutfiles, clinicalfile, outfile):
         outf.write(headers['^-$'])
         for l in levels:
             outf.write('\t' + l)
-        outf.write('\tHIGHEST_LEVEL\toncogenic_mutations\t#actionable_mutations\t#oncogenic_mutations\n')
+        outf.write('\tHIGHEST_LEVEL\tONCOGENIC_MUTATIONS\t#ACTIONABLE_MUTATIONS\t#ONCOGENIC_MUTATIONS\n')
         isample = headers['SAMPLE_ID']
 
         for row in reader:

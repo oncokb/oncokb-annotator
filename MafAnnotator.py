@@ -61,7 +61,7 @@ if __name__ == "__main__":
     parser.add_argument('-p', dest='previous_result_file', default='', type=str)
     parser.add_argument('-c', dest='input_clinical_file', default='', type=str)
     parser.add_argument('-s', dest='sample_ids_filter', default='', type=str)
-    parser.add_argument('-t', dest='default_cancer_type', default='cancer', type=str)
+    parser.add_argument('-t', dest='default_cancer_type', default='', type=str)
     parser.add_argument('-u', dest='oncokb_api_url', default='', type=str)
     parser.add_argument('-a', dest='annotate_hotspots', action="store_true", default=False)
     parser.add_argument('-v', dest='cancer_hotspots_base_url', default='', type=str)
