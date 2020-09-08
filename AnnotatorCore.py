@@ -219,7 +219,7 @@ def conversion(hgvs):
             return replace_all(hgvs)
     return hgvs
 def replace_all(hgvs):
-    # Author: Thomas Gläßle
+    # Author: Thomas Glaessle
     pattern = re.compile('|'.join(conversionlist), re.IGNORECASE)
     return pattern.sub(lambda m: conversiondict[m.group().capitalize()], hgvs)
 
