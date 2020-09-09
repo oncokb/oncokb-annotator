@@ -20,6 +20,42 @@ def get_annotation_from_string(content_str):
     return [] if content_str is None else content_str.split('\t')
 
 
+def fake_gene_one_query_suite(annotations):
+    assert len(annotations) == 1
+
+    annotation = get_annotation_from_string(annotations[0])
+    assert len(annotation) == 14
+    assert annotation[MUTATION_EFFECT_INDEX] == UNKNOWN
+    assert annotation[ONCOGENIC_INDEX] == ''
+    assert annotation[HIGHEST_LEVEL_INDEX] == ''
+
+
+@pytest.mark.skipif(ONCOKB_API_TOKEN in (None, ''), reason="oncokb api token required")
+def test_check_protein_change():
+    queries = [
+        ProteinChangeQuery('BRAF', 'V600E', 'Colorectal Cancer')
+    ]
+
+    annotations = pull_mutation_info(queries)
+    assert len(annotations) == 1
+
+    annotation = get_annotation_from_string(annotations[0])
+    assert len(annotation) == 14
+    assert annotation[MUTATION_EFFECT_INDEX] == 'Gain-of-function'
+    assert annotation[ONCOGENIC_INDEX] == 'Oncogenic'
+    assert annotation[HIGHEST_LEVEL_INDEX] == 'LEVEL_1'
+
+
+@pytest.mark.skipif(ONCOKB_API_TOKEN in (None, ''), reason="oncokb api token required")
+def test_fake_gene_protein_change():
+    queries = [
+        ProteinChangeQuery('test1', 'V600E', 'Ovarian Cancer')
+    ]
+
+    annotations = pull_mutation_info(queries)
+    fake_gene_one_query_suite(annotations)
+
+
 @pytest.mark.skipif(ONCOKB_API_TOKEN in (None, ''), reason="oncokb api token required")
 def test_check_atypical_alts():
     queries = [
@@ -67,6 +103,16 @@ def test_check_fusions():
 
 
 @pytest.mark.skipif(ONCOKB_API_TOKEN in (None, ''), reason="oncokb api token required")
+def test_fake_fusion_gene():
+    queries = [
+        StructuralVariantQuery('test1', 'test2', 'FUSION', 'NSCLC'),
+    ]
+
+    annotations = pull_structural_variant_info(queries)
+    fake_gene_one_query_suite(annotations)
+
+
+@pytest.mark.skipif(ONCOKB_API_TOKEN in (None, ''), reason="oncokb api token required")
 def test_cna():
     queries = [
         CNAQuery('BRCA2', 'DELETION', 'Ovarian Cancer'),
@@ -94,3 +140,13 @@ def test_cna():
     assert annotation[MUTATION_EFFECT_INDEX] == 'Gain-of-function'
     assert annotation[ONCOGENIC_INDEX] == 'Oncogenic'
     assert annotation[HIGHEST_LEVEL_INDEX] == 'LEVEL_2'
+
+
+@pytest.mark.skipif(ONCOKB_API_TOKEN in (None, ''), reason="oncokb api token required")
+def test_fake_cna():
+    queries = [
+        CNAQuery('test1', 'Amplification', 'Breast Cancer'),
+    ]
+
+    annotations = pull_cna_info(queries)
+    fake_gene_one_query_suite(annotations)
