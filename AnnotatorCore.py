@@ -107,7 +107,7 @@ PROTEIN_POSITION_HEADERS = ['PROTEIN_POSITION']
 CANCER_TYPE_HEADERS = ['ONCOTREE_CODE', 'CANCER_TYPE']
 FUSION_HEADERS = ['FUSION']
 
-POST_QUERIES_THRESHOLD = 100
+POST_QUERIES_THRESHOLD = 1000
 
 def getsampleid(rawsampleid):
     if rawsampleid.startswith("TCGA"):
@@ -298,7 +298,7 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
         for row in reader:
             i = i + 1
 
-            if i % 100 == 0:
+            if i % POST_QUERIES_THRESHOLD == 0:
                 log.info(i)
 
             row = padrow(row, ncols)
@@ -435,7 +435,7 @@ def processsv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap
         rows = []
         for row in reader:
             i = i + 1
-            if i % 100 == 0:
+            if i % POST_QUERIES_THRESHOLD == 0:
                 log.info(i)
 
             row = padrow(row, ncols)
@@ -538,7 +538,7 @@ def processcnagisticdata(cnafile, outfile, previousoutfile, defaultCancerType, c
         queries = []
         for row in reader:
             i = i + 1
-            if i % 100 == 0:
+            if i % POST_QUERIES_THRESHOLD == 0:
                 log.info(i)
 
             hugo = row[0]
@@ -890,7 +890,7 @@ def processmutationdata(mutfile, outfile, clinicaldata):
 
         i = 0
         for row in reader:
-            if i % 100 == 0:
+            if i % POST_QUERIES_THRESHOLD == 0:
                 log.info(i)
             i = i + 1
 
