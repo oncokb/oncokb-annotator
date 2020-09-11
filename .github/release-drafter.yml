@@ -31,4 +31,4 @@ template: |
   ## Changes
   $CHANGES
   ## 🕵️‍♀️ Full commit logs
-  - https://github.com/oncokb/oncokb/compare/$PREVIOUS_TAG...v$NEXT_PATCH_VERSION
+  - https://github.com/oncokb/oncokb-annotator/compare/$PREVIOUS_TAG...v$NEXT_PATCH_VERSION
