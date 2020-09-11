@@ -647,7 +647,7 @@ def processclinicaldata(annotatedmutfiles, clinicalfile, outfile):
                     samplelevels[sample] = {}
                     sampleleveltreatments[sample] = {}
                     sampledrivers[sample] = []
-                    sampleactionablecount[sample] = 0
+                    sampleactionablecount[sample] = {}
 
                 hugo = row[ihugo]
                 alteration = row[ihgvs]
@@ -676,7 +676,7 @@ def processclinicaldata(annotatedmutfiles, clinicalfile, outfile):
                         sampleleveltreatments[sample][l].extend(row[il].split(","))
 
                         if not l.startswith('LEVEL_R'):
-                            sampleactionablecount[sample] += 1
+                            sampleactionablecount[sample][variant] = True
 
     outf = open(outfile, 'w+')
 
@@ -716,7 +716,7 @@ def processclinicaldata(annotatedmutfiles, clinicalfile, outfile):
 
             actionablecount = 0
             if sample in sampleactionablecount:
-                actionablecount = sampleactionablecount[sample]
+                actionablecount = len(sampleactionablecount[sample].keys())
 
             drivercount = 0
             drivermutations = ""
