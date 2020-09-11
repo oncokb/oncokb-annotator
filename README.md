@@ -4,6 +4,18 @@
 
 # oncokb-annotator <a href="https://ascopubs.org/doi/full/10.1200/PO.17.00011"><img src="https://img.shields.io/badge/DOI-10.1200%2FPO.17.00011-1c75cd" /></a>
 
+## Install dependencies
+For python 3
+```
+pip install -r requirements/common.txt -r requirements/pip3.txt
+```
+
+For python 2.7
+```
+pip install -r requirements/common.txt -r requirements/pip2.7.txt
+```
+
+## Usage
 Annotates variants in MAF with OncoKB annotation. Supports both python2 and python3.
 
 Please try 
