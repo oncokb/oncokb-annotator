@@ -60,11 +60,13 @@ def test_fake_gene_protein_change():
 def test_check_atypical_alts():
     queries = [
         ProteinChangeQuery('Other Biomarkers', 'MSI-H', 'Colorectal Cancer'),
-        ProteinChangeQuery('Other Biomarkers', 'MSI-H', 'Leukemia')
+        ProteinChangeQuery('Other Biomarkers', 'MSI-H', 'Leukemia'),
+        ProteinChangeQuery('TERT', 'Promoter Mutation', 'Bladder Cancer'),
+        ProteinChangeQuery('TERT', 'Promoter Mutation', 'Bladder Cancer', '5\'Flank')
     ]
 
     annotations = pull_mutation_info(queries)
-    assert len(annotations) == 2
+    assert len(annotations) == 4
 
     annotation = get_annotation_from_string(annotations[0])
     assert len(annotation) == 14
@@ -77,6 +79,16 @@ def test_check_atypical_alts():
     assert annotation[MUTATION_EFFECT_INDEX] == UNKNOWN
     assert annotation[ONCOGENIC_INDEX] == 'Oncogenic'
     assert annotation[HIGHEST_LEVEL_INDEX] == ''
+
+    annotation = get_annotation_from_string(annotations[2])
+    assert len(annotation) == 14
+    assert annotation[MUTATION_EFFECT_INDEX] == 'Gain-of-function'
+    assert annotation[ONCOGENIC_INDEX] == 'Oncogenic'
+    assert annotation[HIGHEST_LEVEL_INDEX] == ''
+
+    annotation_dup = get_annotation_from_string(annotations[3])
+    assert len(annotation_dup) == 14
+    assert annotation == annotation_dup
 
 
 @pytest.mark.skipif(ONCOKB_API_TOKEN in (None, ''), reason="oncokb api token required")

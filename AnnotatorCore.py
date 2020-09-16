@@ -224,7 +224,7 @@ conversiondict = {'Ala': 'A',
                   }
 conversionlist = conversiondict.keys()
 def conversion(hgvs):
-    threecharactersearch = re.findall('[a-zA-Z]{3}', hgvs, flags=re.IGNORECASE)
+    threecharactersearch = re.findall('[a-zA-Z]{3}\d+', hgvs, flags=re.IGNORECASE)
     if threecharactersearch:
         if any(letters.lower() in hgvs.lower() for letters in conversionlist):
             return replace_all(hgvs)
@@ -319,7 +319,7 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
             if hgvs.startswith('p.'):
                 hgvs = hgvs[2:]
             if hugo=='TERT' and (row[iconsequence]=='5\'Flank' or row[iconsequence]=='5\'UTR'):
-                hgvs = "Promoter Mutations"
+                hgvs = "Promoter Mutation"
 
             cancertype = defaultCancerType
             if icancertype >= 0:
