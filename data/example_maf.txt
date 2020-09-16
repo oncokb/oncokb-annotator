@@ -12,3 +12,4 @@ RB1	Nonsense_Mutation	TCGA-02-0033-01	p.Q702*	Gln702*
 TP53	Missense_Mutation	TCGA-02-0033-01	p.R248Q	Arg248Gln
 NF1	Splice_Site	TCGA-02-0033-01	p.X1445_splice	X1445_splice
 STK11	Missense_Mutation	TCGA-05-4417-01	p.H168R	His168Arg
+TERT	5'Flank	TCGA-05-4417-01		

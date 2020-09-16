@@ -31,27 +31,24 @@ def test_getgenesfromfusion():
 
 def test_conversion():
     # Test conversion case for case insensitivity
-    assert conversion('tyr') == 'Y'
-    assert conversion('tYr') == 'Y'
-    assert conversion('Tyr') == 'Y'
-    assert conversion('tyR') == 'Y'
-    assert conversion('TyR') == 'Y'
-    assert conversion('TYR') == 'Y'
-    assert conversion('tYR') == 'Y'
-    assert conversion('sEr') == 'S'
+    assert conversion('tyr100') == 'Y100'
+    assert conversion('tYr100') == 'Y100'
+    assert conversion('Tyr100') == 'Y100'
+    assert conversion('tyR100') == 'Y100'
+    assert conversion('TyR100') == 'Y100'
+    assert conversion('TYR100') == 'Y100'
+    assert conversion('tYR100') == 'Y100'
+    assert conversion('sEr100') == 'S100'
 
     # Test conversion only targets dict() keys
-    assert conversion('hot cup mop lap tap zip Thr cheetos hand') == 'hot cup mop lap tap zip T cheetos hand'
-    assert conversion('Ly s Lys Th r Thr X X As p Asp') == 'Ly s K Th r T X X As p D'
-
-    # Test conversion is not affected by numbers
-    assert conversion('8453 388 830 32 -2 -4 -23 2 -23 6 26 784 1 2 3 4 5 6 7 8 90 0') == '8453 388 830 32 -2 -4 -23 2 -23 6 26 784 1 2 3 4 5 6 7 8 90 0'
-    assert conversion('Val500Thr Asn 788 88 His 5H8is') == 'V500T N 788 88 H 5H8is'
+    assert conversion('hot100') == 'hot100'
 
     # Test conversion is not affected by empty string and whitespaces
     assert conversion('') == ''
-    assert conversion(' ') == ' '
-    assert conversion('Tyr Asn As n Ile Il e') == 'Y N As n I Il e'
+    assert conversion(' sEr100') == ' S100'
+    
+    # Test conversion when the string contains three letter but not supposed to be converted
+    assert conversion('Promoter') == 'Promoter'
 
 def test_replace_all():
     # Test replace_all for case insensitivity
