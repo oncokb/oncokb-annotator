@@ -236,15 +236,19 @@ def replace_all(hgvs):
     return pattern.sub(lambda m: conversiondict[m.group().capitalize()], hgvs)
 
 
-def append_annotation_to_file(outf, rows, annotations):
+def append_annotation_to_file(outf, ncol, rows, annotations):
     if len(rows) != len(annotations):
         log.error('The length of the rows and annotations do not match')
 
     for index, annotation in enumerate(annotations):
         row = rows[index]
         if annotation is not None:
-            row.append(annotation)
-        outf.write('\t'.join(row) + "\n")
+            row = row + annotation
+
+        row = padrow(row, ncol)
+        rowstr = '\t'.join(row)
+        rowstr = rowstr.encode('ascii', 'ignore').decode('ascii')
+        outf.write(rowstr + "\n")
 
 def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerType, cancerTypeMap,
                             retainonlycuratedgenes, annotatehotspots):
@@ -259,25 +263,30 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
         headers = readheaders(reader)
 
         ncols = headers["length"]
+        newncols = ncols
 
         outf.write(headers['^-$'])
 
         if annotatehotspots:
             outf.write("\tis-a-hotspot")
             outf.write("\tis-a-3d-hotspot")
+            newncols += 2
 
         outf.write("\t" + GENE_IN_ONCOKB_HEADER)
         outf.write("\t" + VARIANT_IN_ONCOKB_HEADER)
 
         outf.write("\tMUTATION_EFFECT")
         outf.write("\tONCOGENIC")
+        
+        newncols += 4
 
         for l in levels:
             outf.write('\t' + l)
+        newncols += len(levels)
 
         outf.write("\tHIGHEST_LEVEL")
-
         outf.write("\tCITATIONS")
+        newncols += 2
 
         outf.write("\n")
 
@@ -371,18 +380,18 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
                 rows.append(row)
             else:
                 # Include Gene in OncoKB and Variant in OncoKB
-                row.append(GENE_IN_ONCOKB_DEFAULT + '\t' + VARIANT_IN_ONCOKB_DEFAULT)
-                outf.write('\t'.join(row) + "\n")
+                append_annotation_to_file(outf, newncols, [row],
+                                          [[GENE_IN_ONCOKB_DEFAULT, VARIANT_IN_ONCOKB_DEFAULT]])
 
             if len(queries) == POST_QUERIES_THRESHOLD:
                 annotations = pull_mutation_info(queries)
-                append_annotation_to_file(outf, rows, annotations)
+                append_annotation_to_file(outf,newncols, rows, annotations)
                 queries = []
                 rows = []
 
         if len(queries) > 0:
             annotations = pull_mutation_info(queries)
-            append_annotation_to_file(outf, rows, annotations)
+            append_annotation_to_file(outf, newncols, rows, annotations)
 
 
     outf.close()
@@ -423,6 +432,7 @@ def processsv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap
             outf.write('\t' + l)
         outf.write("\tHIGHEST_LEVEL")
         outf.write("\tCITATIONS\n")
+        newcols = ncols + 6 + len(levels)
 
         igene1 = geIndexOfHeader(headers, ['GENE1'])
         igene2 = geIndexOfHeader(headers, ['GENE2'])
@@ -471,17 +481,17 @@ def processsv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap
 
                 if len(queries) == POST_QUERIES_THRESHOLD:
                     annotations = pull_structural_variant_info(queries)
-                    append_annotation_to_file(outf, rows, annotations)
+                    append_annotation_to_file(outf, newcols, rows, annotations)
                     queries = []
                     rows = []
             else:
                 # Include default Gene in OncoKB and Variant in OncoKB
-                row.append(GENE_IN_ONCOKB_DEFAULT + '\t' + VARIANT_IN_ONCOKB_DEFAULT)
-                outf.write('\t'.join(row) + "\n")
+                append_annotation_to_file(outf, newcols, [row],
+                                          [[GENE_IN_ONCOKB_DEFAULT, VARIANT_IN_ONCOKB_DEFAULT]])
 
         if len(queries) > 0:
             annotations = pull_structural_variant_info(queries)
-            append_annotation_to_file(outf, rows, annotations)
+            append_annotation_to_file(outf, newcols, rows, annotations)
     outf.close()
 
 
@@ -532,6 +542,7 @@ def processcnagisticdata(cnafile, outfile, previousoutfile, defaultCancerType, c
             outf.write('\t' + l)
         outf.write("\tHIGHEST_LEVEL")
         outf.write("\tCITATIONS\n")
+        ncols = 10 + len(levels)
 
         i = 0
         rows = []
@@ -564,17 +575,17 @@ def processcnagisticdata(cnafile, outfile, previousoutfile, defaultCancerType, c
 
                                 if len(queries) == POST_QUERIES_THRESHOLD:
                                     annotations = pull_cna_info(queries)
-                                    append_annotation_to_file(outf, rows, annotations)
+                                    append_annotation_to_file(outf, ncols, rows, annotations)
                                     rows = []
                                     queries = []
                             else:
                                 # Include Gene in OncoKB and Variant in OncoKB
-                                append_annotation_to_file(outf, [[sample, cancertype, hugo, cna_type]],
-                                                          [GENE_IN_ONCOKB_DEFAULT + '\t' + VARIANT_IN_ONCOKB_DEFAULT])
+                                append_annotation_to_file(outf, ncols, [[sample, cancertype, hugo, cna_type]],
+                                                          [[GENE_IN_ONCOKB_DEFAULT, VARIANT_IN_ONCOKB_DEFAULT]])
 
         if len(queries) > 0:
             annotations = pull_cna_info(queries)
-            append_annotation_to_file(outf, rows, annotations)
+            append_annotation_to_file(outf, ncols, rows, annotations)
 
     outf.close()
 
@@ -1229,8 +1240,6 @@ def process_oncokb_annotation(annotation):
     ret.append(gethighestsensitivitylevel(oncokbdata))
     ret.append(';'.join(oncokbdata['citations']))
 
-    ret = "\t".join(ret)
-    ret = ret.encode('ascii', 'ignore').decode('ascii')  # ignore unicode
     return ret
 
 
