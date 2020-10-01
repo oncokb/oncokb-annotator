@@ -1,15 +1,16 @@
-Hugo_Symbol	Variant_Classification	Tumor_Sample_Barcode	HGVSp_Short	HGVSp
-CUL1	Missense_Mutation	TCGA-A6-2672-01A-01W-0833-10	p.Y466S	Tyr466Ser
-AKT3	Nonsense_Mutation	TCGA-05-4417-01	p.E182*	Glu182*
-PIK3CA	Missense_Mutation	TCGA-02-0033-01	p.E542K	Glu542Lys
-FGFR3	Missense_Mutation	TCGA-05-4417-01	p.V271M	Val271Met
-EGFR	Missense_Mutation	TCGA-06-0155-01	p.H304Y	His304Tyr
-PTEN	Missense_Mutation	TCGA-06-0155-01	p.C136R	Cys136Arg
-FGFR2	Missense_Mutation	TCGA-02-0033-01	p.Q212K	Gln121Lys
-ATM	Missense_Mutation	TCGA-05-4417-01	p.L2890R	Leu2890Arg
-KRAS	Missense_Mutation	TCGA-05-4417-01	p.G12C	Gly12Cys
-RB1	Nonsense_Mutation	TCGA-02-0033-01	p.Q702*	Gln702*
-TP53	Missense_Mutation	TCGA-02-0033-01	p.R248Q	Arg248Gln
-NF1	Splice_Site	TCGA-02-0033-01	p.X1445_splice	X1445_splice
-STK11	Missense_Mutation	TCGA-05-4417-01	p.H168R	His168Arg
-TERT	5'Flank	TCGA-05-4417-01		
+NCBI_Build	Hugo_Symbol	Variant_Classification	Tumor_Sample_Barcode	HGVSp_Short	HGVSp	HGVSg	Chromosome	Start_Position	End_Position	Reference_Allele	Tumor_Seq_Allele1	Tumor_Seq_Allele2
+GRCh37	CUL1	Missense_Mutation	TCGA-A6-2672-01A-01W-0833-10	p.Y466S	Tyr466Ser							
+GRCh37	AKT3	Nonsense_Mutation	TCGA-05-4417-01	p.E182*	Glu182*							
+GRCh37	PIK3CA	Missense_Mutation	TCGA-02-0033-01	p.E542K	Glu542Lys	3:g.178936082G>A	3	178936082	178936082	G	A	A
+GRCh37	FGFR3	Missense_Mutation	TCGA-05-4417-01	p.V271M	Val271Met							
+GRCh37	EGFR	Missense_Mutation	TCGA-06-0155-01	p.H304Y	His304Tyr	7:g.55223543C>T	7	55223543	55223543	C	T	T
+GRCh37	PTEN	Missense_Mutation	TCGA-06-0155-01	p.C136R	Cys136Arg	10:g.89692922T>C	10	89692922	89692922	T	C	C
+GRCh37	FGFR2	Missense_Mutation	TCGA-02-0033-01	p.Q212K	Gln121Lys							
+GRCh37	ATM	Missense_Mutation	TCGA-05-4417-01	p.L2890R	Leu2890Arg							
+GRCh37	KRAS	Missense_Mutation	TCGA-05-4417-01	p.G12C	Gly12Cys	12:g.25398285C>A	12	25398285	25398285	C	A	A
+GRCh37	KRAS	Missense_Mutation	TCGA-05-4417-01	p.G12C	Gly12Cys	12:g.25398285_25398286delinsAG	12	25398285	25398286	CA	AG	AG
+GRCh37	RB1	Nonsense_Mutation	TCGA-02-0033-01	p.Q702*	Gln702*							
+GRCh37	TP53	Missense_Mutation	TCGA-02-0033-01	p.R248Q	Arg248Gln	17:g.7577538C>T	17	7577538	7577538	C	T	T
+GRCh37	NF1	Splice_Site	TCGA-02-0033-01	p.X1445_splice	X1445_splice	17:g.29586049G>A	17	29586049	29586049	G	A	A
+GRCh37	STK11	Missense_Mutation	TCGA-05-4417-01	p.H168R	His168Arg							
+GRCh37	TERT	5'Flank	TCGA-05-4417-01			5:g.1295228G>A	5	1295228	1295228	G	A	A

@@ -15,6 +15,7 @@ For python 2.7
 pip install -r requirements/common.txt -r requirements/pip2.7.txt
 ```
 
+
 ## Usage
 Annotates variants in MAF with OncoKB annotation. Supports both python2 and python3.
 
@@ -28,6 +29,17 @@ Please try
 Example input files are under [data](data). An example script is here: [example.sh](example.sh)
 
 We recommend processing VCF files by [vcf2maf](https://github.com/mskcc/vcf2maf/) with [MSK override isoforms](https://github.com/mskcc/vcf2maf/blob/master/data/isoform_overrides_at_mskcc) before using the `MafAnnotator` here.
+
+
+#### Annotate with HGVSp_Short, HGVSp, HGVSg or Genomic Change
+OncoKB MafAnnotator supports annotating the alteration with HGVSp, HGVSp_Short, HGVSg or Genomic Change format. Please specify the alteration query type with -q parameter.
+The acceptable values are HGVSp_Short(Default), HGVSp, HGVSg and Genomic_Change(case insensitive). Please see data/example.sh for examples.  
+
+For HGVSp_Short, the annotator takes alteration from column HGVSp_Short or Alteration  
+For HGVSp, the annotator takes alteration from column HGVSp or Alteration  
+For HGVSg, the annotator takes alteration from column HGVSg or Alteration  
+For Genomic_Change, the annotator takes genomic change from columns Chromosome, Start_Position, End_Position, Reference_Allele, Tumor_Seq_Allele1 and Tumor_Seq_Allele2  
+
 
 ## Levels of Evidence
 Introducing [Simplified OncoKB Levels of Evidence](https://www.oncokb.org/levels):
@@ -46,6 +58,7 @@ With the token listed under [OncoKB Account Settings Page](https://www.oncokb.or
 python ${FILE_NAME.py} -i ${INPUT_FILE} -o ${OUTPUT_FILE} -b ${ONCOKB_API_TOKEN}
 ``` 
 
+
 ## Columns added in the annotation files
 | Column          	| Possible Values                                                                                                                                                            	 	 	| Description                                                                                                                                                                                                                      	|
 |-----------------	|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------	|
@@ -57,12 +70,14 @@ python ${FILE_NAME.py} -i ${INPUT_FILE} -o ${OUTPUT_FILE} -b ${ONCOKB_API_TOKEN}
 | HIGHEST_LEVEL   	| LEVEL_1, LEVEL_2, LEVEL_3A, LEVEL_3B, LEVEL_4, LEVEL_R1, LEVEL_R2                                                                                                      	| The highest level across all available treatments giving a tumor type.                                                                                                                                                           	|
 | CITATIONS       	| PMID, Abstract, Website Link                                                                                                                                                 	 	 	| All citations related to a mutation/alteration                                                                                                                                                                                   	|
 
+
 ## FAQs
 - **How to get the subversion of the ensembl transcript ID?**  
   vcf2maf is designed to work with all Ensembl releases and reference genomes, that is the reason the subversion is not included. 
 
   Within MSK, we are using GRCh37 which corresponding to the Ensembl release 75. You can get the full list of versioned transcript IDs here http://grch37.ensembl.org/biomart/martview/40d921c6ab6956144cf6fb2e9a8ca093?VIRTUALSCHEMANAME=default&ATTRIBUTES=hsapiens_gene_ensembl.default.feature_page.ensembl_transcript_id_version&FILTERS=&VISIBLEPANEL=attributepanel.  
-  
+
+
 ## Questions?
 The best way is to send an email to contact@oncokb.org so all our team members can help.  
 We are also available on Gitter. [![Gitter](https://img.shields.io/gitter/room/oncokb/public-chat)](https://gitter.im/oncokb/public-chat)
