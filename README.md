@@ -32,12 +32,13 @@ We recommend processing VCF files by [vcf2maf](https://github.com/mskcc/vcf2maf/
 
 
 #### Annotate with HGVSp_Short, HGVSp, HGVSg or Genomic Change
-OncoKB MafAnnotator supports annotating the alteration with HGVSp, HGVSp_Short, HGVSg or Genomic Change format. Please specify the alteration query type with -q parameter.
-The acceptable values are HGVSp_Short(Default), HGVSp, HGVSg and Genomic_Change(case insensitive). Please see data/example.sh for examples.  
+OncoKB MafAnnotator supports annotating the alteration with HGVSp, HGVSp_Short, HGVSg or Genomic Change format. Please specify the query type with -q parameter.
+The acceptable values are HGVSp_Short, HGVSp, HGVSg and Genomic_Change(case-insensitive). Please see data/example.sh for examples.  
+If you do not specify query type, the MafAnnotator will try to figure out the query type based on the headers.  
 
-For HGVSp_Short, the annotator takes alteration from column HGVSp_Short or Alteration  
-For HGVSp, the annotator takes alteration from column HGVSp or Alteration  
-For HGVSg, the annotator takes alteration from column HGVSg or Alteration  
+For HGVSp_Short, the annotator takes alteration from the column HGVSp_Short or Alteration  
+For HGVSp, the annotator takes alteration from the column HGVSp or Alteration  
+For HGVSg, the annotator takes alteration from the column HGVSg or Alteration  
 For Genomic_Change, the annotator takes genomic change from columns Chromosome, Start_Position, End_Position, Reference_Allele, Tumor_Seq_Allele1 and Tumor_Seq_Allele2  
 
 
@@ -62,8 +63,8 @@ python ${FILE_NAME.py} -i ${INPUT_FILE} -o ${OUTPUT_FILE} -b ${ONCOKB_API_TOKEN}
 ## Columns added in the annotation files
 | Column          	| Possible Values                                                                                                                                                            	 	 	| Description                                                                                                                                                                                                                      	|
 |-----------------	|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------	|
-| GENE_IN_ONCOKB       	| TRUE, FLASE   	| Whether the gene has been curated by the OncoKB Team  	|
-| VARIANT_IN_ONCOKB     | TRUE, FLASE   	| Whether the vairant has been curated by the OncoKB Team. Note: when a variant does not exist, it may still have annotations.   	|
+| GENE_IN_ONCOKB       	| TRUE, FALSE   	| Whether the gene has been curated by the OncoKB Team  	|
+| VARIANT_IN_ONCOKB     | TRUE, FALSE   	| Whether the variant has been curated by the OncoKB Team. Note: when a variant does not exist, it may still have annotations.   	|
 | MUTATION_EFFECT 	| Gain-of-function, Likely Gain-of-function, Loss-of-function, Likely Loss-of-function, Switch-of-function, Likely Switch-of-function, Neutral, Likely Neutral, Inconclusive, Unknown 	| The biological effect of a mutation/alteration on the protein function that gives rise to changes in the biological properties of cells expressing the mutant/altered protein compared to cells expressing the wildtype protein. 	|
 | ONCOGENIC       	| Oncogenic, Likely Oncogenic, Likely Neutral, Inconclusive Unknown                                                                                                             	 	| In OncoKB, “oncogenic” is defined as “referring to the ability to induce or cause cancer” as described in the second edition of The Biology of Cancer by Robert Weinberg (2014).                                                 	|
 | LEVEL_*         	| LEVEL_1, LEVEL_2, LEVEL_3A, LEVEL_3B, LEVEL_4, LEVEL_R1, LEVEL_R2                                                                                                      	| The treatments available for a mutation/alteration giving a tumor type.                                                                                                                                                          	|
@@ -79,6 +80,6 @@ python ${FILE_NAME.py} -i ${INPUT_FILE} -o ${OUTPUT_FILE} -b ${ONCOKB_API_TOKEN}
 
 
 ## Questions?
-The best way is to send an email to contact@oncokb.org so all our team members can help.  
+The best way is to email contact@oncokb.org so all our team members can help.  
 We are also available on Gitter. [![Gitter](https://img.shields.io/gitter/room/oncokb/public-chat)](https://gitter.im/oncokb/public-chat)
 

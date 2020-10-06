@@ -27,11 +27,6 @@ csv.field_size_limit(sizeLimit) # for reading large files
 oncokbapiurl = "https://www.oncokb.org/api/v1"
 oncokbapibearertoken = ""
 
-class AlterationQueryType(Enum):
-    HGVSP_SHORT = 'HGVSP_SHORT'
-    HGVSP = 'HGVSP'
-    HGVSG = 'HGVSG'
-    GENOMIC_CHANGE = 'GENOMIC_CHANGE'
     
 def setoncokbbaseurl(u):
     global oncokbapiurl
@@ -104,10 +99,15 @@ mutationtypeconsequencemap = {
     'vIII deletion': ['any']
 }
 
+
 # column headers
 HUGO_HEADERS = ['HUGO_SYMBOL', 'HUGO_GENE_SYMBOL', 'GENE']
 CONSEQUENCE_HEADERS = ['VARIANT_CLASSIFICATION', 'MUTATION_TYPE']
-HGVS_HEADERS = ['ALTERATION', 'HGVSP_SHORT', 'HGVSP', 'AMINO_ACID_CHANGE', 'FUSION']
+ALTERATION_HEADER = 'ALTERATION'
+HGVSP_SHORT_HEADER = 'HGVSP_SHORT'
+HGVSP_HEADER = 'HGVSP'
+HGVSG_HEADER = 'HGVSG'
+HGVS_HEADERS = ['ALTERATION', HGVSP_SHORT_HEADER, HGVSP_HEADER, HGVSG_HEADER, 'AMINO_ACID_CHANGE', 'FUSION']
 SAMPLE_HEADERS = ['SAMPLE_ID', 'TUMOR_SAMPLE_BARCODE']
 PROTEIN_START_HEADERS = ['PROTEIN_START']
 PROTEIN_END_HEADERS = ['PROTEIN_END']
@@ -116,12 +116,28 @@ CANCER_TYPE_HEADERS = ['ONCOTREE_CODE', 'CANCER_TYPE']
 FUSION_HEADERS = ['FUSION']
 
 # columns for genomic change annotation
-GC_CHROMOSOME = ['CHROMOSOME']
-GC_START_POSITION = ['START_POSITION']
-GC_END_POSITION = ['END_POSITION']
-GC_REF_ALLELE = ['REFERENCE_ALLELE']
-GC_VAR_ALLELE_1 = ['TUMOR_SEQ_ALLELE1']
-GC_VAR_ALLELE_2 = ['TUMOR_SEQ_ALLELE2']
+GC_CHROMOSOME_HEADER = 'CHROMOSOME'
+GC_START_POSITION_HEADER = 'START_POSITION'
+GC_END_POSITION_HEADER = 'END_POSITION'
+GC_REF_ALLELE_HEADER = 'REFERENCE_ALLELE'
+GC_VAR_ALLELE_1_HEADER = 'TUMOR_SEQ_ALLELE1'
+GC_VAR_ALLELE_2_HEADER = 'TUMOR_SEQ_ALLELE2'
+GENOMIC_CHANGE_HEADERS = [GC_CHROMOSOME_HEADER, GC_START_POSITION_HEADER, GC_END_POSITION_HEADER, GC_REF_ALLELE_HEADER, GC_VAR_ALLELE_1_HEADER, GC_VAR_ALLELE_2_HEADER]
+
+
+class QueryType(Enum):
+    HGVSP_SHORT = 'HGVSP_SHORT'
+    HGVSP = 'HGVSP'
+    HGVSG = 'HGVSG'
+    GENOMIC_CHANGE = 'GENOMIC_CHANGE'
+
+
+REQUIRED_QUERY_TYPE_COLUMNS = {
+    QueryType.HGVSP_SHORT: [HGVSP_SHORT_HEADER],
+    QueryType.HGVSP: [HGVSP_HEADER],
+    QueryType.HGVSG: [HGVSG_HEADER],
+    QueryType.GENOMIC_CHANGE: GENOMIC_CHANGE_HEADERS
+}
 
 POST_QUERIES_THRESHOLD = 1000
 
@@ -280,9 +296,48 @@ def get_tumor_type_from_row(row, row_index, defaultCancerType, icancertype, canc
         # continue
     return cancertype
 
+def has_desired_headers(desired_headers, file_headers):
+    has_required_headers = True
+    for header in desired_headers:
+        if header not in file_headers:
+            has_required_headers = False
+            break
+
+    return has_required_headers
+
+
+def resolve_query_type(user_input_query_type, headers):
+    selected_query_type = None
+    if isinstance(user_input_query_type, QueryType):
+        selected_query_type = user_input_query_type
+
+    if selected_query_type is None and HGVSP_SHORT_HEADER in headers:
+        selected_query_type = QueryType.HGVSP_SHORT
+    if selected_query_type is None and HGVSP_HEADER in headers:
+        selected_query_type = QueryType.HGVSP
+    if selected_query_type is None and HGVSG_HEADER in headers:
+        selected_query_type = QueryType.HGVSG
+
+    if selected_query_type is None and has_desired_headers(REQUIRED_QUERY_TYPE_COLUMNS[QueryType.GENOMIC_CHANGE], headers):
+        selected_query_type = QueryType.GENOMIC_CHANGE
+
+    # default to HGVSp_Short
+    if selected_query_type is None:
+        selected_query_type = QueryType.HGVSP_SHORT
+
+    # check the file has required columns
+    if has_desired_headers(REQUIRED_QUERY_TYPE_COLUMNS[selected_query_type], headers) == False:
+        # when it is False, it will never be GENOMIC_CHANGE. For other types, we need to check whether ALTERATION column is available
+        if ALTERATION_HEADER not in headers:
+            raise Exception("The file does not have required columns "
+                            + ', '.join(REQUIRED_QUERY_TYPE_COLUMNS[user_input_query_type])
+                            + " for the query type: " + user_input_query_type.value)
+
+    return selected_query_type
+
 
 def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerType, cancerTypeMap,
-                            retainonlycuratedgenes, annotatehotspots, alteration_query_type):
+                            retainonlycuratedgenes, annotatehotspots, user_input_query_type):
     if annotatehotspots:
         inithotspots()
     if os.path.isfile(previousoutfile):
@@ -321,19 +376,23 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
 
         outf.write("\n")
 
-        if (alteration_query_type == AlterationQueryType.HGVSP_SHORT):
-            process_alteration(reader, outf, headers, ['HGVSP_SHORT', 'ALTERATION'], ncols, newncols, defaultCancerType,
+        query_type = resolve_query_type(user_input_query_type, headers)
+        if (query_type == QueryType.HGVSP_SHORT):
+            process_alteration(reader, outf, headers, [HGVSP_SHORT_HEADER, 'ALTERATION'], ncols, newncols,
+                               defaultCancerType,
                                cancerTypeMap,
                                retainonlycuratedgenes, annotatehotspots)
 
-        if (alteration_query_type == AlterationQueryType.HGVSP):
-            process_alteration(reader, outf, headers, ['HGVSP', 'ALTERATION'], ncols, newncols, defaultCancerType, cancerTypeMap,
+        if (query_type == QueryType.HGVSP):
+            process_alteration(reader, outf, headers, [HGVSP_HEADER, 'ALTERATION'], ncols, newncols, defaultCancerType,
+                               cancerTypeMap,
                                retainonlycuratedgenes, annotatehotspots)
 
-        if (alteration_query_type == AlterationQueryType.HGVSG):
-            process_hvsg(reader, outf, headers, ['HGVSG', 'ALTERATION'], ncols, newncols, defaultCancerType, cancerTypeMap)
+        if (query_type == QueryType.HGVSG):
+            process_hvsg(reader, outf, headers, [HGVSG_HEADER, 'ALTERATION'], ncols, newncols, defaultCancerType,
+                         cancerTypeMap)
 
-        if (alteration_query_type == AlterationQueryType.GENOMIC_CHANGE):
+        if (query_type == QueryType.GENOMIC_CHANGE):
             process_genomic_change(reader, outf, headers, ncols, newncols, defaultCancerType, cancerTypeMap)
 
     outf.close()
@@ -452,12 +511,12 @@ def get_var_allele(ref_allele, tumor_seq_allele1, tumor_seq_allele2):
     return tumor_seq_allele
 
 def process_genomic_change(maffilereader, outf, maf_headers, ncols, nannotationcols, defaultCancerType, cancerTypeMap):
-    ichromosome = geIndexOfHeader(maf_headers, GC_CHROMOSOME)
-    istart = geIndexOfHeader(maf_headers, GC_START_POSITION)
-    iend = geIndexOfHeader(maf_headers, GC_END_POSITION)
-    irefallele = geIndexOfHeader(maf_headers, GC_REF_ALLELE)
-    ivarallele1 = geIndexOfHeader(maf_headers, GC_VAR_ALLELE_1)
-    ivarallele2 = geIndexOfHeader(maf_headers, GC_VAR_ALLELE_2)
+    ichromosome = geIndexOfHeader(maf_headers, [GC_CHROMOSOME_HEADER])
+    istart = geIndexOfHeader(maf_headers, [GC_START_POSITION_HEADER])
+    iend = geIndexOfHeader(maf_headers, [GC_END_POSITION_HEADER])
+    irefallele = geIndexOfHeader(maf_headers, [GC_REF_ALLELE_HEADER])
+    ivarallele1 = geIndexOfHeader(maf_headers, [GC_VAR_ALLELE_1_HEADER])
+    ivarallele2 = geIndexOfHeader(maf_headers, [GC_VAR_ALLELE_2_HEADER])
 
     isample = geIndexOfHeader(maf_headers, SAMPLE_HEADERS)
     icancertype = geIndexOfHeader(maf_headers, CANCER_TYPE_HEADERS)

@@ -60,17 +60,18 @@ def main(argv):
 
     log.info('annotating %s ...' % argv.input_file)
 
-    user_input_alt_type = None
-    try:
-        user_input_alt_type = AlterationQueryType[argv.alteration_query_type.upper()]
-    except KeyError:
-        # if not isinstance(argv.alteration_query_type.upper(), AlterationQueryType):
-        print(
-            'alteration query type is not acceptable. Only the following allows(case insensitive): HGVSp_Short, HGVSp, HGVSg, Genomic_Change')
-        raise
+    user_input_query_type = None
+    if argv.query_type is not None:
+        try:
+            user_input_query_type = QueryType[argv.query_type.upper()]
+        except KeyError:
+            # if not isinstance(argv.query_type.upper(), QueryType):
+            print(
+                'alteration query type is not acceptable. Only the following allows(case insensitive): HGVSp_Short, HGVSp, HGVSg, Genomic_Change')
+            raise
 
     processalterationevents(argv.input_file, argv.output_file, argv.previous_result_file, argv.default_cancer_type,
-                            cancertypemap, True, argv.annotate_hotspots, user_input_alt_type)
+                            cancertypemap, True, argv.annotate_hotspots, user_input_query_type)
 
     log.info('done!')
 
@@ -88,7 +89,7 @@ if __name__ == "__main__":
     parser.add_argument('-a', dest='annotate_hotspots', action="store_true", default=False)
     parser.add_argument('-v', dest='cancer_hotspots_base_url', default='', type=str)
     parser.add_argument('-b', dest='oncokb_api_bearer_token', default='', type=str)
-    parser.add_argument('-q', dest='alteration_query_type', default=AlterationQueryType.HGVSP_SHORT.value, type=str)
+    parser.add_argument('-q', dest='query_type', default=None, type=str)
     parser.set_defaults(func=main)
 
     args = parser.parse_args()
