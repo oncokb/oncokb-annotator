@@ -3,6 +3,7 @@
 import argparse
 from AnnotatorCore import *
 import logging
+
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger('MafAnnotator')
 
@@ -28,7 +29,7 @@ def main(argv):
             '    1) ONCOTREE_CODE in clinical data file\n'
             '    2) ONCOTREE_CODE exist in MAF\n'
             '    3) default tumor type (-t)\n'
-            'Alteration query type only allows the following values (case insensitive):\n'
+            'Query type only allows the following values (case-insensitive):\n'
             '    - HGVSp_Short \n'
             '      It reads from column HGVSp_Short or Alteration\n'
             '    - HGVSp\n'
