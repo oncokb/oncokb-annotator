@@ -13,7 +13,7 @@ def main(argv):
         log.info(
             '\n'
             'MafAnnotator.py -i <input MAF file> -o <output MAF file> [-p previous results] [-c <input clinical file>] '
-            '[-s sample list filter] [-t <default tumor type>] [-u oncokb-base-url] [-b oncokb api bear token] [-a] [-q alteration query type]\n'
+            '[-s sample list filter] [-t <default tumor type>] [-u oncokb-base-url] [-b oncokb api bear token] [-a] [-q query type]\n'
             'Essential MAF columns (case insensitive):\n'
             '    HUGO_SYMBOL: Hugo gene symbol\n'
             '    VARIANT_CLASSIFICATION: Translational effect of variant allele\n'
@@ -68,7 +68,7 @@ def main(argv):
         except KeyError:
             # if not isinstance(argv.query_type.upper(), QueryType):
             print(
-                'alteration query type is not acceptable. Only the following allows(case insensitive): HGVSp_Short, HGVSp, HGVSg, Genomic_Change')
+                'Query type is not acceptable. Only the following allows(case insensitive): HGVSp_Short, HGVSp, HGVSg, Genomic_Change')
             raise
 
     processalterationevents(argv.input_file, argv.output_file, argv.previous_result_file, argv.default_cancer_type,
