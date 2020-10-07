@@ -107,7 +107,7 @@ ALTERATION_HEADER = 'ALTERATION'
 HGVSP_SHORT_HEADER = 'HGVSP_SHORT'
 HGVSP_HEADER = 'HGVSP'
 HGVSG_HEADER = 'HGVSG'
-HGVS_HEADERS = ['ALTERATION', HGVSP_SHORT_HEADER, HGVSP_HEADER, HGVSG_HEADER, 'AMINO_ACID_CHANGE', 'FUSION']
+HGVS_HEADERS = [ALTERATION_HEADER, HGVSP_SHORT_HEADER, HGVSP_HEADER, HGVSG_HEADER, 'AMINO_ACID_CHANGE', 'FUSION']
 SAMPLE_HEADERS = ['SAMPLE_ID', 'TUMOR_SAMPLE_BARCODE']
 PROTEIN_START_HEADERS = ['PROTEIN_START']
 PROTEIN_END_HEADERS = ['PROTEIN_END']
@@ -378,18 +378,18 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
 
         query_type = resolve_query_type(user_input_query_type, headers)
         if (query_type == QueryType.HGVSP_SHORT):
-            process_alteration(reader, outf, headers, [HGVSP_SHORT_HEADER, 'ALTERATION'], ncols, newncols,
+            process_alteration(reader, outf, headers, [HGVSP_SHORT_HEADER, ALTERATION_HEADER], ncols, newncols,
                                defaultCancerType,
                                cancerTypeMap,
                                retainonlycuratedgenes, annotatehotspots)
 
         if (query_type == QueryType.HGVSP):
-            process_alteration(reader, outf, headers, [HGVSP_HEADER, 'ALTERATION'], ncols, newncols, defaultCancerType,
+            process_alteration(reader, outf, headers, [HGVSP_HEADER, ALTERATION_HEADER], ncols, newncols, defaultCancerType,
                                cancerTypeMap,
                                retainonlycuratedgenes, annotatehotspots)
 
         if (query_type == QueryType.HGVSG):
-            process_hvsg(reader, outf, headers, [HGVSG_HEADER, 'ALTERATION'], ncols, newncols, defaultCancerType,
+            process_hvsg(reader, outf, headers, [HGVSG_HEADER, ALTERATION_HEADER], ncols, newncols, defaultCancerType,
                          cancerTypeMap)
 
         if (query_type == QueryType.GENOMIC_CHANGE):
