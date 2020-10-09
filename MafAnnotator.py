@@ -3,15 +3,17 @@
 import argparse
 from AnnotatorCore import *
 import logging
+
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger('MafAnnotator')
 
 
 def main(argv):
     if argv.help:
-        log.info('\n'
+        log.info(
+            '\n'
             'MafAnnotator.py -i <input MAF file> -o <output MAF file> [-p previous results] [-c <input clinical file>] '
-            '[-s sample list filter] [-t <default tumor type>] [-u oncokb-base-url] [-b oncokb_api_bear_token] [-a]\n'
+            '[-s sample list filter] [-t <default tumor type>] [-u oncokb-base-url] [-b oncokb api bear token] [-a] [-q query type]\n'
             'Essential MAF columns (case insensitive):\n'
             '    HUGO_SYMBOL: Hugo gene symbol\n'
             '    VARIANT_CLASSIFICATION: Translational effect of variant allele\n'
@@ -27,8 +29,18 @@ def main(argv):
             '    1) ONCOTREE_CODE in clinical data file\n'
             '    2) ONCOTREE_CODE exist in MAF\n'
             '    3) default tumor type (-t)\n'
+            'Query type only allows the following values (case-insensitive):\n'
+            '    - HGVSp_Short \n'
+            '      It reads from column HGVSp_Short or Alteration\n'
+            '    - HGVSp\n'
+            '      It reads from column HGVSp or Alteration\n'
+            '    - HGVSg\n'
+            '      It reads from column HGVSg or Alteration\n'
+            '    - Genomic_Change\n'
+            '      It reads from columns Chromosome, Start_Position, End_Position, Reference_Allele, Tumor_Seq_Allele1 and Tumor_Seq_Allele2  \n'
             'Default OncoKB base url is https://www.oncokb.org.\n'
-            'Use -a to annotate mutational hotspots\n')
+            'Use -a to annotate mutational hotspots\n'
+        )
         sys.exit()
     if argv.input_file == '' or argv.output_file == '' or argv.oncokb_api_bearer_token == '':
         log.info('For help: python MafAnnotator.py -h')
@@ -48,7 +60,19 @@ def main(argv):
         readCancerTypes(argv.input_clinical_file, cancertypemap)
 
     log.info('annotating %s ...' % argv.input_file)
-    processalterationevents(argv.input_file, argv.output_file, argv.previous_result_file, argv.default_cancer_type, cancertypemap, True, argv.annotate_hotspots)
+
+    user_input_query_type = None
+    if argv.query_type is not None:
+        try:
+            user_input_query_type = QueryType[argv.query_type.upper()]
+        except KeyError:
+            # if not isinstance(argv.query_type.upper(), QueryType):
+            print(
+                'Query type is not acceptable. Only the following allows(case insensitive): HGVSp_Short, HGVSp, HGVSg, Genomic_Change')
+            raise
+
+    processalterationevents(argv.input_file, argv.output_file, argv.previous_result_file, argv.default_cancer_type,
+                            cancertypemap, True, argv.annotate_hotspots, user_input_query_type)
 
     log.info('done!')
 
@@ -66,6 +90,7 @@ if __name__ == "__main__":
     parser.add_argument('-a', dest='annotate_hotspots', action="store_true", default=False)
     parser.add_argument('-v', dest='cancer_hotspots_base_url', default='', type=str)
     parser.add_argument('-b', dest='oncokb_api_bearer_token', default='', type=str)
+    parser.add_argument('-q', dest='query_type', default=None, type=str)
     parser.set_defaults(func=main)
 
     args = parser.parse_args()

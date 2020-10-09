@@ -1,1 +1,2 @@
 matplotlib==2.2.4
+enum34==1.1.10

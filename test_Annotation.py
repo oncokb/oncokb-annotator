@@ -31,7 +31,7 @@ def test_check_protein_change():
         ProteinChangeQuery('BRAF', 'V600E', 'Colorectal Cancer')
     ]
 
-    annotations = pull_mutation_info(queries)
+    annotations = pull_protein_change_info(queries)
     assert len(annotations) == 1
 
     annotation = annotations[0]
@@ -47,7 +47,7 @@ def test_fake_gene_protein_change():
         ProteinChangeQuery('test1', 'V600E', 'Ovarian Cancer')
     ]
 
-    annotations = pull_mutation_info(queries)
+    annotations = pull_protein_change_info(queries)
     fake_gene_one_query_suite(annotations)
 
 
@@ -60,7 +60,7 @@ def test_check_atypical_alts():
         ProteinChangeQuery('TERT', 'Promoter Mutation', 'Bladder Cancer', '5\'Flank')
     ]
 
-    annotations = pull_mutation_info(queries)
+    annotations = pull_protein_change_info(queries)
     assert len(annotations) == 4
 
     annotation = annotations[0]
@@ -85,6 +85,64 @@ def test_check_atypical_alts():
     assert len(annotation_dup) == 14
     assert annotation == annotation_dup
 
+
+@pytest.mark.skipif(ONCOKB_API_TOKEN in (None, ''), reason="oncokb api token required")
+def test_check_hgvsg():
+    queries = [
+        HGVSgQuery('12:g.25398285C>A', 'LUAD'),
+        HGVSgQuery('12:g.25398285_25398286delinsAG', 'LUAD'),
+        HGVSgQuery('5:g.1295228G>A', 'LUAD'),
+    ]
+
+    annotations = pull_hgvsg_info(queries)
+    assert len(annotations) == 3
+
+    annotation = annotations[0]
+    assert len(annotation) == 14
+    assert annotation[MUTATION_EFFECT_INDEX] == 'Gain-of-function'
+    assert annotation[ONCOGENIC_INDEX] == 'Oncogenic'
+    assert annotation[HIGHEST_LEVEL_INDEX] == 'LEVEL_3A'
+
+    annotation = annotations[1]
+    assert len(annotation) == 14
+    assert annotation[MUTATION_EFFECT_INDEX] == 'Gain-of-function'
+    assert annotation[ONCOGENIC_INDEX] == 'Oncogenic'
+    assert annotation[HIGHEST_LEVEL_INDEX] == 'LEVEL_3A'
+
+    annotation = annotations[2]
+    assert len(annotation) == 14
+    assert annotation[MUTATION_EFFECT_INDEX] == 'Gain-of-function'
+    assert annotation[ONCOGENIC_INDEX] == 'Oncogenic'
+    assert annotation[HIGHEST_LEVEL_INDEX] == ''
+
+@pytest.mark.skipif(ONCOKB_API_TOKEN in (None, ''), reason="oncokb api token required")
+def test_check_genomic_change():
+    queries = [
+        GenomicChangeQuery('12', '25398285', '25398285', 'C', 'A', 'LUAD'),
+        GenomicChangeQuery('12', '25398285', '25398286', 'CA', 'AG', 'LUAD'),
+        GenomicChangeQuery('5', '1295228', '1295228', 'G', 'A', 'LUAD'),
+    ]
+
+    annotations = pull_genomic_change_info(queries)
+    assert len(annotations) == 3
+
+    annotation = annotations[0]
+    assert len(annotation) == 14
+    assert annotation[MUTATION_EFFECT_INDEX] == 'Gain-of-function'
+    assert annotation[ONCOGENIC_INDEX] == 'Oncogenic'
+    assert annotation[HIGHEST_LEVEL_INDEX] == 'LEVEL_3A'
+
+    annotation = annotations[1]
+    assert len(annotation) == 14
+    assert annotation[MUTATION_EFFECT_INDEX] == 'Gain-of-function'
+    assert annotation[ONCOGENIC_INDEX] == 'Oncogenic'
+    assert annotation[HIGHEST_LEVEL_INDEX] == 'LEVEL_3A'
+
+    annotation = annotations[2]
+    assert len(annotation) == 14
+    assert annotation[MUTATION_EFFECT_INDEX] == 'Gain-of-function'
+    assert annotation[ONCOGENIC_INDEX] == 'Oncogenic'
+    assert annotation[HIGHEST_LEVEL_INDEX] == ''
 
 @pytest.mark.skipif(ONCOKB_API_TOKEN in (None, ''), reason="oncokb api token required")
 def test_check_fusions():

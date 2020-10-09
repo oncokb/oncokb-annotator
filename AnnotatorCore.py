@@ -2,6 +2,8 @@
 import json
 import sys
 import csv
+from enum import Enum
+
 import requests
 import os.path
 import logging
@@ -25,6 +27,7 @@ csv.field_size_limit(sizeLimit) # for reading large files
 oncokbapiurl = "https://www.oncokb.org/api/v1"
 oncokbapibearertoken = ""
 
+    
 def setoncokbbaseurl(u):
     global oncokbapiurl
     oncokbapiurl = u.rstrip('/') + '/api/v1'
@@ -96,16 +99,45 @@ mutationtypeconsequencemap = {
     'vIII deletion': ['any']
 }
 
+
 # column headers
 HUGO_HEADERS = ['HUGO_SYMBOL', 'HUGO_GENE_SYMBOL', 'GENE']
 CONSEQUENCE_HEADERS = ['VARIANT_CLASSIFICATION', 'MUTATION_TYPE']
-HGVS_HEADERS = ['ALTERATION', 'HGVSP_SHORT', 'HGVSP', 'AMINO_ACID_CHANGE', 'FUSION']
+ALTERATION_HEADER = 'ALTERATION'
+HGVSP_SHORT_HEADER = 'HGVSP_SHORT'
+HGVSP_HEADER = 'HGVSP'
+HGVSG_HEADER = 'HGVSG'
+HGVS_HEADERS = [ALTERATION_HEADER, HGVSP_SHORT_HEADER, HGVSP_HEADER, HGVSG_HEADER, 'AMINO_ACID_CHANGE', 'FUSION']
 SAMPLE_HEADERS = ['SAMPLE_ID', 'TUMOR_SAMPLE_BARCODE']
-START_HEADERS = ['PROTEIN_START']
-END_HEADERS = ['PROTEIN_END']
+PROTEIN_START_HEADERS = ['PROTEIN_START']
+PROTEIN_END_HEADERS = ['PROTEIN_END']
 PROTEIN_POSITION_HEADERS = ['PROTEIN_POSITION']
 CANCER_TYPE_HEADERS = ['ONCOTREE_CODE', 'CANCER_TYPE']
 FUSION_HEADERS = ['FUSION']
+
+# columns for genomic change annotation
+GC_CHROMOSOME_HEADER = 'CHROMOSOME'
+GC_START_POSITION_HEADER = 'START_POSITION'
+GC_END_POSITION_HEADER = 'END_POSITION'
+GC_REF_ALLELE_HEADER = 'REFERENCE_ALLELE'
+GC_VAR_ALLELE_1_HEADER = 'TUMOR_SEQ_ALLELE1'
+GC_VAR_ALLELE_2_HEADER = 'TUMOR_SEQ_ALLELE2'
+GENOMIC_CHANGE_HEADERS = [GC_CHROMOSOME_HEADER, GC_START_POSITION_HEADER, GC_END_POSITION_HEADER, GC_REF_ALLELE_HEADER, GC_VAR_ALLELE_1_HEADER, GC_VAR_ALLELE_2_HEADER]
+
+
+class QueryType(Enum):
+    HGVSP_SHORT = 'HGVSP_SHORT'
+    HGVSP = 'HGVSP'
+    HGVSG = 'HGVSG'
+    GENOMIC_CHANGE = 'GENOMIC_CHANGE'
+
+
+REQUIRED_QUERY_TYPE_COLUMNS = {
+    QueryType.HGVSP_SHORT: [HGVSP_SHORT_HEADER],
+    QueryType.HGVSP: [HGVSP_HEADER],
+    QueryType.HGVSG: [HGVSG_HEADER],
+    QueryType.GENOMIC_CHANGE: GENOMIC_CHANGE_HEADERS
+}
 
 POST_QUERIES_THRESHOLD = 1000
 
@@ -236,7 +268,7 @@ def replace_all(hgvs):
     return pattern.sub(lambda m: conversiondict[m.group().capitalize()], hgvs)
 
 
-def append_annotation_to_file(outf, ncol, rows, annotations):
+def append_annotation_to_file(outf, ncols, rows, annotations):
     if len(rows) != len(annotations):
         log.error('The length of the rows and annotations do not match')
 
@@ -245,13 +277,67 @@ def append_annotation_to_file(outf, ncol, rows, annotations):
         if annotation is not None:
             row = row + annotation
 
-        row = padrow(row, ncol)
+        row = padrow(row, ncols)
         rowstr = '\t'.join(row)
         rowstr = rowstr.encode('ascii', 'ignore').decode('ascii')
         outf.write(rowstr + "\n")
 
+
+def get_tumor_type_from_row(row, row_index, defaultCancerType, icancertype, cancerTypeMap, sample):
+    cancertype = defaultCancerType
+    if icancertype >= 0:
+        row_cancer_type = get_cell_content(row, icancertype)
+        if row_cancer_type is not None:
+            cancertype = row_cancer_type
+    if sample in cancerTypeMap:
+        cancertype = cancerTypeMap[sample]
+    if cancertype == "":
+        log.info("Cancer type for the sample should be defined for a more accurate result\nline %s: %s\n" % (row_index, row))
+        # continue
+    return cancertype
+
+def has_desired_headers(desired_headers, file_headers):
+    has_required_headers = True
+    for header in desired_headers:
+        if header not in file_headers:
+            has_required_headers = False
+            break
+
+    return has_required_headers
+
+
+def resolve_query_type(user_input_query_type, headers):
+    selected_query_type = None
+    if isinstance(user_input_query_type, QueryType):
+        selected_query_type = user_input_query_type
+
+    if selected_query_type is None and HGVSP_SHORT_HEADER in headers:
+        selected_query_type = QueryType.HGVSP_SHORT
+    if selected_query_type is None and HGVSP_HEADER in headers:
+        selected_query_type = QueryType.HGVSP
+    if selected_query_type is None and HGVSG_HEADER in headers:
+        selected_query_type = QueryType.HGVSG
+
+    if selected_query_type is None and has_desired_headers(REQUIRED_QUERY_TYPE_COLUMNS[QueryType.GENOMIC_CHANGE], headers):
+        selected_query_type = QueryType.GENOMIC_CHANGE
+
+    # default to HGVSp_Short
+    if selected_query_type is None:
+        selected_query_type = QueryType.HGVSP_SHORT
+
+    # check the file has required columns
+    if has_desired_headers(REQUIRED_QUERY_TYPE_COLUMNS[selected_query_type], headers) == False:
+        # when it is False, it will never be GENOMIC_CHANGE. For other types, we need to check whether ALTERATION column is available
+        if ALTERATION_HEADER not in headers:
+            raise Exception("The file does not have required columns "
+                            + ', '.join(REQUIRED_QUERY_TYPE_COLUMNS[user_input_query_type])
+                            + " for the query type: " + user_input_query_type.value)
+
+    return selected_query_type
+
+
 def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerType, cancerTypeMap,
-                            retainonlycuratedgenes, annotatehotspots):
+                            retainonlycuratedgenes, annotatehotspots, user_input_query_type):
     if annotatehotspots:
         inithotspots()
     if os.path.isfile(previousoutfile):
@@ -263,7 +349,7 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
         headers = readheaders(reader)
 
         ncols = headers["length"]
-        newncols = ncols
+        newncols = 0
 
         outf.write(headers['^-$'])
 
@@ -290,113 +376,235 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
 
         outf.write("\n")
 
-        ihugo = geIndexOfHeader(headers, HUGO_HEADERS)
-        iconsequence = geIndexOfHeader(headers, CONSEQUENCE_HEADERS)
-        ihgvs = geIndexOfHeader(headers, HGVS_HEADERS)
-        isample = geIndexOfHeader(headers, SAMPLE_HEADERS)
-        istart = geIndexOfHeader(headers, START_HEADERS)
-        iend = geIndexOfHeader(headers, END_HEADERS)
-        iproteinpos = geIndexOfHeader(headers, PROTEIN_POSITION_HEADERS)
-        icancertype = geIndexOfHeader(headers, CANCER_TYPE_HEADERS)
+        query_type = resolve_query_type(user_input_query_type, headers)
+        if (query_type == QueryType.HGVSP_SHORT):
+            process_alteration(reader, outf, headers, [HGVSP_SHORT_HEADER, ALTERATION_HEADER], ncols, newncols,
+                               defaultCancerType,
+                               cancerTypeMap,
+                               retainonlycuratedgenes, annotatehotspots)
 
-        posp = re.compile('[0-9]+')
+        if (query_type == QueryType.HGVSP):
+            process_alteration(reader, outf, headers, [HGVSP_HEADER, ALTERATION_HEADER], ncols, newncols, defaultCancerType,
+                               cancerTypeMap,
+                               retainonlycuratedgenes, annotatehotspots)
 
-        i = 0
-        queries = []
-        rows = []
-        for row in reader:
-            i = i + 1
+        if (query_type == QueryType.HGVSG):
+            process_hvsg(reader, outf, headers, [HGVSG_HEADER, ALTERATION_HEADER], ncols, newncols, defaultCancerType,
+                         cancerTypeMap)
 
-            if i % POST_QUERIES_THRESHOLD == 0:
-                log.info(i)
-
-            row = padrow(row, ncols)
-
-            sample = getsampleid(row[isample])
-            if sampleidsfilter and sample not in sampleidsfilter:
-                continue
-
-            hugo = row[ihugo]
-
-            consequence = None
-            if iconsequence >= 0 and row[iconsequence] != 'NULL':
-                consequence = row[iconsequence]
-            if consequence in mutationtypeconsequencemap:
-                consequence = '%2B'.join(mutationtypeconsequencemap[consequence])
-
-            hgvs = row[ihgvs]
-            if hgvs.startswith('p.'):
-                hgvs = hgvs[2:]
-            if hugo=='TERT' and (row[iconsequence]=='5\'Flank' or row[iconsequence]=='5\'UTR'):
-                hgvs = "Promoter Mutation"
-
-            cancertype = defaultCancerType
-            if icancertype >= 0:
-                cancertype = row[icancertype]
-            if sample in cancerTypeMap:
-                cancertype = cancerTypeMap[sample]
-            if cancertype == "":
-                log.info("Cancer type for the sample should be defined for a more accurate result\nline %s: %s\n" % (i, row))
-                # continue
-
-            hgvs = conversion(hgvs)
-
-            start = None
-            if istart >= 0 and row[istart] != 'NULL' and row[istart] != '':
-                start = row[istart]
-
-            end = None
-            if iend >= 0 and row[iend] != 'NULL' and row[iend] != '':
-                end = row[iend]
-
-            if start is None and iproteinpos >= 0 and row[iproteinpos] != "" and row[iproteinpos] != "." and row[iproteinpos] != "-":
-                poss = row[iproteinpos].split('/')[0].split('-')
-                try:
-                    if len(poss) > 0:
-                        start = int(poss[0])
-                    if len(poss) == 2:
-                        end = int(poss[1])
-                except ValueError:
-                    log.info("position wrong at line %s: %s" % (str(i), row[iproteinpos]))
-
-            if start is None and consequence == "missense_variant":
-                m = posp.search(hgvs)
-                if m:
-                    start = m.group()
-
-            if start is not None and end is None:
-                end = start
-
-            if annotatehotspots:
-                hotspot = pullsinglehotspots(hugo, hgvs, None, consequence, start, end, cancertype)
-                row.append(hotspot)
-
-                _3dhotspot = pull3dhotspots(hugo, hgvs, None, consequence, start, end, cancertype)
-                row.append(_3dhotspot)
-
-            if not retainonlycuratedgenes or hugo in curatedgenes:
-                query = ProteinChangeQuery(hugo, hgvs, cancertype, consequence, start, end)
-                queries.append(query)
-                rows.append(row)
-            else:
-                # Include Gene in OncoKB and Variant in OncoKB
-                append_annotation_to_file(outf, newncols, [row],
-                                          [[GENE_IN_ONCOKB_DEFAULT, VARIANT_IN_ONCOKB_DEFAULT]])
-
-            if len(queries) == POST_QUERIES_THRESHOLD:
-                annotations = pull_mutation_info(queries)
-                append_annotation_to_file(outf,newncols, rows, annotations)
-                queries = []
-                rows = []
-
-        if len(queries) > 0:
-            annotations = pull_mutation_info(queries)
-            append_annotation_to_file(outf, newncols, rows, annotations)
-
+        if (query_type == QueryType.GENOMIC_CHANGE):
+            process_genomic_change(reader, outf, headers, ncols, newncols, defaultCancerType, cancerTypeMap)
 
     outf.close()
 
 
+def get_cell_content(row, index, return_empty_string=False):
+    if index >= 0 and row[index] != 'NULL' and row[index] != '':
+        return row[index]
+    elif return_empty_string:
+        return ''
+    else:
+        return None
+
+def process_alteration(maffilereader, outf, maf_headers, alteration_column_names, ncols, nannotationcols, defaultCancerType, cancerTypeMap,
+                       retainonlycuratedgenes, annotatehotspots):
+    ihugo = geIndexOfHeader(maf_headers, HUGO_HEADERS)
+    iconsequence = geIndexOfHeader(maf_headers, CONSEQUENCE_HEADERS)
+    ihgvs = geIndexOfHeader(maf_headers, alteration_column_names)
+    isample = geIndexOfHeader(maf_headers, SAMPLE_HEADERS)
+    istart = geIndexOfHeader(maf_headers, PROTEIN_START_HEADERS)
+    iend = geIndexOfHeader(maf_headers, PROTEIN_END_HEADERS)
+    iproteinpos = geIndexOfHeader(maf_headers, PROTEIN_POSITION_HEADERS)
+    icancertype = geIndexOfHeader(maf_headers, CANCER_TYPE_HEADERS)
+
+    posp = re.compile('[0-9]+')
+
+    i = 0
+    queries = []
+    rows = []
+    for row in maffilereader:
+        i = i + 1
+
+        if i % POST_QUERIES_THRESHOLD == 0:
+            log.info(i)
+
+        row = padrow(row, ncols)
+
+        sample = getsampleid(row[isample])
+        if sampleidsfilter and sample not in sampleidsfilter:
+            continue
+
+        hugo = row[ihugo]
+
+        consequence = get_cell_content(row, iconsequence)
+        if consequence in mutationtypeconsequencemap:
+            consequence = '%2B'.join(mutationtypeconsequencemap[consequence])
+
+        hgvs = row[ihgvs]
+        if hgvs.startswith('p.'):
+            hgvs = hgvs[2:]
+
+        cancertype = get_tumor_type_from_row(row, i, defaultCancerType, icancertype, cancerTypeMap, sample)
+
+        hgvs = conversion(hgvs)
+
+        start = get_cell_content(row, istart)
+
+        end = get_cell_content(row, iend)
+
+        if start is None and iproteinpos >= 0 and row[iproteinpos] != "" and row[iproteinpos] != "." and row[iproteinpos] != "-":
+            poss = row[iproteinpos].split('/')[0].split('-')
+            try:
+                if len(poss) > 0:
+                    start = int(poss[0])
+                if len(poss) == 2:
+                    end = int(poss[1])
+            except ValueError:
+                log.info("position wrong at line %s: %s" % (str(i), row[iproteinpos]))
+
+        if start is None and consequence == "missense_variant":
+            m = posp.search(hgvs)
+            if m:
+                start = m.group()
+
+        if start is not None and end is None:
+            end = start
+
+        if annotatehotspots:
+            hotspot = pullsinglehotspots(hugo, hgvs, None, consequence, start, end, cancertype)
+            row.append(hotspot)
+
+            _3dhotspot = pull3dhotspots(hugo, hgvs, None, consequence, start, end, cancertype)
+            row.append(_3dhotspot)
+
+        if not retainonlycuratedgenes or hugo in curatedgenes:
+            query = ProteinChangeQuery(hugo, hgvs, cancertype, consequence, start, end)
+            queries.append(query)
+            rows.append(row)
+        else:
+            # Include Gene in OncoKB and Variant in OncoKB
+            append_annotation_to_file(outf, ncols + nannotationcols, [row],
+                                      [[GENE_IN_ONCOKB_DEFAULT, VARIANT_IN_ONCOKB_DEFAULT]])
+
+        if len(queries) == POST_QUERIES_THRESHOLD:
+            annotations = pull_protein_change_info(queries)
+            append_annotation_to_file(outf, ncols + nannotationcols, rows, annotations)
+            queries = []
+            rows = []
+
+    if len(queries) > 0:
+        annotations = pull_protein_change_info(queries)
+        append_annotation_to_file(outf, ncols + nannotationcols, rows, annotations)
+
+# this method is from genome-nexus annotation-tools
+# https://github.com/genome-nexus/annotation-tools/blob/53ff7f7fe673e961282f871ebc78d2ecc0831919/standardize_mutation_data.py
+def get_var_allele(ref_allele, tumor_seq_allele1, tumor_seq_allele2):
+    # set the general tumor_seq_allele as the first non-ref allele encountered
+    # this will be used to resolve the variant classification and variant type
+    # if there are no tumor alleles that do not match the ref allele then use empty string
+    # in the event that this happens then there might be something wrong with the data itself
+    try:
+        tumor_seq_allele = [allele for allele in [tumor_seq_allele1, tumor_seq_allele2] if allele != ref_allele][0]
+    except:
+        tumor_seq_allele = ""
+    
+    return tumor_seq_allele
+
+def process_genomic_change(maffilereader, outf, maf_headers, ncols, nannotationcols, defaultCancerType, cancerTypeMap):
+    ichromosome = geIndexOfHeader(maf_headers, [GC_CHROMOSOME_HEADER])
+    istart = geIndexOfHeader(maf_headers, [GC_START_POSITION_HEADER])
+    iend = geIndexOfHeader(maf_headers, [GC_END_POSITION_HEADER])
+    irefallele = geIndexOfHeader(maf_headers, [GC_REF_ALLELE_HEADER])
+    ivarallele1 = geIndexOfHeader(maf_headers, [GC_VAR_ALLELE_1_HEADER])
+    ivarallele2 = geIndexOfHeader(maf_headers, [GC_VAR_ALLELE_2_HEADER])
+
+    isample = geIndexOfHeader(maf_headers, SAMPLE_HEADERS)
+    icancertype = geIndexOfHeader(maf_headers, CANCER_TYPE_HEADERS)
+
+    posp = re.compile('[0-9]+')
+
+    i = 0
+    queries = []
+    rows = []
+    for row in maffilereader:
+        i = i + 1
+
+        if i % POST_QUERIES_THRESHOLD == 0:
+            log.info(i)
+
+        row = padrow(row, ncols)
+
+        sample = getsampleid(row[isample])
+        if sampleidsfilter and sample not in sampleidsfilter:
+            continue
+
+        cancertype = get_tumor_type_from_row(row, i, defaultCancerType, icancertype, cancerTypeMap, sample)
+
+        chromosome = get_cell_content(row, ichromosome, True)
+        start = get_cell_content(row, istart, True)
+        end = get_cell_content(row, iend, True)
+        ref_allele = get_cell_content(row, irefallele, True)
+        var_allele_1 = get_cell_content(row, ivarallele1, True)
+        var_allele_2 = get_cell_content(row, ivarallele2, True)
+        var_allele = get_var_allele(ref_allele, var_allele_1, var_allele_2)
+
+        query = GenomicChangeQuery(chromosome, start, end, ref_allele, var_allele, cancertype)
+        queries.append(query)
+        rows.append(row)
+
+        if len(queries) == POST_QUERIES_THRESHOLD:
+            annotations = pull_genomic_change_info(queries)
+            append_annotation_to_file(outf, ncols+nannotationcols, rows, annotations)
+            queries = []
+            rows = []
+
+    if len(queries) > 0:
+        annotations = pull_genomic_change_info(queries)
+        append_annotation_to_file(outf, ncols+nannotationcols, rows, annotations)
+
+def process_hvsg(maffilereader, outf, maf_headers, alteration_column_names, ncols, nannotationcols, defaultCancerType, cancerTypeMap):
+    ihgvsg = geIndexOfHeader(maf_headers, alteration_column_names)
+    isample = geIndexOfHeader(maf_headers, SAMPLE_HEADERS)
+    icancertype = geIndexOfHeader(maf_headers, CANCER_TYPE_HEADERS)
+
+    i = 0
+    queries = []
+    rows = []
+    for row in maffilereader:
+        i = i + 1
+
+        if i % POST_QUERIES_THRESHOLD == 0:
+            log.info(i)
+
+        row = padrow(row, ncols)
+
+        sample = getsampleid(row[isample])
+        if sampleidsfilter and sample not in sampleidsfilter:
+            continue
+
+        hgvsg = get_cell_content(row, ihgvsg)
+
+        cancertype = get_tumor_type_from_row(row, i, defaultCancerType, icancertype, cancerTypeMap, sample)
+
+        if hgvsg is None:
+            append_annotation_to_file(outf, ncols + nannotationcols, [row],
+                                      [[GENE_IN_ONCOKB_DEFAULT, VARIANT_IN_ONCOKB_DEFAULT]])
+        else:
+            query = HGVSgQuery(hgvsg, cancertype)
+            queries.append(query)
+            rows.append(row)
+
+        if len(queries) == POST_QUERIES_THRESHOLD:
+            annotations = pull_hgvsg_info(queries)
+            append_annotation_to_file(outf, ncols+nannotationcols, rows, annotations)
+            queries = []
+            rows = []
+
+    if len(queries) > 0:
+        annotations = pull_hgvsg_info(queries)
+        append_annotation_to_file(outf, ncols+nannotationcols, rows, annotations)
+
+    
 def getgenesfromfusion(fusion, nameregex=None):
     GENES_REGEX = "([A-Za-z\d]+-[A-Za-z\d]+)" if nameregex is None else nameregex
     searchresult = re.search(GENES_REGEX, fusion, flags=re.IGNORECASE)
@@ -465,14 +673,7 @@ def processsv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap
                 fusion = row[ifusion]
                 gene1, gene2 = getgenesfromfusion(fusion, nameregex)
 
-            cancertype = defaultCancerType
-            if icancertype >= 0:
-                cancertype = row[icancertype]
-            if sample in cancerTypeMap:
-                cancertype = cancerTypeMap[sample]
-            if cancertype == "":
-                log.info("Cancer type for the sample should be defined for a more accurate result\nline %s: %s\n" % (i, row))
-                # continueor
+            cancertype = get_tumor_type_from_row(row, i, defaultCancerType, icancertype, cancerTypeMap, sample)
 
 
             if not retainonlycuratedgenes or gene1 in curatedgenes or gene2 in curatedgenes:
@@ -632,8 +833,8 @@ def processclinicaldata(annotatedmutfiles, clinicalfile, outfile):
             iconsequence = geIndexOfHeader(headers, CONSEQUENCE_HEADERS)
             ihgvs = geIndexOfHeader(headers, HGVS_HEADERS)
             isample = geIndexOfHeader(headers, SAMPLE_HEADERS)
-            istart = geIndexOfHeader(headers, START_HEADERS)
-            iend = geIndexOfHeader(headers, END_HEADERS)
+            istart = geIndexOfHeader(headers, PROTEIN_START_HEADERS)
+            iend = geIndexOfHeader(headers, PROTEIN_END_HEADERS)
             icancertype = geIndexOfHeader(headers, CANCER_TYPE_HEADERS)
             # imutationeffect = headers['MUTATION_EFFECT']
             ioncogenic = headers['ONCOGENIC']
@@ -886,55 +1087,6 @@ def plotclinicalactionability(annotatedclinicalfile, outfile, parameters):
         # plt.show()
         f.savefig(outfile, bbox_inches='tight')
 
-def processmutationdata(mutfile, outfile, clinicaldata):
-    outf = open(outfile, 'w+')
-    with open(mutfile, 'rU') as infile:
-        reader = csv.reader(infile, delimiter='\t')
-        headers = readheaders(reader)
-
-        ihugo = geIndexOfHeader(headers, HUGO_HEADERS)
-        iconsequence = geIndexOfHeader(headers, CONSEQUENCE_HEADERS)
-        ihgvs = geIndexOfHeader(headers, HGVS_HEADERS)
-        isample = geIndexOfHeader(headers, SAMPLE_HEADERS)
-        istart = geIndexOfHeader(headers, START_HEADERS)
-        iend = geIndexOfHeader(headers, END_HEADERS)
-
-        i = 0
-        for row in reader:
-            if i % POST_QUERIES_THRESHOLD == 0:
-                log.info(i)
-            i = i + 1
-
-            sample = row[isample]
-            hugo = row[ihugo]
-            consequence = row[iconsequence]
-            if consequence == 'NULL' or consequence == '':
-                consequence = None
-            if consequence in mutationtypeconsequencemap:
-                consequence = '%2B'.join(mutationtypeconsequencemap[consequence])
-
-            hgvs = row[ihgvs]
-            if hgvs.startswith('p.'):
-                hgvs = hgvs[2:]
-            cancertype = None
-
-            start = row[istart]
-            if start == 'NULL' or start == '':
-                start = None
-
-            end = row[iend]
-            if end == 'NULL' or end == '':
-                end = None
-
-            if sample in clinicaldata:
-                cancertype = clinicaldata[sample]
-            oncokbevidences = pull_mutation_info(hugo, hgvs, consequence, start, end, cancertype)
-            annotatedrow = [hugo, consequence, start, end, hgvs, sample, cancertype, oncokbevidences]
-            outf.write('\t'.join(annotatedrow) + "\n")
-
-    outf.close()
-
-
 oncokbcache = {}
 
 
@@ -948,8 +1100,8 @@ def cacheannotated(annotatedfile, defaultCancerType, cancerTypeMap):
             iconsequence = geIndexOfHeader(headers, CONSEQUENCE_HEADERS)
             ihgvs = geIndexOfHeader(headers, HGVS_HEADERS)
             isample = geIndexOfHeader(headers, SAMPLE_HEADERS)
-            istart = geIndexOfHeader(headers, START_HEADERS)
-            iend = geIndexOfHeader(headers, END_HEADERS)
+            istart = geIndexOfHeader(headers, PROTEIN_START_HEADERS)
+            iend = geIndexOfHeader(headers, PROTEIN_END_HEADERS)
             icancertype = geIndexOfHeader(headers, CANCER_TYPE_HEADERS)
             imutationeffect = headers['MUTATION_EFFECT']
             icitations = headers['CITATIONS']
@@ -1052,9 +1204,22 @@ class ProteinChangeQuery:
     def __init__(self, hugo, hgvs, cancertype, consequence=None, start=None, end=None):
         self.gene = Gene(hugo)
         self.alteration = hgvs
-        self.consequence = consequence
-        self.proteinStart = start
-        self.proteinEnd = end
+        if consequence is not None:
+            self.consequence = consequence
+        if start is not None:
+            self.proteinStart = start
+        if end is not None:
+            self.proteinEnd = end
+        self.tumorType = cancertype
+
+class HGVSgQuery:
+    def __init__(self, hgvsg, cancertype):
+        self.hgvsg = hgvsg
+        self.tumorType = cancertype
+
+class GenomicChangeQuery:
+    def __init__(self, chromosome, start, end, ref_allele, var_allele, cancertype):
+        self.genomicLocation = ','.join([chromosome, start, end, ref_allele, var_allele])
         self.tumorType = cancertype
 
 class CNAQuery:
@@ -1079,8 +1244,8 @@ class StructuralVariantQuery:
         self.tumorType = cancertype
 
 
-def pull_mutation_info(queries):
-    url = 'https://www.oncokb.org/api/v1/annotate/mutations/byProteinChange'
+def pull_protein_change_info(queries):
+    url = oncokbapiurl + '/annotate/mutations/byProteinChange'
     response = makeoncokbpostrequest(url, queries)
     annotation = []
     if response.status_code == 200:
@@ -1097,6 +1262,55 @@ def pull_mutation_info(queries):
                 geturl += '&proteinStart=' + str(query.proteinStart)
             if query.proteinEnd and query.proteinEnd != '\\N' and query.proteinEnd != 'NULL' and query.proteinEnd != '':
                 geturl += '&proteinEnd=' + str(query.proteinEnd)
+            getresponse = makeoncokbgetrequest(geturl)
+            if getresponse.status_code == 200:
+                annotation.append(getresponse.json())
+            else:
+                # if the api call fails, we should still push a None into the list
+                # to keep the same length of the queries
+                annotation.append(None)
+
+    processed_annotation = []
+    for query_annotation in annotation:
+        processed_annotation.append(process_oncokb_annotation(query_annotation))
+    return processed_annotation
+
+
+def pull_hgvsg_info(queries):
+    url = oncokbapiurl + '/annotate/mutations/byHGVSg'
+    response = makeoncokbpostrequest(url, queries)
+    annotation = []
+    if response.status_code == 200:
+        annotation = response.json()
+    else:
+        for query in queries:
+            geturl = url + '?'
+            geturl += 'hgvsg=' + query.hgvsg
+            geturl += '&tumorType=' + query.tumorType
+            getresponse = makeoncokbgetrequest(geturl)
+            if getresponse.status_code == 200:
+                annotation.append(getresponse.json())
+            else:
+                # if the api call fails, we should still push a None into the list
+                # to keep the same length of the queries
+                annotation.append(None)
+
+    processed_annotation = []
+    for query_annotation in annotation:
+        processed_annotation.append(process_oncokb_annotation(query_annotation))
+    return processed_annotation
+
+def pull_genomic_change_info(queries):
+    url = oncokbapiurl + '/annotate/mutations/byGenomicChange'
+    response = makeoncokbpostrequest(url, queries)
+    annotation = []
+    if response.status_code == 200:
+        annotation = response.json()
+    else:
+        for query in queries:
+            geturl = url + '?'
+            geturl += 'genomicLocation=' + query.genomicLocation
+            geturl += '&tumorType=' + query.tumorType
             getresponse = makeoncokbgetrequest(geturl)
             if getresponse.status_code == 200:
                 annotation.append(getresponse.json())
