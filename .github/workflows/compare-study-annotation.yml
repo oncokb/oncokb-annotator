@@ -1,6 +1,6 @@
 # This workflow will install Python dependencies, run annotation against the master annotation for a particular study
 
-name: Compare annotation
+name: Compare Study Annotation
 
 on:
   push:
