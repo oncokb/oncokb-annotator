@@ -42,6 +42,33 @@ def test_check_protein_change():
 
 
 @pytest.mark.skipif(ONCOKB_API_TOKEN in (None, ''), reason="oncokb api token required")
+def test_reference_genome():
+    queries = [
+        GenomicChangeQuery('7', '140453136', '140453136', 'A', 'T', 'LUAD', ReferenceGenome.GRCH37),
+        GenomicChangeQuery('7', '140753336', '140753336', 'A', 'T', 'LUAD', ReferenceGenome.GRCH38)
+    ]
+
+    annotations = pull_protein_change_info(queries)
+    assert len(annotations) == 2
+
+    annotation37 = annotations[0]
+    annotation38 = annotations[1]
+    assert annotation37 == annotation38
+
+    queries = [
+        ProteinChangeQuery('MYD88', 'M232T', 'Ovarian Cancer', ReferenceGenome.GRCH37),
+        ProteinChangeQuery('MYD88', 'M219T', 'Ovarian Cancer', ReferenceGenome.GRCH38)
+    ]
+
+    annotations = pull_protein_change_info(queries)
+    assert len(annotations) == 2
+
+    annotation37 = annotations[0]
+    annotation38 = annotations[1]
+    assert annotation37 == annotation38
+
+
+@pytest.mark.skipif(ONCOKB_API_TOKEN in (None, ''), reason="oncokb api token required")
 def test_fake_gene_protein_change():
     queries = [
         ProteinChangeQuery('test1', 'V600E', 'Ovarian Cancer')
@@ -57,7 +84,7 @@ def test_check_atypical_alts():
         ProteinChangeQuery('Other Biomarkers', 'MSI-H', 'Colorectal Cancer'),
         ProteinChangeQuery('Other Biomarkers', 'MSI-H', 'Leukemia'),
         ProteinChangeQuery('TERT', 'Promoter Mutation', 'Bladder Cancer'),
-        ProteinChangeQuery('TERT', 'Promoter Mutation', 'Bladder Cancer', '5\'Flank')
+        ProteinChangeQuery('TERT', 'Promoter Mutation', 'Bladder Cancer', None, '5\'Flank')
     ]
 
     annotations = pull_protein_change_info(queries)

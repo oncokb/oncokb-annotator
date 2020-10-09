@@ -31,7 +31,7 @@ Example input files are under [data](data). An example script is here: [example.
 We recommend processing VCF files by [vcf2maf](https://github.com/mskcc/vcf2maf/) with [MSK override isoforms](https://github.com/mskcc/vcf2maf/blob/master/data/isoform_overrides_at_mskcc) before using the `MafAnnotator` here.
 
 
-#### Annotate with HGVSp_Short, HGVSp, HGVSg or Genomic Change
+### Annotate with HGVSp_Short, HGVSp, HGVSg or Genomic Change
 OncoKB MafAnnotator supports annotating the alteration with HGVSp, HGVSp_Short, HGVSg or Genomic Change format. Please specify the query type with -q parameter.
 The acceptable values are HGVSp_Short, HGVSp, HGVSg and Genomic_Change(case-insensitive). Please see data/example.sh for examples.  
 If you do not specify query type, the MafAnnotator will try to figure out the query type based on the headers.  
@@ -40,6 +40,18 @@ For HGVSp_Short, the annotator takes alteration from the column HGVSp_Short or A
 For HGVSp, the annotator takes alteration from the column HGVSp or Alteration  
 For HGVSg, the annotator takes alteration from the column HGVSg or Alteration  
 For Genomic_Change, the annotator takes genomic change from columns Chromosome, Start_Position, End_Position, Reference_Allele, Tumor_Seq_Allele1 and Tumor_Seq_Allele2  
+
+
+### Annotate with different reference genomes (GRCh37, GRCh38)
+OncoKB MafAnnotator supports annotating the alteration with reference genome GRCh37 and GRCh38.  
+
+The annotator will get the reference genome from MAF file column NCBI_Build or Reference_Genome.  
+If there is no reference genome specified in the file, we will use the default reference genome through -r parameter.  
+
+You can specify the default reference genome using -r parameter (This is only applicable to MafAnnotator.py).  
+The acceptable values are GRCh37, GRCh38 (case in-sensitive).  
+
+If both values are not specified, the annotator will use OncoKB default reference genome which is GRCh37.
 
 
 ## Levels of Evidence
