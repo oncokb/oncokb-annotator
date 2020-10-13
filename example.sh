@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 IMAF="data/example_maf.txt"
 OMAF="data/example_maf.oncokb.txt"
+IMAF38="data/example_maf_grch38.txt"
+OMAF38="data/example_maf_grch38.oncokb.txt"
 OMAFHGVSPSHORT="data/example_maf_hgsp_short.oncokb.txt"
 OMAFHGVSP="data/example_maf_hgsp.oncokb.txt"
 OMAFHGVSG="data/example_maf_hgsg.oncokb.txt"
@@ -22,6 +24,8 @@ python MafAnnotator.py -i $IMAF -o $OMAFHGVSPSHORT -c $IC -b $TOKEN -q hgvsp_sho
 python MafAnnotator.py -i $IMAF -o $OMAFHGVSP -c $IC -b $TOKEN -q hgvsp
 python MafAnnotator.py -i $IMAF -o $OMAFHGVSG -c $IC -b $TOKEN -q hgvsg
 python MafAnnotator.py -i $IMAF -o $OMAFGC -c $IC -b $TOKEN -q genomic_change
+
+python MafAnnotator.py -i $IMAF38 -o $OMAF38 -c $IC -b $TOKEN
 
 python MafAnnotator.py -i $IATYPICALALT -o $OATYPICALALT -c $IC -b $TOKEN
 

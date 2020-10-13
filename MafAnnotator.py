@@ -13,7 +13,7 @@ def main(argv):
         log.info(
             '\n'
             'MafAnnotator.py -i <input MAF file> -o <output MAF file> [-p previous results] [-c <input clinical file>] '
-            '[-s sample list filter] [-t <default tumor type>] [-u oncokb-base-url] [-b oncokb api bear token] [-a] [-q query type]\n'
+            '[-s sample list filter] [-t <default tumor type>] [-u oncokb-base-url] [-b oncokb api bear token] [-a] [-q query type] [-r defauult reference genome]\n'
             'Essential MAF columns (case insensitive):\n'
             '    HUGO_SYMBOL: Hugo gene symbol\n'
             '    VARIANT_CLASSIFICATION: Translational effect of variant allele\n'
@@ -30,7 +30,7 @@ def main(argv):
             '    2) ONCOTREE_CODE exist in MAF\n'
             '    3) default tumor type (-t)\n'
             'Query type only allows the following values (case-insensitive):\n'
-            '    - HGVSp_Short \n'
+            '    - HGVSp_Short\n'
             '      It reads from column HGVSp_Short or Alteration\n'
             '    - HGVSp\n'
             '      It reads from column HGVSp or Alteration\n'
@@ -38,6 +38,9 @@ def main(argv):
             '      It reads from column HGVSg or Alteration\n'
             '    - Genomic_Change\n'
             '      It reads from columns Chromosome, Start_Position, End_Position, Reference_Allele, Tumor_Seq_Allele1 and Tumor_Seq_Allele2  \n'
+            'Reference Genome only allows the following values(case-insensitive):\n'
+            '    - GRCh37\n'
+            '      GRCh38\n'
             'Default OncoKB base url is https://www.oncokb.org.\n'
             'Use -a to annotate mutational hotspots\n'
         )
@@ -66,13 +69,21 @@ def main(argv):
         try:
             user_input_query_type = QueryType[argv.query_type.upper()]
         except KeyError:
-            # if not isinstance(argv.query_type.upper(), QueryType):
-            print(
+            log.error(
                 'Query type is not acceptable. Only the following allows(case insensitive): HGVSp_Short, HGVSp, HGVSg, Genomic_Change')
             raise
 
+    default_reference_genome = None
+    if argv.default_reference_genome is not None:
+        try:
+            default_reference_genome = ReferenceGenome[argv.default_reference_genome.upper()]
+        except KeyError:
+            log.error(
+                'Reference genome is not acceptable. Only the following allows(case insensitive): GRCh37, GRCh38')
+            raise
+
     processalterationevents(argv.input_file, argv.output_file, argv.previous_result_file, argv.default_cancer_type,
-                            cancertypemap, True, argv.annotate_hotspots, user_input_query_type)
+                            cancertypemap, True, argv.annotate_hotspots, user_input_query_type, default_reference_genome)
 
     log.info('done!')
 
@@ -91,6 +102,7 @@ if __name__ == "__main__":
     parser.add_argument('-v', dest='cancer_hotspots_base_url', default='', type=str)
     parser.add_argument('-b', dest='oncokb_api_bearer_token', default='', type=str)
     parser.add_argument('-q', dest='query_type', default=None, type=str)
+    parser.add_argument('-r', dest='default_reference_genome', default=None, type=str)
     parser.set_defaults(func=main)
 
     args = parser.parse_args()

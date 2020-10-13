@@ -114,6 +114,7 @@ PROTEIN_END_HEADERS = ['PROTEIN_END']
 PROTEIN_POSITION_HEADERS = ['PROTEIN_POSITION']
 CANCER_TYPE_HEADERS = ['ONCOTREE_CODE', 'CANCER_TYPE']
 FUSION_HEADERS = ['FUSION']
+REFERENCE_GENOME_HEADERS = ['NCBI_BUILD', 'REFERENCE_GENOME']
 
 # columns for genomic change annotation
 GC_CHROMOSOME_HEADER = 'CHROMOSOME'
@@ -130,6 +131,11 @@ class QueryType(Enum):
     HGVSP = 'HGVSP'
     HGVSG = 'HGVSG'
     GENOMIC_CHANGE = 'GENOMIC_CHANGE'
+
+
+class ReferenceGenome(Enum):
+    GRCH37 = 'GRCh37'
+    GRCH38 = 'GRCh38'
 
 
 REQUIRED_QUERY_TYPE_COLUMNS = {
@@ -336,8 +342,19 @@ def resolve_query_type(user_input_query_type, headers):
     return selected_query_type
 
 
+def get_reference_genome_from_row(row_reference_genome, default_reference_genome):
+    reference_genome = default_reference_genome
+    if row_reference_genome is not None and row_reference_genome != '':
+        try:
+            reference_genome = ReferenceGenome[row_reference_genome.upper()]
+        except KeyError:
+            log.warning('Unexpected reference genome, only GRCh37 and GRCh38 are supported.' + (
+                ' Use default.' if default_reference_genome is not None else ' Skipping.'))
+    return reference_genome
+
+
 def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerType, cancerTypeMap,
-                            retainonlycuratedgenes, annotatehotspots, user_input_query_type):
+                            retainonlycuratedgenes, annotatehotspots, user_input_query_type, default_reference_genome):
     if annotatehotspots:
         inithotspots()
     if os.path.isfile(previousoutfile):
@@ -381,19 +398,19 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
             process_alteration(reader, outf, headers, [HGVSP_SHORT_HEADER, ALTERATION_HEADER], ncols, newncols,
                                defaultCancerType,
                                cancerTypeMap,
-                               retainonlycuratedgenes, annotatehotspots)
+                               retainonlycuratedgenes, annotatehotspots, default_reference_genome)
 
         if (query_type == QueryType.HGVSP):
             process_alteration(reader, outf, headers, [HGVSP_HEADER, ALTERATION_HEADER], ncols, newncols, defaultCancerType,
                                cancerTypeMap,
-                               retainonlycuratedgenes, annotatehotspots)
+                               retainonlycuratedgenes, annotatehotspots, default_reference_genome)
 
         if (query_type == QueryType.HGVSG):
             process_hvsg(reader, outf, headers, [HGVSG_HEADER, ALTERATION_HEADER], ncols, newncols, defaultCancerType,
-                         cancerTypeMap)
+                         cancerTypeMap, default_reference_genome)
 
         if (query_type == QueryType.GENOMIC_CHANGE):
-            process_genomic_change(reader, outf, headers, ncols, newncols, defaultCancerType, cancerTypeMap)
+            process_genomic_change(reader, outf, headers, ncols, newncols, defaultCancerType, cancerTypeMap, default_reference_genome)
 
     outf.close()
 
@@ -407,7 +424,7 @@ def get_cell_content(row, index, return_empty_string=False):
         return None
 
 def process_alteration(maffilereader, outf, maf_headers, alteration_column_names, ncols, nannotationcols, defaultCancerType, cancerTypeMap,
-                       retainonlycuratedgenes, annotatehotspots):
+                       retainonlycuratedgenes, annotatehotspots, default_reference_genome):
     ihugo = geIndexOfHeader(maf_headers, HUGO_HEADERS)
     iconsequence = geIndexOfHeader(maf_headers, CONSEQUENCE_HEADERS)
     ihgvs = geIndexOfHeader(maf_headers, alteration_column_names)
@@ -416,6 +433,7 @@ def process_alteration(maffilereader, outf, maf_headers, alteration_column_names
     iend = geIndexOfHeader(maf_headers, PROTEIN_END_HEADERS)
     iproteinpos = geIndexOfHeader(maf_headers, PROTEIN_POSITION_HEADERS)
     icancertype = geIndexOfHeader(maf_headers, CANCER_TYPE_HEADERS)
+    ireferencegenome= geIndexOfHeader(maf_headers, REFERENCE_GENOME_HEADERS)
 
     posp = re.compile('[0-9]+')
 
@@ -445,6 +463,7 @@ def process_alteration(maffilereader, outf, maf_headers, alteration_column_names
             hgvs = hgvs[2:]
 
         cancertype = get_tumor_type_from_row(row, i, defaultCancerType, icancertype, cancerTypeMap, sample)
+        reference_genome = get_reference_genome_from_row(get_cell_content(row, ireferencegenome), default_reference_genome)
 
         hgvs = conversion(hgvs)
 
@@ -478,7 +497,7 @@ def process_alteration(maffilereader, outf, maf_headers, alteration_column_names
             row.append(_3dhotspot)
 
         if not retainonlycuratedgenes or hugo in curatedgenes:
-            query = ProteinChangeQuery(hugo, hgvs, cancertype, consequence, start, end)
+            query = ProteinChangeQuery(hugo, hgvs, cancertype, reference_genome, consequence, start, end)
             queries.append(query)
             rows.append(row)
         else:
@@ -510,7 +529,7 @@ def get_var_allele(ref_allele, tumor_seq_allele1, tumor_seq_allele2):
     
     return tumor_seq_allele
 
-def process_genomic_change(maffilereader, outf, maf_headers, ncols, nannotationcols, defaultCancerType, cancerTypeMap):
+def process_genomic_change(maffilereader, outf, maf_headers, ncols, nannotationcols, defaultCancerType, cancerTypeMap, default_reference_genome):
     ichromosome = geIndexOfHeader(maf_headers, [GC_CHROMOSOME_HEADER])
     istart = geIndexOfHeader(maf_headers, [GC_START_POSITION_HEADER])
     iend = geIndexOfHeader(maf_headers, [GC_END_POSITION_HEADER])
@@ -520,6 +539,7 @@ def process_genomic_change(maffilereader, outf, maf_headers, ncols, nannotationc
 
     isample = geIndexOfHeader(maf_headers, SAMPLE_HEADERS)
     icancertype = geIndexOfHeader(maf_headers, CANCER_TYPE_HEADERS)
+    ireferencegenome= geIndexOfHeader(maf_headers, REFERENCE_GENOME_HEADERS)
 
     posp = re.compile('[0-9]+')
 
@@ -539,6 +559,7 @@ def process_genomic_change(maffilereader, outf, maf_headers, ncols, nannotationc
             continue
 
         cancertype = get_tumor_type_from_row(row, i, defaultCancerType, icancertype, cancerTypeMap, sample)
+        reference_genome = get_reference_genome_from_row(get_cell_content(row, ireferencegenome), default_reference_genome)
 
         chromosome = get_cell_content(row, ichromosome, True)
         start = get_cell_content(row, istart, True)
@@ -548,7 +569,7 @@ def process_genomic_change(maffilereader, outf, maf_headers, ncols, nannotationc
         var_allele_2 = get_cell_content(row, ivarallele2, True)
         var_allele = get_var_allele(ref_allele, var_allele_1, var_allele_2)
 
-        query = GenomicChangeQuery(chromosome, start, end, ref_allele, var_allele, cancertype)
+        query = GenomicChangeQuery(chromosome, start, end, ref_allele, var_allele, cancertype, reference_genome)
         queries.append(query)
         rows.append(row)
 
@@ -562,10 +583,11 @@ def process_genomic_change(maffilereader, outf, maf_headers, ncols, nannotationc
         annotations = pull_genomic_change_info(queries)
         append_annotation_to_file(outf, ncols+nannotationcols, rows, annotations)
 
-def process_hvsg(maffilereader, outf, maf_headers, alteration_column_names, ncols, nannotationcols, defaultCancerType, cancerTypeMap):
+def process_hvsg(maffilereader, outf, maf_headers, alteration_column_names, ncols, nannotationcols, defaultCancerType, cancerTypeMap, default_reference_genome):
     ihgvsg = geIndexOfHeader(maf_headers, alteration_column_names)
     isample = geIndexOfHeader(maf_headers, SAMPLE_HEADERS)
     icancertype = geIndexOfHeader(maf_headers, CANCER_TYPE_HEADERS)
+    ireferencegenome= geIndexOfHeader(maf_headers, REFERENCE_GENOME_HEADERS)
 
     i = 0
     queries = []
@@ -585,12 +607,13 @@ def process_hvsg(maffilereader, outf, maf_headers, alteration_column_names, ncol
         hgvsg = get_cell_content(row, ihgvsg)
 
         cancertype = get_tumor_type_from_row(row, i, defaultCancerType, icancertype, cancerTypeMap, sample)
+        reference_genome = get_reference_genome_from_row(get_cell_content(row, ireferencegenome), default_reference_genome)
 
         if hgvsg is None:
             append_annotation_to_file(outf, ncols + nannotationcols, [row],
                                       [[GENE_IN_ONCOKB_DEFAULT, VARIANT_IN_ONCOKB_DEFAULT]])
         else:
-            query = HGVSgQuery(hgvsg, cancertype)
+            query = HGVSgQuery(hgvsg, cancertype, reference_genome)
             queries.append(query)
             rows.append(row)
 
@@ -1201,7 +1224,7 @@ class Gene:
 
 
 class ProteinChangeQuery:
-    def __init__(self, hugo, hgvs, cancertype, consequence=None, start=None, end=None):
+    def __init__(self, hugo, hgvs, cancertype, reference_genome=None, consequence=None, start=None, end=None):
         self.gene = Gene(hugo)
         self.alteration = hgvs
         if consequence is not None:
@@ -1211,16 +1234,24 @@ class ProteinChangeQuery:
         if end is not None:
             self.proteinEnd = end
         self.tumorType = cancertype
+        if reference_genome is not None:
+            self.referenceGenome = reference_genome.value
+
 
 class HGVSgQuery:
-    def __init__(self, hgvsg, cancertype):
+    def __init__(self, hgvsg, cancertype, reference_genome=None):
         self.hgvsg = hgvsg
         self.tumorType = cancertype
+        if reference_genome is not None:
+            self.referenceGenome = reference_genome.value
+
 
 class GenomicChangeQuery:
-    def __init__(self, chromosome, start, end, ref_allele, var_allele, cancertype):
+    def __init__(self, chromosome, start, end, ref_allele, var_allele, cancertype, reference_genome=None):
         self.genomicLocation = ','.join([chromosome, start, end, ref_allele, var_allele])
         self.tumorType = cancertype
+        if reference_genome is not None:
+            self.referenceGenome = reference_genome.value
 
 class CNAQuery:
     def __init__(self, hugo, cnatype, cancertype):

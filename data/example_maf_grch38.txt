@@ -1,0 +1,15 @@
+NCBI_Build	Hugo_Symbol	Variant_Classification	Tumor_Sample_Barcode	HGVSp_Short	HGVSp	HGVSg	Chromosome	Start_Position	End_Position	Reference_Allele	Tumor_Seq_Allele1	Tumor_Seq_Allele2
+GRCh38	CUL1	Missense_Mutation	TCGA-A6-2672-01A-01W-0833-10	p.Y466S	Tyr466Ser							
+GRCh38	AKT3	Nonsense_Mutation	TCGA-05-4417-01	p.E182*	Glu182*							
+GRCh38	PIK3CA	Missense_Mutation	TCGA-02-0033-01	p.E542K	Glu542Lys	3:g.179218294G>A	3	179218294	179218294	G	A	A
+GRCh38	FGFR3	Missense_Mutation	TCGA-05-4417-01	p.V271M	Val271Met							
+GRCh38	EGFR	Missense_Mutation	TCGA-06-0155-01	p.H304Y	His304Tyr	7:g.55155850C>T	7	55155850	55155850	C	T	T
+GRCh38	PTEN	Missense_Mutation	TCGA-06-0155-01	p.C136R	Cys136Arg	10:g.87933165T>C	10	87933165	87933165	T	C	C
+GRCh38	FGFR2	Missense_Mutation	TCGA-02-0033-01	p.Q212K	Gln121Lys							
+GRCh38	ATM	Missense_Mutation	TCGA-05-4417-01	p.L2890R	Leu2890Arg							
+GRCh38	KRAS	Missense_Mutation	TCGA-05-4417-01	p.G12C	Gly12Cys	12:g.25245351C>A	12	25245351	25245351	C	A	A
+GRCh38	RB1	Nonsense_Mutation	TCGA-02-0033-01	p.Q702*	Gln702*							
+GRCh38	TP53	Missense_Mutation	TCGA-02-0033-01	p.R248Q	Arg248Gln	17:g.7674220C>T	17	7674220	7674220	C	T	T
+GRCh38	NF1	Splice_Site	TCGA-02-0033-01	p.X1445_splice	X1445_splice	17:g.31259031G>A	17	31259031	31259031	G	A	A
+GRCh38	STK11	Missense_Mutation	TCGA-05-4417-01	p.H168R	His168Arg							
+GRCh38	MYD88	Missense_Mutation	TCGA-05-4417-01	M219T								
