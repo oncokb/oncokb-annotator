@@ -17,7 +17,7 @@ pip install -r requirements/common.txt -r requirements/pip2.7.txt
 
 
 ## Usage
-Annotates variants in MAF with OncoKB annotation. Supports both python2 and python3.
+Annotates variants in MAF(https://docs.gdc.cancer.gov/Data/File_Formats/MAF_Format/) with OncoKB annotation. Supports both python2 and python3.
 
 Please try 
 * `python MafAnnotator.py -h`
