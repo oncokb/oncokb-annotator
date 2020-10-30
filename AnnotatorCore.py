@@ -205,22 +205,7 @@ def makeoncokbgetrequest(url):
     return requests.get(url, headers=headers)
 
 
-def getcuratedgenes():
-    global curatedgenes
-    url = oncokbapiurl + "/utils/allCuratedGenes.json"
-    response = makeoncokbgetrequest(url)
-    if response.status_code == 200:
-        curatedgenesjson = response.json()
-
-        for curatedgene in curatedgenesjson:
-            if curatedgene['hugoSymbol'] is not None:
-                curatedgenes.append(curatedgene['hugoSymbol'])
-    else:
-        log.error("error when processing %s \n" % url +
-                  "reason: %s" % response.reason)
-
 _3dhotspots = None
-curatedgenes = []
 
 def init_3d_hotspots():
     global _3dhotspots
@@ -344,7 +329,7 @@ def get_reference_genome_from_row(row_reference_genome, default_reference_genome
 
 
 def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerType, cancerTypeMap,
-                            retainonlycuratedgenes, annotatehotspots, user_input_query_type, default_reference_genome):
+                            annotatehotspots, user_input_query_type, default_reference_genome):
     if annotatehotspots:
         init_3d_hotspots()
     if os.path.isfile(previousoutfile):
@@ -387,13 +372,11 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
         if (query_type == QueryType.HGVSP_SHORT):
             process_alteration(reader, outf, headers, [HGVSP_SHORT_HEADER, ALTERATION_HEADER], ncols, newncols,
                                defaultCancerType,
-                               cancerTypeMap,
-                               retainonlycuratedgenes, annotatehotspots, default_reference_genome)
+                               cancerTypeMap, annotatehotspots, default_reference_genome)
 
         if (query_type == QueryType.HGVSP):
             process_alteration(reader, outf, headers, [HGVSP_HEADER, ALTERATION_HEADER], ncols, newncols, defaultCancerType,
-                               cancerTypeMap,
-                               retainonlycuratedgenes, annotatehotspots, default_reference_genome)
+                               cancerTypeMap, annotatehotspots, default_reference_genome)
 
         if (query_type == QueryType.HGVSG):
             process_hvsg(reader, outf, headers, [HGVSG_HEADER, ALTERATION_HEADER], ncols, newncols, defaultCancerType,
@@ -414,7 +397,7 @@ def get_cell_content(row, index, return_empty_string=False):
         return None
 
 def process_alteration(maffilereader, outf, maf_headers, alteration_column_names, ncols, nannotationcols, defaultCancerType, cancerTypeMap,
-                       retainonlycuratedgenes, annotatehotspots, default_reference_genome):
+                       annotatehotspots, default_reference_genome):
     ihugo = geIndexOfHeader(maf_headers, HUGO_HEADERS)
     iconsequence = geIndexOfHeader(maf_headers, CONSEQUENCE_HEADERS)
     ihgvs = geIndexOfHeader(maf_headers, alteration_column_names)
@@ -479,18 +462,9 @@ def process_alteration(maffilereader, outf, maf_headers, alteration_column_names
         if start is not None and end is None:
             end = start
 
-        if not retainonlycuratedgenes or hugo in curatedgenes:
-            query = ProteinChangeQuery(hugo, hgvs, cancertype, reference_genome, consequence, start, end)
-            queries.append(query)
-            rows.append(row)
-        else:
-            # Include Gene in OncoKB and Variant in OncoKB
-            if annotatehotspots:
-                default_cols = [['', '', GENE_IN_ONCOKB_DEFAULT, VARIANT_IN_ONCOKB_DEFAULT]]
-            else:
-                default_cols = [[GENE_IN_ONCOKB_DEFAULT, VARIANT_IN_ONCOKB_DEFAULT]]
-            append_annotation_to_file(outf, ncols + nannotationcols, [row],
-                                      default_cols)
+        query = ProteinChangeQuery(hugo, hgvs, cancertype, reference_genome, consequence, start, end)
+        queries.append(query)
+        rows.append(row)
 
         if len(queries) == POST_QUERIES_THRESHOLD:
             annotations = pull_protein_change_info(queries,annotatehotspots)
@@ -634,7 +608,7 @@ def getgenesfromfusion(fusion, nameregex=None):
         gene1=gene2=fusion
     return gene1, gene2
 
-def processsv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap, retainonlycuratedgenes, nameregex):
+def processsv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap, nameregex):
     if os.path.isfile(previousoutfile):
         cacheannotated(previousoutfile, defaultCancerType, cancerTypeMap)
     outf = open(outfile, 'w+')
@@ -690,19 +664,14 @@ def processsv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap
             cancertype = get_tumor_type_from_row(row, i, defaultCancerType, icancertype, cancerTypeMap, sample)
 
 
-            if not retainonlycuratedgenes or gene1 in curatedgenes or gene2 in curatedgenes:
-                queries.append(StructuralVariantQuery(gene1, gene2, 'FUSION', cancertype))
-                rows.append(row)
+            queries.append(StructuralVariantQuery(gene1, gene2, 'FUSION', cancertype))
+            rows.append(row)
 
-                if len(queries) == POST_QUERIES_THRESHOLD:
-                    annotations = pull_structural_variant_info(queries)
-                    append_annotation_to_file(outf, newcols, rows, annotations)
-                    queries = []
-                    rows = []
-            else:
-                # Include default Gene in OncoKB and Variant in OncoKB
-                append_annotation_to_file(outf, newcols, [row],
-                                          [[GENE_IN_ONCOKB_DEFAULT, VARIANT_IN_ONCOKB_DEFAULT]])
+            if len(queries) == POST_QUERIES_THRESHOLD:
+                annotations = pull_structural_variant_info(queries)
+                append_annotation_to_file(outf, newcols, rows, annotations)
+                queries = []
+                rows = []
 
         if len(queries) > 0:
             annotations = pull_structural_variant_info(queries)
@@ -710,7 +679,7 @@ def processsv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap
     outf.close()
 
 
-def processcnagisticdata(cnafile, outfile, previousoutfile, defaultCancerType, cancerTypeMap, retainonlycuratedgenes, annotate_gain_loss=False):
+def processcnagisticdata(cnafile, outfile, previousoutfile, defaultCancerType, cancerTypeMap, annotate_gain_loss=False):
     CNA_AMPLIFICATION_TXT = 'Amplification'
     CNA_DELETION_TXT = 'Deletion'
     CNA_LOSS_TXT = 'Loss'
@@ -784,19 +753,14 @@ def processcnagisticdata(cnafile, outfile, previousoutfile, defaultCancerType, c
                             if sample in cancerTypeMap:
                                 cancertype = cancerTypeMap[sample]
 
-                            if not retainonlycuratedgenes or hugo in curatedgenes:
-                                rows.append([sample, cancertype, hugo, cna_type])
-                                queries.append(CNAQuery(hugo, cna_type, cancertype))
+                            rows.append([sample, cancertype, hugo, cna_type])
+                            queries.append(CNAQuery(hugo, cna_type, cancertype))
 
-                                if len(queries) == POST_QUERIES_THRESHOLD:
-                                    annotations = pull_cna_info(queries)
-                                    append_annotation_to_file(outf, ncols, rows, annotations)
-                                    rows = []
-                                    queries = []
-                            else:
-                                # Include Gene in OncoKB and Variant in OncoKB
-                                append_annotation_to_file(outf, ncols, [[sample, cancertype, hugo, cna_type]],
-                                                          [[GENE_IN_ONCOKB_DEFAULT, VARIANT_IN_ONCOKB_DEFAULT]])
+                            if len(queries) == POST_QUERIES_THRESHOLD:
+                                annotations = pull_cna_info(queries)
+                                append_annotation_to_file(outf, ncols, rows, annotations)
+                                rows = []
+                                queries = []
 
         if len(queries) > 0:
             annotations = pull_cna_info(queries)
@@ -1126,8 +1090,6 @@ def cacheannotated(annotatedfile, defaultCancerType, cancerTypeMap):
             for row in reader:
                 try:
                     hugo = row[ihugo]
-                    if hugo not in curatedgenes:
-                        continue
 
                     hgvs = row[ihgvs]
                     if hgvs.startswith('p.'):
