@@ -31,7 +31,7 @@ def test_check_protein_change():
         ProteinChangeQuery('BRAF', 'V600E', 'Colorectal Cancer')
     ]
 
-    annotations = pull_protein_change_info(queries)
+    annotations = pull_protein_change_info(queries, False)
     assert len(annotations) == 1
 
     annotation = annotations[0]
@@ -48,7 +48,7 @@ def test_reference_genome():
         GenomicChangeQuery('7', '140753336', '140753336', 'A', 'T', 'LUAD', ReferenceGenome.GRCH38)
     ]
 
-    annotations = pull_protein_change_info(queries)
+    annotations = pull_protein_change_info(queries, False)
     assert len(annotations) == 2
 
     annotation37 = annotations[0]
@@ -60,7 +60,7 @@ def test_reference_genome():
         ProteinChangeQuery('MYD88', 'M219T', 'Ovarian Cancer', ReferenceGenome.GRCH38)
     ]
 
-    annotations = pull_protein_change_info(queries)
+    annotations = pull_protein_change_info(queries, False)
     assert len(annotations) == 2
 
     annotation37 = annotations[0]
@@ -74,7 +74,7 @@ def test_fake_gene_protein_change():
         ProteinChangeQuery('test1', 'V600E', 'Ovarian Cancer')
     ]
 
-    annotations = pull_protein_change_info(queries)
+    annotations = pull_protein_change_info(queries, False)
     fake_gene_one_query_suite(annotations)
 
 
@@ -87,7 +87,7 @@ def test_check_atypical_alts():
         ProteinChangeQuery('TERT', 'Promoter Mutation', 'Bladder Cancer', None, '5\'Flank')
     ]
 
-    annotations = pull_protein_change_info(queries)
+    annotations = pull_protein_change_info(queries, False)
     assert len(annotations) == 4
 
     annotation = annotations[0]
@@ -121,7 +121,7 @@ def test_check_hgvsg():
         HGVSgQuery('5:g.1295228G>A', 'LUAD'),
     ]
 
-    annotations = pull_hgvsg_info(queries)
+    annotations = pull_hgvsg_info(queries, False)
     assert len(annotations) == 3
 
     annotation = annotations[0]
@@ -150,7 +150,7 @@ def test_check_genomic_change():
         GenomicChangeQuery('5', '1295228', '1295228', 'G', 'A', 'LUAD'),
     ]
 
-    annotations = pull_genomic_change_info(queries)
+    annotations = pull_genomic_change_info(queries, False)
     assert len(annotations) == 3
 
     annotation = annotations[0]
