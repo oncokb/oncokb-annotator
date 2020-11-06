@@ -4,6 +4,10 @@
 
 # oncokb-annotator <a href="https://ascopubs.org/doi/full/10.1200/PO.17.00011"><img src="https://img.shields.io/badge/DOI-10.1200%2FPO.17.00011-1c75cd" /></a>
 
+## Status
+
+[![Run all python tests](https://github.com/oncokb/oncokb-annotator/workflows/Run%20all%20python%20tests/badge.svg)](https://github.com/oncokb/oncokb-annotator/actions?query=workflow%3A%22Run+all+python+tests%22) [![Compare Study Annotation](https://github.com/oncokb/oncokb-annotator/workflows/Compare%20Study%20Annotation/badge.svg)](https://github.com/oncokb/oncokb-annotator/actions?query=workflow%3A%22Compare+Study+Annotation%22)
+
 ## Install dependencies
 For python 3
 ```
