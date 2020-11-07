@@ -737,9 +737,15 @@ def processcnagisticdata(cnafile, outfile, previousoutfile, defaultCancerType, c
                 log.info(i)
 
             hugo = row[0]
+            if len(row) == 1:
+                log.warning("No CNA specified for gene " + hugo)
+                continue
 
             for rawsample in rawsamples:
                 if rawsample in headers:
+                    if len(row) <= headers[rawsample]:
+                        log.warning('No CNA specified for ' + row[0] + ' ' + rawsample)
+                        continue
                     cna = row[headers[rawsample]]
                     if cna in cnaEventMap:
                         cna_type = cnaEventMap[cna]
