@@ -43,7 +43,9 @@ If you do not specify query type, the MafAnnotator will try to figure out the qu
 For HGVSp_Short, the annotator takes alteration from the column HGVSp_Short or Alteration  
 For HGVSp, the annotator takes alteration from the column HGVSp or Alteration  
 For HGVSg, the annotator takes alteration from the column HGVSg or Alteration  
-For Genomic_Change, the annotator takes genomic change from columns Chromosome, Start_Position, End_Position, Reference_Allele, Tumor_Seq_Allele1 and Tumor_Seq_Allele2  
+For Genomic_Change, the annotator takes genomic change from columns Chromosome, Start_Position, End_Position, Reference_Allele, Tumor_Seq_Allele1 and Tumor_Seq_Allele2.
+
+Annotation with Genomic_Change is relatively slow. We need to annotate the variant first with GenomeNexus(https://www.genomenexus.org/) then get annotation one by one. There is a plan to improve this method. If you are annotating a lot of data, please prioritize using other query type if applicable. 
 
 
 ### Annotate with different reference genomes (GRCh37, GRCh38)
