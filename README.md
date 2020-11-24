@@ -92,6 +92,4 @@ python ${FILE_NAME.py} -i ${INPUT_FILE} -o ${OUTPUT_FILE} -b ${ONCOKB_API_TOKEN}
 
 
 ## Questions?
-The best way is to email contact@oncokb.org so all our team members can help.  
-We are also available on Gitter. [![Gitter](https://img.shields.io/gitter/room/oncokb/public-chat)](https://gitter.im/oncokb/public-chat)
-
+The best way is to email contact@oncokb.org so all our team members can help.
