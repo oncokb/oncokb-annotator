@@ -147,12 +147,6 @@ REQUIRED_QUERY_TYPE_COLUMNS = {
 
 POST_QUERIES_THRESHOLD = 1000
 
-def getsampleid(rawsampleid):
-    if rawsampleid.startswith("TCGA"):
-        return rawsampleid[:15]
-    return rawsampleid
-
-
 def getOncokbInfo():
     ret = ['Files annotated on ' + date.today().strftime('%m/%d/%Y') + "\nOncoKB API URL: "+oncokbapiurl]
     try:
@@ -421,7 +415,7 @@ def process_alteration(maffilereader, outf, maf_headers, alteration_column_names
 
         row = padrow(row, ncols)
 
-        sample = getsampleid(row[isample])
+        sample = row[isample]
         if sampleidsfilter and sample not in sampleidsfilter:
             continue
 
@@ -515,7 +509,7 @@ def process_genomic_change(maffilereader, outf, maf_headers, ncols, nannotationc
 
         row = padrow(row, ncols)
 
-        sample = getsampleid(row[isample])
+        sample = row[isample]
         if sampleidsfilter and sample not in sampleidsfilter:
             continue
 
@@ -561,7 +555,7 @@ def process_hvsg(maffilereader, outf, maf_headers, alteration_column_names, ncol
 
         row = padrow(row, ncols)
 
-        sample = getsampleid(row[isample])
+        sample = row[isample]
         if sampleidsfilter and sample not in sampleidsfilter:
             continue
 
@@ -646,7 +640,7 @@ def processsv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap
 
             row = padrow(row, ncols)
 
-            sample = getsampleid(row[isample])
+            sample = row[isample]
 
             if sampleidsfilter and sample not in sampleidsfilter:
                 continue
@@ -710,7 +704,7 @@ def processcnagisticdata(cnafile, outfile, previousoutfile, defaultCancerType, c
         rawsamples = headers['^-$'].split('\t')[startofsamples:]
         samples = []
         for rs in rawsamples:
-            samples.append(getsampleid(rs))
+            samples.append(rs)
 
         if defaultCancerType == '' and not set(cancerTypeMap.keys()).issuperset(set(samples)):
             log.info(
@@ -751,7 +745,7 @@ def processcnagisticdata(cnafile, outfile, previousoutfile, defaultCancerType, c
                         cna_type = cnaEventMap[cna]
                         if cna_type is not None:
                             cancertype = defaultCancerType
-                            sample = getsampleid(rawsample)
+                            sample = rawsample
 
                             if sampleidsfilter and sample not in sampleidsfilter:
                                 continue
@@ -834,7 +828,7 @@ def processclinicaldata(annotatedmutfiles, clinicalfile, outfile):
 
                 row = padrow(row, ncols)
 
-                sample = getsampleid(row[isample])
+                sample = row[isample]
 
                 oncogenic = ""
                 if ioncogenic < len(row):
