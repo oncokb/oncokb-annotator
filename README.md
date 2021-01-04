@@ -32,7 +32,7 @@ Please try
 
 Example input files are under [data](data). An example script is here: [example.sh](example.sh)
 
-We recommend processing VCF files by [vcf2maf](https://github.com/mskcc/vcf2maf/) with [MSK override isoforms](https://github.com/mskcc/vcf2maf/blob/master/data/isoform_overrides_at_mskcc) before using the `MafAnnotator` here.
+We recommend processing VCF files by [vcf2maf](https://github.com/mskcc/vcf2maf/) with [OncoKB isoforms](https://www.oncokb.org/api/v1/utils/allCuratedGenes) before using the `MafAnnotator` here.
 
 
 ### Annotate with HGVSp_Short, HGVSp, HGVSg or Genomic Change
@@ -43,7 +43,9 @@ If you do not specify query type, the MafAnnotator will try to figure out the qu
 For HGVSp_Short, the annotator takes alteration from the column HGVSp_Short or Alteration  
 For HGVSp, the annotator takes alteration from the column HGVSp or Alteration  
 For HGVSg, the annotator takes alteration from the column HGVSg or Alteration  
-For Genomic_Change, the annotator takes genomic change from columns Chromosome, Start_Position, End_Position, Reference_Allele, Tumor_Seq_Allele1 and Tumor_Seq_Allele2  
+For Genomic_Change, the annotator takes genomic change from columns Chromosome, Start_Position, End_Position, Reference_Allele, Tumor_Seq_Allele1 and Tumor_Seq_Allele2.
+
+Annotation with Genomic_Change is relatively slow. We need to annotate the variant first with GenomeNexus(https://www.genomenexus.org/) then get annotation one by one. There is a plan to improve this method. If you are annotating a lot of data, please prioritize using other query type if applicable. 
 
 
 ### Annotate with different reference genomes (GRCh37, GRCh38)
@@ -88,14 +90,6 @@ python ${FILE_NAME.py} -i ${INPUT_FILE} -o ${OUTPUT_FILE} -b ${ONCOKB_API_TOKEN}
 | CITATIONS       	| PMID, Abstract, Website Link                                                                                                                                                 	 	 	| All citations related to a mutation/alteration                                                                                                                                                                                   	|
 
 
-## FAQs
-- **How to get the subversion of the ensembl transcript ID?**  
-  vcf2maf is designed to work with all Ensembl releases and reference genomes, that is the reason the subversion is not included. 
-
-  Within MSK, we are using GRCh37 which corresponding to the Ensembl release 75. You can get the full list of versioned transcript IDs here http://grch37.ensembl.org/biomart/martview/40d921c6ab6956144cf6fb2e9a8ca093?VIRTUALSCHEMANAME=default&ATTRIBUTES=hsapiens_gene_ensembl.default.feature_page.ensembl_transcript_id_version&FILTERS=&VISIBLEPANEL=attributepanel.  
-
 
 ## Questions?
-The best way is to email contact@oncokb.org so all our team members can help.  
-We are also available on Gitter. [![Gitter](https://img.shields.io/gitter/room/oncokb/public-chat)](https://gitter.im/oncokb/public-chat)
-
+The best way is to email contact@oncokb.org so all our team members can help.
