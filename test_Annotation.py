@@ -13,13 +13,15 @@ VARIANT_EXISTS_INDEX = 1
 MUTATION_EFFECT_INDEX = 2
 ONCOGENIC_INDEX = 3
 HIGHEST_LEVEL_INDEX = 12
+HIGHEST_DX_LEVEL_INDEX = 17
+HIGHEST_PX_LEVEL_INDEX = 21
 UNKNOWN = 'Unknown'
 
 def fake_gene_one_query_suite(annotations):
     assert len(annotations) == 1
 
     annotation = annotations[0]
-    assert len(annotation) == 14
+    assert len(annotation) == 22
     assert annotation[MUTATION_EFFECT_INDEX] == UNKNOWN
     assert annotation[ONCOGENIC_INDEX] == ''
     assert annotation[HIGHEST_LEVEL_INDEX] == ''
@@ -28,17 +30,26 @@ def fake_gene_one_query_suite(annotations):
 @pytest.mark.skipif(ONCOKB_API_TOKEN in (None, ''), reason="oncokb api token required")
 def test_check_protein_change():
     queries = [
-        ProteinChangeQuery('BRAF', 'V600E', 'Colorectal Cancer')
+        ProteinChangeQuery('BRAF', 'V600E', 'Colorectal Cancer'),
+        ProteinChangeQuery('ABL1', 'BCR-ABL1 Fusion', 'Acute Leukemias of Ambiguous Lineage'),
     ]
 
     annotations = pull_protein_change_info(queries, False)
-    assert len(annotations) == 1
+    assert len(annotations) == 2
 
     annotation = annotations[0]
-    assert len(annotation) == 14
+    assert len(annotation) == 22
     assert annotation[MUTATION_EFFECT_INDEX] == 'Gain-of-function'
     assert annotation[ONCOGENIC_INDEX] == 'Oncogenic'
     assert annotation[HIGHEST_LEVEL_INDEX] == 'LEVEL_1'
+
+    annotation = annotations[1]
+    assert len(annotation) == 22
+    assert annotation[MUTATION_EFFECT_INDEX] == 'Gain-of-function'
+    assert annotation[ONCOGENIC_INDEX] == 'Oncogenic'
+    assert annotation[HIGHEST_LEVEL_INDEX] == ''
+    assert annotation[HIGHEST_DX_LEVEL_INDEX] == 'LEVEL_Dx1'
+    assert annotation[HIGHEST_PX_LEVEL_INDEX] == 'LEVEL_Px1'
 
 
 @pytest.mark.skipif(ONCOKB_API_TOKEN in (None, ''), reason="oncokb api token required")
@@ -91,25 +102,25 @@ def test_check_atypical_alts():
     assert len(annotations) == 4
 
     annotation = annotations[0]
-    assert len(annotation) == 14
+    assert len(annotation) == 22
     assert annotation[MUTATION_EFFECT_INDEX] == UNKNOWN
     assert annotation[ONCOGENIC_INDEX] == 'Oncogenic'
     assert annotation[HIGHEST_LEVEL_INDEX] == 'LEVEL_1'
 
     annotation = annotations[1]
-    assert len(annotation) == 14
+    assert len(annotation) == 22
     assert annotation[MUTATION_EFFECT_INDEX] == UNKNOWN
     assert annotation[ONCOGENIC_INDEX] == 'Oncogenic'
     assert annotation[HIGHEST_LEVEL_INDEX] == ''
 
     annotation = annotations[2]
-    assert len(annotation) == 14
+    assert len(annotation) == 22
     assert annotation[MUTATION_EFFECT_INDEX] == 'Gain-of-function'
     assert annotation[ONCOGENIC_INDEX] == 'Oncogenic'
     assert annotation[HIGHEST_LEVEL_INDEX] == ''
 
     annotation_dup = annotations[3]
-    assert len(annotation_dup) == 14
+    assert len(annotation_dup) == 22
     assert annotation == annotation_dup
 
 
@@ -125,19 +136,19 @@ def test_check_hgvsg():
     assert len(annotations) == 3
 
     annotation = annotations[0]
-    assert len(annotation) == 14
+    assert len(annotation) == 22
     assert annotation[MUTATION_EFFECT_INDEX] == 'Gain-of-function'
     assert annotation[ONCOGENIC_INDEX] == 'Oncogenic'
     assert annotation[HIGHEST_LEVEL_INDEX] == 'LEVEL_3A'
 
     annotation = annotations[1]
-    assert len(annotation) == 14
+    assert len(annotation) == 22
     assert annotation[MUTATION_EFFECT_INDEX] == 'Gain-of-function'
     assert annotation[ONCOGENIC_INDEX] == 'Oncogenic'
     assert annotation[HIGHEST_LEVEL_INDEX] == 'LEVEL_3A'
 
     annotation = annotations[2]
-    assert len(annotation) == 14
+    assert len(annotation) == 22
     assert annotation[MUTATION_EFFECT_INDEX] == 'Gain-of-function'
     assert annotation[ONCOGENIC_INDEX] == 'Oncogenic'
     assert annotation[HIGHEST_LEVEL_INDEX] == ''
@@ -154,19 +165,19 @@ def test_check_genomic_change():
     assert len(annotations) == 3
 
     annotation = annotations[0]
-    assert len(annotation) == 14
+    assert len(annotation) == 22
     assert annotation[MUTATION_EFFECT_INDEX] == 'Gain-of-function'
     assert annotation[ONCOGENIC_INDEX] == 'Oncogenic'
     assert annotation[HIGHEST_LEVEL_INDEX] == 'LEVEL_3A'
 
     annotation = annotations[1]
-    assert len(annotation) == 14
+    assert len(annotation) == 22
     assert annotation[MUTATION_EFFECT_INDEX] == 'Gain-of-function'
     assert annotation[ONCOGENIC_INDEX] == 'Oncogenic'
     assert annotation[HIGHEST_LEVEL_INDEX] == 'LEVEL_3A'
 
     annotation = annotations[2]
-    assert len(annotation) == 14
+    assert len(annotation) == 22
     assert annotation[MUTATION_EFFECT_INDEX] == 'Gain-of-function'
     assert annotation[ONCOGENIC_INDEX] == 'Oncogenic'
     assert annotation[HIGHEST_LEVEL_INDEX] == ''
@@ -176,22 +187,31 @@ def test_check_fusions():
     queries = [
         StructuralVariantQuery('ALK', 'EML4', 'FUSION', 'NSCLC'),
         StructuralVariantQuery('ALK', 'EML4', 'FUSION', 'Melanoma'),
+        StructuralVariantQuery('BCR', 'ABL1', 'FUSION', 'Acute Leukemias of Ambiguous Lineage'),
     ]
 
     annotations = pull_structural_variant_info(queries)
-    assert len(annotations) == 2
+    assert len(annotations) == 3
 
     annotation = annotations[0]
-    assert len(annotation) == 14
+    assert len(annotation) == 22
     assert annotation[MUTATION_EFFECT_INDEX] == 'Gain-of-function'
     assert annotation[ONCOGENIC_INDEX] == 'Oncogenic'
     assert annotation[HIGHEST_LEVEL_INDEX] == 'LEVEL_1'
 
     annotation = annotations[1]
-    assert len(annotation) == 14
+    assert len(annotation) == 22
     assert annotation[MUTATION_EFFECT_INDEX] == 'Gain-of-function'
     assert annotation[ONCOGENIC_INDEX] == 'Oncogenic'
     assert annotation[HIGHEST_LEVEL_INDEX] == 'LEVEL_3B'
+
+    annotation = annotations[2]
+    assert len(annotation) == 22
+    assert annotation[MUTATION_EFFECT_INDEX] == 'Gain-of-function'
+    assert annotation[ONCOGENIC_INDEX] == 'Oncogenic'
+    assert annotation[HIGHEST_LEVEL_INDEX] == ''
+    assert annotation[HIGHEST_DX_LEVEL_INDEX] == 'LEVEL_Dx1'
+    assert annotation[HIGHEST_PX_LEVEL_INDEX] == 'LEVEL_Px1'
 
 
 @pytest.mark.skipif(ONCOKB_API_TOKEN in (None, ''), reason="oncokb api token required")
@@ -210,28 +230,37 @@ def test_cna():
         CNAQuery('BRCA2', 'DELETION', 'Ovarian Cancer'),
         CNAQuery('ERBB2', 'Amplification', 'Breast Cancer'),
         CNAQuery('ERBB2', 'Amplification', 'Colorectal Cancer'),
+        CNAQuery('CDKN2A', 'Deletion', 'AML with BCR-ABL1'),
     ]
 
     annotations = pull_cna_info(queries)
-    assert len(annotations) == 3
+    assert len(annotations) == 4
 
     annotation = annotations[0]
-    assert len(annotation) == 14
+    assert len(annotation) == 22
     assert annotation[MUTATION_EFFECT_INDEX] == 'Loss-of-function'
     assert annotation[ONCOGENIC_INDEX] == 'Oncogenic'
     assert annotation[HIGHEST_LEVEL_INDEX] == 'LEVEL_1'
 
     annotation = annotations[1]
-    assert len(annotation) == 14
+    assert len(annotation) == 22
     assert annotation[MUTATION_EFFECT_INDEX] == 'Gain-of-function'
     assert annotation[ONCOGENIC_INDEX] == 'Oncogenic'
     assert annotation[HIGHEST_LEVEL_INDEX] == 'LEVEL_1'
 
     annotation = annotations[2]
-    assert len(annotation) == 14
+    assert len(annotation) == 22
     assert annotation[MUTATION_EFFECT_INDEX] == 'Gain-of-function'
     assert annotation[ONCOGENIC_INDEX] == 'Oncogenic'
     assert annotation[HIGHEST_LEVEL_INDEX] == 'LEVEL_2'
+
+    annotation = annotations[3]
+    assert len(annotation) == 22
+    assert annotation[MUTATION_EFFECT_INDEX] == 'Loss-of-function'
+    assert annotation[ONCOGENIC_INDEX] == 'Oncogenic'
+    assert annotation[HIGHEST_LEVEL_INDEX] == ''
+    assert annotation[HIGHEST_DX_LEVEL_INDEX] == 'LEVEL_Dx2'
+    assert annotation[HIGHEST_PX_LEVEL_INDEX] == ''
 
 
 @pytest.mark.skipif(ONCOKB_API_TOKEN in (None, ''), reason="oncokb api token required")
