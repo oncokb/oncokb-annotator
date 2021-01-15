@@ -27,7 +27,7 @@ csv.field_size_limit(sizeLimit) # for reading large files
 oncokbapiurl = "https://www.oncokb.org/api/v1"
 oncokbapibearertoken = ""
 
-    
+
 def setoncokbbaseurl(u):
     global oncokbapiurl
     oncokbapiurl = u.rstrip('/') + '/api/v1'
@@ -347,6 +347,8 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
         headers = readheaders(reader)
 
         ncols = headers["length"]
+        if ncols == 0:
+            return
         newncols = 0
 
         outf.write(headers['^-$'])
@@ -361,7 +363,7 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
 
         outf.write("\tMUTATION_EFFECT")
         outf.write("\tONCOGENIC")
-        
+
         newncols += 4
 
         for l in levels:
@@ -507,7 +509,7 @@ def get_var_allele(ref_allele, tumor_seq_allele1, tumor_seq_allele2):
         tumor_seq_allele = [allele for allele in [tumor_seq_allele1, tumor_seq_allele2] if allele != ref_allele][0]
     except:
         tumor_seq_allele = ""
-    
+
     return tumor_seq_allele
 
 def process_genomic_change(maffilereader, outf, maf_headers, ncols, nannotationcols, defaultCancerType, cancerTypeMap, annotatehotspots, default_reference_genome):
@@ -612,7 +614,7 @@ def process_hvsg(maffilereader, outf, maf_headers, alteration_column_names, ncol
         annotations = pull_hgvsg_info(queries,annotatehotspots)
         append_annotation_to_file(outf, ncols+nannotationcols, rows, annotations)
 
-    
+
 def getgenesfromfusion(fusion, nameregex=None):
     GENES_REGEX = "([A-Za-z\d]+-[A-Za-z\d]+)" if nameregex is None else nameregex
     searchresult = re.search(GENES_REGEX, fusion, flags=re.IGNORECASE)
@@ -638,6 +640,9 @@ def processsv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap
         headers = readheaders(reader)
 
         ncols = headers["length"]
+
+        if ncols == 0:
+            return
 
         outf.write(headers['^-$'])
         outf.write("\t" + GENE_IN_ONCOKB_HEADER)
@@ -732,9 +737,11 @@ def processcnagisticdata(cnafile, outfile, previousoutfile, defaultCancerType, c
     with open(cnafile, 'rU') as infile:
         reader = csv.reader(infile, delimiter='\t')
         headers = readheaders(reader)
-        startofsamples = getfirstcolumnofsampleingisticdata(headers['^-$'].split('\t'))
-        rawsamples = headers['^-$'].split('\t')[startofsamples:]
         samples = []
+        rawsamples = []
+        if headers["length"] != 0:
+            startofsamples = getfirstcolumnofsampleingisticdata(headers['^-$'].split('\t'))
+            rawsamples = headers['^-$'].split('\t')[startofsamples:]
         for rs in rawsamples:
             samples.append(rs)
 
@@ -849,6 +856,9 @@ def processclinicaldata(annotatedmutfiles, clinicalfile, outfile):
             headers = readheaders(reader)
 
             ncols = headers["length"]
+
+            if ncols == 0:
+                return
 
             igene1 = geIndexOfHeader(headers, ['GENE1'] + HUGO_HEADERS)  # fusion
             igene2 = geIndexOfHeader(headers, ['GENE2'] + HUGO_HEADERS)  # fusion
@@ -1659,7 +1669,7 @@ def process_oncokb_annotation(annotation, annotate_hotspot):
 
         _3dhotspot = pull3dhotspots(annotation['query']['hugoSymbol'], annotation['query']['consequence'], annotation['query']['proteinStart'], annotation['query']['proteinEnd'])
         ret.append(_3dhotspot)
-        
+
     ret.append(oncokbdata[GENE_IN_ONCOKB_HEADER])
     ret.append(oncokbdata[VARIANT_IN_ONCOKB_HEADER])
     ret.append(oncokbdata['mutation_effect'])
@@ -1671,7 +1681,7 @@ def process_oncokb_annotation(annotation, annotate_hotspot):
     for l in dxLevels:
         ret.append(','.join(oncokbdata[l]))
     ret.append(gethighestDxPxlevel(dxLevels, [oncokbdata['highestDiagnosticImplicationLevel']]))
-        
+
     for l in pxLevels:
         ret.append(','.join(oncokbdata[l]))
     ret.append(gethighestDxPxlevel(pxLevels, [oncokbdata['highestPrognosticImplicationLevel']]))
@@ -1723,6 +1733,7 @@ def readCancerTypes(clinicalFile, data):
 
 def readheaders(reader):
     headers = {}
+    headers["length"] = 0
     for row in reader:
         if not row[0].startswith("#"):
             headers["^-$"] = '\t'.join(row)  # the whole line
