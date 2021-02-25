@@ -21,19 +21,33 @@ pip install -r requirements/common.txt -r requirements/pip2.7.txt
 
 
 ## Usage
-Annotates variants in MAF(https://docs.gdc.cancer.gov/Data/File_Formats/MAF_Format/) with OncoKB annotation. Supports both python2 and python3.
-
-Please try 
-* `python MafAnnotator.py -h`
-* `python FusionAnnotator.py -h`
-* `python CnaAnnotator.py -h`
-* `python ClinicalDataAnnotator.py -h`
-* `python OncoKBPlots.py -h`
-
 Example input files are under [data](data). An example script is here: [example.sh](example.sh)
+
+### MAF
+Annotates variants in MAF(https://docs.gdc.cancer.gov/Data/File_Formats/MAF_Format/) with OncoKB annotation. Supports both python2 and python3.  
+Get more details on the command line using `python MafAnnotator.py -h`.  
 
 We recommend processing VCF files by [vcf2maf](https://github.com/mskcc/vcf2maf/) with [OncoKB isoforms](https://www.oncokb.org/api/v1/utils/allCuratedGenes) before using the `MafAnnotator` here.
 
+#### Atypical Alteration
+You can still use MAF format to annotate atypical alterations, such as MSI-H, TMB-H, EGFR vIII. Please see more examples [HERE](data/example_atypical_alterations.txt).  
+
+### Copy Number Alteration
+We use GISTIC 2.0 format. For more information, please see https://docs.cbioportal.org/5.1-data-loading/data-loading/file-formats#discrete-copy-number-data. 
+
+Get more details on the command line using `python CnaAnnotator.py -h`.  
+
+### Fusion
+OncoKB offers to anntoate the strucutal variant. But in annotator, we only annotate the functional fusion.
+The fusion format for intragenic deletion is `GENE-intragenic` or `GENE-GENE`.
+For other fusions, please use `GENEA-GENEB` or `GENEA-GENEB Fusion`.  
+
+Get more details on the command line using `python FusionAnnotator.py -h`.  
+
+### Clinical Data (Combine MAF+CNA+Fusion)
+You can comebine all annotation on sample/patient level using the clinical data annotator.  
+
+Get more details on the command line using `python ClinicalDataAnnotator.py -h`.  
 
 ### Annotate with HGVSp_Short, HGVSp, HGVSg or Genomic Change
 OncoKB MafAnnotator supports annotating the alteration with HGVSp, HGVSp_Short, HGVSg or Genomic Change format. Please specify the query type with -q parameter.
