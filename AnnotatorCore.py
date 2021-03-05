@@ -13,8 +13,12 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from datetime import date
 import ctypes as ct
+from multiprocessing import Pool 
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    format='%(asctime)s %(levelname)-8s %(message)s',
+    level=logging.INFO,
+    datefmt='%Y-%m-%d %H:%M:%S')
 logging.getLogger("requests").setLevel(logging.WARNING)
 logging.getLogger("urllib3").setLevel(logging.WARNING)
 
@@ -217,6 +221,7 @@ def init_3d_hotspots():
     global _3dhotspots
     _3dhotspots = gethotspots(_3dhotspotsbaseurl+"/api/hotspots/3d", None)
 
+ITERATOR = 0
 
 conversiondict = {'Ala': 'A',
                   'Asx': 'B',
@@ -279,8 +284,8 @@ def get_tumor_type_from_row(row, row_index, defaultCancerType, icancertype, canc
     if sample in cancerTypeMap:
         cancertype = cancerTypeMap[sample]
     if cancertype == "":
-        log.info("Cancer type for the sample should be defined for a more accurate result\nline %s: %s\n" % (row_index, row))
-        # continue
+        # log.info("Cancer type for the sample should be defined for a more accurate result\nline %s: %s\n" % (row_index, row))
+        pass
     return cancertype
 
 def has_desired_headers(desired_headers, file_headers):
@@ -335,7 +340,7 @@ def get_reference_genome_from_row(row_reference_genome, default_reference_genome
 
 
 def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerType, cancerTypeMap,
-                            annotatehotspots, user_input_query_type, default_reference_genome):
+                            annotatehotspots, user_input_query_type, default_reference_genome,num_procs):
     if annotatehotspots:
         init_3d_hotspots()
     if os.path.isfile(previousoutfile):
@@ -394,11 +399,11 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
         if (query_type == QueryType.HGVSP_SHORT):
             process_alteration(reader, outf, headers, [HGVSP_SHORT_HEADER, ALTERATION_HEADER], ncols, newncols,
                                defaultCancerType,
-                               cancerTypeMap, annotatehotspots, default_reference_genome)
+                               cancerTypeMap, annotatehotspots, default_reference_genome,num_procs)
 
         if (query_type == QueryType.HGVSP):
             process_alteration(reader, outf, headers, [HGVSP_HEADER, ALTERATION_HEADER], ncols, newncols, defaultCancerType,
-                               cancerTypeMap, annotatehotspots, default_reference_genome)
+                               cancerTypeMap, annotatehotspots, default_reference_genome,num_procs)
 
         if (query_type == QueryType.HGVSG):
             process_hvsg(reader, outf, headers, [HGVSG_HEADER, ALTERATION_HEADER], ncols, newncols, defaultCancerType,
@@ -419,7 +424,7 @@ def get_cell_content(row, index, return_empty_string=False):
         return None
 
 def process_alteration(maffilereader, outf, maf_headers, alteration_column_names, ncols, nannotationcols, defaultCancerType, cancerTypeMap,
-                       annotatehotspots, default_reference_genome):
+                       annotatehotspots, default_reference_genome,num_procs):
     ihugo = geIndexOfHeader(maf_headers, HUGO_HEADERS)
     iconsequence = geIndexOfHeader(maf_headers, CONSEQUENCE_HEADERS)
     ihgvs = geIndexOfHeader(maf_headers, alteration_column_names)
@@ -435,11 +440,12 @@ def process_alteration(maffilereader, outf, maf_headers, alteration_column_names
     i = 0
     queries = []
     rows = []
+    iterator = []
     for row in maffilereader:
         i = i + 1
 
-        if i % POST_QUERIES_THRESHOLD == 0:
-            log.info(i)
+        # if i % POST_QUERIES_THRESHOLD == 0:
+        #     log.info(i)
 
         row = padrow(row, ncols)
 
@@ -487,16 +493,27 @@ def process_alteration(maffilereader, outf, maf_headers, alteration_column_names
         query = ProteinChangeQuery(hugo, hgvs, cancertype, reference_genome, consequence, start, end)
         queries.append(query)
         rows.append(row)
+        iterator.append(i)
+    n= POST_QUERIES_THRESHOLD
+    queries_all = [queries[i * n:(i + 1) * n] for i in range((len(queries) + n - 1) // n )]
+    rows_all = [rows[i * n:(i + 1) * n] for i in range((len(rows) + n - 1) // n )]
+    iterator_all = [iterator[i * n:(i + 1) * n] for i in range((len(iterator) + n - 1) // n )]
+    log.info("Begin query")
+    with Pool(num_procs) as p:
+        annotations_all = p.starmap(pull_protein_change_info, [(i,annotatehotspots,it) for i,it in zip(queries_all,iterator_all)])
+    for annotations, rows in zip(annotations_all,rows_all):
+        append_annotation_to_file(outf, ncols+nannotationcols, rows, annotations)
 
-        if len(queries) == POST_QUERIES_THRESHOLD:
-            annotations = pull_protein_change_info(queries,annotatehotspots)
-            append_annotation_to_file(outf, ncols + nannotationcols, rows, annotations)
-            queries = []
-            rows = []
 
-    if len(queries) > 0:
-        annotations = pull_protein_change_info(queries,annotatehotspots)
-        append_annotation_to_file(outf, ncols + nannotationcols, rows, annotations)
+    #     if len(queries) == POST_QUERIES_THRESHOLD:
+    #         annotations = pull_protein_change_info(queries,annotatehotspots)
+    #         append_annotation_to_file(outf, ncols + nannotationcols, rows, annotations)
+    #         queries = []
+    #         rows = []
+
+    # if len(queries) > 0:
+    #     annotations = pull_protein_change_info(queries,annotatehotspots)
+    #     append_annotation_to_file(outf, ncols + nannotationcols, rows, annotations)
 
 # this method is from genome-nexus annotation-tools
 # https://github.com/genome-nexus/annotation-tools/blob/53ff7f7fe673e961282f871ebc78d2ecc0831919/standardize_mutation_data.py
@@ -1448,7 +1465,7 @@ class StructuralVariantQuery:
         self.tumorType = cancertype
 
 
-def pull_protein_change_info(queries, annotate_hotspot):
+def pull_protein_change_info(queries, annotate_hotspot, iterator):
     url = oncokbapiurl + '/annotate/mutations/byProteinChange'
     response = makeoncokbpostrequest(url, queries)
     annotation = []
@@ -1477,6 +1494,7 @@ def pull_protein_change_info(queries, annotate_hotspot):
     processed_annotation = []
     for query_annotation in annotation:
         processed_annotation.append(process_oncokb_annotation(query_annotation, annotate_hotspot))
+    log.info(iterator[-1])
     return processed_annotation
 
 

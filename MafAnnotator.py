@@ -90,7 +90,7 @@ def main(argv):
             raise
 
     processalterationevents(argv.input_file, argv.output_file, argv.previous_result_file, argv.default_cancer_type,
-                            cancertypemap, argv.annotate_hotspots, user_input_query_type, default_reference_genome)
+                            cancertypemap, argv.annotate_hotspots, user_input_query_type, default_reference_genome,argv.num_procs)
 
     log.info('done!')
 
@@ -110,6 +110,7 @@ if __name__ == "__main__":
     parser.add_argument('-b', dest='oncokb_api_bearer_token', default='', type=str)
     parser.add_argument('-q', dest='query_type', default=None, type=str)
     parser.add_argument('-r', dest='default_reference_genome', default=None, type=str)
+    parser.add_argument('-n', dest='num_procs', default=4,type=int)
     parser.set_defaults(func=main)
 
     args = parser.parse_args()

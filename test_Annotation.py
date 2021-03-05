@@ -34,7 +34,7 @@ def test_check_protein_change():
         ProteinChangeQuery('ABL1', 'BCR-ABL1 Fusion', 'Acute Leukemias of Ambiguous Lineage'),
     ]
 
-    annotations = pull_protein_change_info(queries, False)
+    annotations = pull_protein_change_info(queries, False,[1,2])
     assert len(annotations) == 2
 
     annotation = annotations[0]
@@ -59,7 +59,7 @@ def test_reference_genome():
         GenomicChangeQuery('7', '140753336', '140753336', 'A', 'T', 'LUAD', ReferenceGenome.GRCH38)
     ]
 
-    annotations = pull_protein_change_info(queries, False)
+    annotations = pull_protein_change_info(queries, False,[1,2])
     assert len(annotations) == 2
 
     annotation37 = annotations[0]
@@ -71,7 +71,7 @@ def test_reference_genome():
         ProteinChangeQuery('MYD88', 'M219T', 'Ovarian Cancer', ReferenceGenome.GRCH38)
     ]
 
-    annotations = pull_protein_change_info(queries, False)
+    annotations = pull_protein_change_info(queries, False,[1,2])
     assert len(annotations) == 2
 
     annotation37 = annotations[0]
@@ -85,7 +85,7 @@ def test_fake_gene_protein_change():
         ProteinChangeQuery('test1', 'V600E', 'Ovarian Cancer')
     ]
 
-    annotations = pull_protein_change_info(queries, False)
+    annotations = pull_protein_change_info(queries, False,[1])
     fake_gene_one_query_suite(annotations)
 
 
@@ -98,7 +98,7 @@ def test_check_atypical_alts():
         ProteinChangeQuery('TERT', 'Promoter Mutation', 'Bladder Cancer', None, '5\'Flank')
     ]
 
-    annotations = pull_protein_change_info(queries, False)
+    annotations = pull_protein_change_info(queries, False,[1,2,3,4])
     assert len(annotations) == 4
 
     annotation = annotations[0]
