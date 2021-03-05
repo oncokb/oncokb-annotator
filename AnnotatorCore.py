@@ -284,8 +284,7 @@ def get_tumor_type_from_row(row, row_index, defaultCancerType, icancertype, canc
     if sample in cancerTypeMap:
         cancertype = cancerTypeMap[sample]
     if cancertype == "":
-        # log.info("Cancer type for the sample should be defined for a more accurate result\nline %s: %s\n" % (row_index, row))
-        pass
+        log.info("Cancer type for the sample should be defined for a more accurate result\nline %s: %s\n" % (row_index, row))
     return cancertype
 
 def has_desired_headers(desired_headers, file_headers):
