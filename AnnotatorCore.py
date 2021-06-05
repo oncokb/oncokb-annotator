@@ -1460,11 +1460,11 @@ def pull_protein_change_info(queries, annotate_hotspot):
             geturl += 'hugoSymbol=' + query.gene.hugoSymbol
             geturl += '&alteration=' + query.alteration
             geturl += '&tumorType=' + query.tumorType
-            if query.consequence:
+            if hasattr(query, 'consequence') and query.consequence:
                 geturl += '&consequence=' + query.consequence
-            if query.proteinStart and query.proteinStart != '\\N' and query.proteinStart != 'NULL' and query.proteinStart != '':
+            if hasattr(query, 'proteinStart') and query.proteinStart and query.proteinStart != '\\N' and query.proteinStart != 'NULL' and query.proteinStart != '':
                 geturl += '&proteinStart=' + str(query.proteinStart)
-            if query.proteinEnd and query.proteinEnd != '\\N' and query.proteinEnd != 'NULL' and query.proteinEnd != '':
+            if hasattr(query, 'proteinEnd') and query.proteinEnd and query.proteinEnd != '\\N' and query.proteinEnd != 'NULL' and query.proteinEnd != '':
                 geturl += '&proteinEnd=' + str(query.proteinEnd)
             getresponse = makeoncokbgetrequest(geturl)
             if getresponse.status_code == 200:
