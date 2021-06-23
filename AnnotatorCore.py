@@ -1530,7 +1530,7 @@ def pull_genomic_change_info(queries, annotate_hotspot):
 
 
 def pull_cna_info(queries):
-    url = oncokbapiurl + '/annotate/copyNumberAlterations?'
+    url = oncokbapiurl + '/annotate/copyNumberAlterations'
 
     response = makeoncokbpostrequest(url, queries)
     annotation = []
