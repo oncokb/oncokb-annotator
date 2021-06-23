@@ -139,13 +139,13 @@ def test_check_hgvsg():
     assert len(annotation) == 22
     assert annotation[MUTATION_EFFECT_INDEX] == 'Gain-of-function'
     assert annotation[ONCOGENIC_INDEX] == 'Oncogenic'
-    assert annotation[HIGHEST_LEVEL_INDEX] == 'LEVEL_3A'
+    assert annotation[HIGHEST_LEVEL_INDEX] == 'LEVEL_1'
 
     annotation = annotations[1]
     assert len(annotation) == 22
     assert annotation[MUTATION_EFFECT_INDEX] == 'Gain-of-function'
     assert annotation[ONCOGENIC_INDEX] == 'Oncogenic'
-    assert annotation[HIGHEST_LEVEL_INDEX] == 'LEVEL_3A'
+    assert annotation[HIGHEST_LEVEL_INDEX] == 'LEVEL_1'
 
     annotation = annotations[2]
     assert len(annotation) == 22
@@ -168,13 +168,13 @@ def test_check_genomic_change():
     assert len(annotation) == 22
     assert annotation[MUTATION_EFFECT_INDEX] == 'Gain-of-function'
     assert annotation[ONCOGENIC_INDEX] == 'Oncogenic'
-    assert annotation[HIGHEST_LEVEL_INDEX] == 'LEVEL_3A'
+    assert annotation[HIGHEST_LEVEL_INDEX] == 'LEVEL_1'
 
     annotation = annotations[1]
     assert len(annotation) == 22
     assert annotation[MUTATION_EFFECT_INDEX] == 'Gain-of-function'
     assert annotation[ONCOGENIC_INDEX] == 'Oncogenic'
-    assert annotation[HIGHEST_LEVEL_INDEX] == 'LEVEL_3A'
+    assert annotation[HIGHEST_LEVEL_INDEX] == 'LEVEL_1'
 
     annotation = annotations[2]
     assert len(annotation) == 22

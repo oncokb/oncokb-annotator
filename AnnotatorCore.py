@@ -557,6 +557,7 @@ def process_genomic_change(maffilereader, outf, maf_headers, ncols, nannotationc
         queries.append(query)
         rows.append(row)
 
+        if len(queries) == POST_QUERIES_THRESHOLD_GC_HGVSG:
             annotations = pull_genomic_change_info(queries,annotatehotspots)
             append_annotation_to_file(outf, ncols+nannotationcols, rows, annotations)
             queries = []
