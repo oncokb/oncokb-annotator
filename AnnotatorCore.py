@@ -158,6 +158,7 @@ REQUIRED_QUERY_TYPE_COLUMNS = {
 }
 
 POST_QUERIES_THRESHOLD = 1000
+POST_QUERIES_THRESHOLD_GC_HGVSG = 100
 
 def getOncokbInfo():
     ret = ['Files annotated on ' + date.today().strftime('%m/%d/%Y') + "\nOncoKB API URL: "+oncokbapiurl]
@@ -532,7 +533,7 @@ def process_genomic_change(maffilereader, outf, maf_headers, ncols, nannotationc
     for row in maffilereader:
         i = i + 1
 
-        if i % POST_QUERIES_THRESHOLD == 0:
+        if i % POST_QUERIES_THRESHOLD_GC_HGVSG == 0:
             log.info(i)
 
         row = padrow(row, ncols)
@@ -556,7 +557,6 @@ def process_genomic_change(maffilereader, outf, maf_headers, ncols, nannotationc
         queries.append(query)
         rows.append(row)
 
-        if len(queries) == POST_QUERIES_THRESHOLD:
             annotations = pull_genomic_change_info(queries,annotatehotspots)
             append_annotation_to_file(outf, ncols+nannotationcols, rows, annotations)
             queries = []
@@ -578,7 +578,7 @@ def process_hvsg(maffilereader, outf, maf_headers, alteration_column_names, ncol
     for row in maffilereader:
         i = i + 1
 
-        if i % POST_QUERIES_THRESHOLD == 0:
+        if i % POST_QUERIES_THRESHOLD_GC_HGVSG == 0:
             log.info(i)
 
         row = padrow(row, ncols)
@@ -604,7 +604,7 @@ def process_hvsg(maffilereader, outf, maf_headers, alteration_column_names, ncol
             queries.append(query)
             rows.append(row)
 
-        if len(queries) == POST_QUERIES_THRESHOLD:
+        if len(queries) == POST_QUERIES_THRESHOLD_GC_HGVSG:
             annotations = pull_hgvsg_info(queries, annotatehotspots)
             append_annotation_to_file(outf, ncols+nannotationcols, rows, annotations)
             queries = []
