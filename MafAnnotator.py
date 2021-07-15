@@ -13,7 +13,7 @@ def main(argv):
         log.info(
             '\n'
             'MafAnnotator.py -i <input MAF file> -o <output MAF file> [-p previous results] [-c <input clinical file>] '
-            '[-s sample list filter] [-t <default tumor type>] [-u oncokb-base-url] [-b oncokb api bear token] [-a] [-q query type] [-r defauult reference genome]\n'
+            '[-s sample list filter] [-t <default tumor type>] [-u oncokb-base-url] [-b oncokb api bear token] [-a] [-q query type] [-r default reference genome]\n'
             'For definitions of the MAF format, please see https://docs.gdc.cancer.gov/Data/File_Formats/MAF_Format/\n\n'
             'Essential MAF columns for querying HGVSp_Short and HGVSp(case insensitive):\n'
             '    Hugo_Symbol: Hugo gene symbol\n'
