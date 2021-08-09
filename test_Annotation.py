@@ -59,7 +59,7 @@ def test_reference_genome():
         GenomicChangeQuery('7', '140753336', '140753336', 'A', 'T', 'LUAD', ReferenceGenome.GRCH38)
     ]
 
-    annotations = pull_protein_change_info(queries, False)
+    annotations = pull_genomic_change_info(queries, False)
     assert len(annotations) == 2
 
     annotation37 = annotations[0]
