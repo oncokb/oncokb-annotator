@@ -57,6 +57,9 @@ jobs:
           IMAF=data/$MUTATION_DATA_NAME
           OMAF=compare/"$PREFIX"_$MUTATION_DATA_NAME
 
+          IGCMAF=data/$MUTATION_DATA_NAME
+          OGCMAF=compare/"$PREFIX"_genomic_change_$MUTATION_DATA_NAME
+
           IC=data/$CLINICAL_DATA_NAME
           OC=compare/"$PREFIX"_$CLINICAL_DATA_NAME
 
@@ -67,6 +70,7 @@ jobs:
           OCNA=compare/"$PREFIX"_$CNA_DATA_NAME
 
           python MafAnnotator.py -i $IMAF -o $OMAF -c $IC -b $ONCOKB_API_TOKEN
+          python MafAnnotator.py -i $IGCMAF -o $OGCMAF -c $IC -b $ONCOKB_API_TOKEN -q Genomic_Change
           python FusionAnnotator.py -i $IF -o $OF -c $IC -b $ONCOKB_API_TOKEN
           python CnaAnnotator.py -i $ICNA -o $OCNA -c $IC -b $ONCOKB_API_TOKEN
           python ClinicalDataAnnotator.py -i $IC -o $OC -a $OMAF,$OCNA,$OF
