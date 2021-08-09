@@ -1422,7 +1422,9 @@ def getimplications(oncokbdata, levels, implications):
                 log.info(level + " is ignored")
             else:
                 if 'tumorType' in implication:
-                    oncokbdata[level].append(gettumortypename(implication['tumorType']))
+                    tumortypename = gettumortypename(implication['tumorType'])
+                    if tumortypename not in oncokbdata[level]:
+                        oncokbdata[level].append(tumortypename)
 
 
 class GenomicChangeQuery:
@@ -1656,7 +1658,9 @@ def process_oncokb_annotation(annotation, annotate_hotspot):
                     drugnames = []
                     for drug in drugs:
                         drugnames.append(drug['drugName'])
-                    oncokbdata[level].append('+'.join(drugnames))
+                    treatmentname = '+'.join(drugnames)
+                    if treatmentname not in oncokbdata[level]:
+                        oncokbdata[level].append('+'.join(drugnames))
         if annotation['diagnosticImplications'] is not None:
             getimplications(oncokbdata, dxLevels, annotation['diagnosticImplications'])
 
