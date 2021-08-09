@@ -506,8 +506,13 @@ def get_var_allele(ref_allele, tumor_seq_allele1, tumor_seq_allele2):
     # this will be used to resolve the variant classification and variant type
     # if there are no tumor alleles that do not match the ref allele then use empty string
     # in the event that this happens then there might be something wrong with the data itself
+    # if both alleles are different, use allele2. Stick with the logic of GenomeNexus
     try:
-        tumor_seq_allele = [allele for allele in [tumor_seq_allele1, tumor_seq_allele2] if allele != ref_allele][0]
+        tumor_seq_allele = ""
+        if ref_allele != tumor_seq_allele2:
+            tumor_seq_allele = tumor_seq_allele2
+        elif ref_allele != tumor_seq_allele1:
+            tumor_seq_allele = tumor_seq_allele1
     except:
         tumor_seq_allele = ""
 
@@ -1498,6 +1503,7 @@ def pull_hgvsg_info(queries, annotate_hotspot):
             else:
                 # if the api call fails, we should still push a None into the list
                 # to keep the same length of the queries
+                print('Error on annotating the url ' + geturl)
                 annotation.append(None)
 
     processed_annotation = []
@@ -1522,6 +1528,7 @@ def pull_genomic_change_info(queries, annotate_hotspot):
             else:
                 # if the api call fails, we should still push a None into the list
                 # to keep the same length of the queries
+                print('Error on annotating the url ' + geturl)
                 annotation.append(None)
 
     processed_annotation = []
@@ -1549,6 +1556,7 @@ def pull_cna_info(queries):
             else:
                 # if the api call fails, we should still push a None into the list
                 # to keep the same length of the queries
+                print('Error on annotating the url ' + geturl)
                 annotation.append(None)
 
     processed_annotation = []
@@ -1580,6 +1588,7 @@ def pull_structural_variant_info(queries):
             else:
                 # if the api call fails, we should still push a None into the list
                 # to keep the same length of the queries
+                print('Error on annotating the url ' + geturl)
                 annotation.append(None)
 
     processed_annotation = []
