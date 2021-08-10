@@ -12,6 +12,9 @@ log.info('test-----------', os.environ["ONCOKB_API_TOKEN"], '------')
 VARIANT_EXISTS_INDEX = 1
 MUTATION_EFFECT_INDEX = 2
 ONCOGENIC_INDEX = 3
+LEVEL_1_INDEX =4
+LEVEL_2_INDEX = 5
+LEVEL_3A_INDEX = 6
 HIGHEST_LEVEL_INDEX = 12
 HIGHEST_DX_LEVEL_INDEX = 17
 HIGHEST_PX_LEVEL_INDEX = 21
@@ -271,3 +274,34 @@ def test_fake_cna():
 
     annotations = pull_cna_info(queries)
     fake_gene_one_query_suite(annotations)
+
+def check_brca2_n3214i_without_cancertype(annotation):
+    assert len(annotation) == 22
+    assert annotation[MUTATION_EFFECT_INDEX] == 'Likely Loss-of-function'
+    assert annotation[ONCOGENIC_INDEX] == 'Likely Oncogenic'
+    assert annotation[HIGHEST_LEVEL_INDEX] == 'LEVEL_1'
+    assert annotation[LEVEL_1_INDEX] == 'Olaparib,Olaparib+Bevacizumab,Rucaparib,Niraparib'
+    assert annotation[LEVEL_2_INDEX] == 'Talazoparib,Olaparib'
+    assert annotation[LEVEL_3A_INDEX] == 'Rucaparib,Olaparib'
+    
+@pytest.mark.skipif(ONCOKB_API_TOKEN in (None, ''), reason="oncokb api token required")
+def test_duplicated_treatments():
+    # there should not be any duplicated treatment listed when cancer type is not specified
+    
+    # test protein change query
+    queries = [
+        ProteinChangeQuery('BRCA2', 'S1882*', ''),
+    ]
+    annotations = pull_protein_change_info(queries, False)
+    assert len(annotations) == 1
+
+    check_brca2_n3214i_without_cancertype(annotations[0])
+
+    # test genomic change query
+    queries = [
+        GenomicChangeQuery('13', '32914137', '32914137', 'C', 'A', ''),
+    ]
+    annotations = pull_genomic_change_info(queries, False)
+    assert len(annotations) == 1
+
+    check_brca2_n3214i_without_cancertype(annotations[0])
