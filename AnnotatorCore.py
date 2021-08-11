@@ -1460,6 +1460,8 @@ def pull_protein_change_info(queries, annotate_hotspot):
     url = oncokbapiurl + '/annotate/mutations/byProteinChange'
     response = makeoncokbpostrequest(url, queries)
     annotation = []
+    if response.status_code == 401:
+        raise Exception('unauthorized')
     if response.status_code == 200:
         annotation = response.json()
     else:
