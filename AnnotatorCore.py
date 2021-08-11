@@ -1459,9 +1459,9 @@ class StructuralVariantQuery:
 def pull_protein_change_info(queries, annotate_hotspot):
     url = oncokbapiurl + '/annotate/mutations/byProteinChange'
     response = makeoncokbpostrequest(url, queries)
-    annotation = []
     if response.status_code == 401:
         raise Exception('unauthorized')
+    annotation = []
     if response.status_code == 200:
         annotation = response.json()
     else:
@@ -1493,6 +1493,8 @@ def pull_protein_change_info(queries, annotate_hotspot):
 def pull_hgvsg_info(queries, annotate_hotspot):
     url = oncokbapiurl + '/annotate/mutations/byHGVSg'
     response = makeoncokbpostrequest(url, queries)
+    if response.status_code == 401:
+        raise Exception('unauthorized')
     annotation = []
     if response.status_code == 200:
         annotation = response.json()
@@ -1518,6 +1520,8 @@ def pull_hgvsg_info(queries, annotate_hotspot):
 def pull_genomic_change_info(queries, annotate_hotspot):
     url = oncokbapiurl + '/annotate/mutations/byGenomicChange'
     response = makeoncokbpostrequest(url, queries)
+    if response.status_code == 401:
+        raise Exception('unauthorized')
     annotation = []
     if response.status_code == 200:
         annotation = response.json()
@@ -1545,6 +1549,8 @@ def pull_cna_info(queries):
     url = oncokbapiurl + '/annotate/copyNumberAlterations'
 
     response = makeoncokbpostrequest(url, queries)
+    if response.status_code == 401:
+        raise Exception('unauthorized')
     annotation = []
     if response.status_code == 200:
         annotation = response.json()
@@ -1574,6 +1580,8 @@ def pull_structural_variant_info(queries):
     url = oncokbapiurl + '/annotate/structuralVariants'
 
     response = makeoncokbpostrequest(url, queries)
+    if response.status_code == 401:
+        raise Exception('unauthorized')
     annotation = []
     if response.status_code == 200:
         annotation = response.json()
