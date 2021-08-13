@@ -158,7 +158,7 @@ REQUIRED_QUERY_TYPE_COLUMNS = {
 }
 
 POST_QUERIES_THRESHOLD = 1000
-POST_QUERIES_THRESHOLD_GC_HGVSG = 1000
+POST_QUERIES_THRESHOLD_GC_HGVSG = 100
 
 def getOncokbInfo():
     ret = ['Files annotated on ' + date.today().strftime('%m/%d/%Y') + "\nOncoKB API URL: "+oncokbapiurl]
