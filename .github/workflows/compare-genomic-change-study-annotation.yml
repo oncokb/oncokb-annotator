@@ -1,6 +1,6 @@
 # This workflow will install Python dependencies, run annotation against the master annotation for a particular study
 
-name: Compare Study Annotation
+name: Compare Study Genomic Change Annotation
 
 on:
   push:
@@ -40,36 +40,20 @@ jobs:
 
           MUTATION_DATA_NAME=data_mutations_extended.txt
           CLINICAL_DATA_NAME=data_clinical_sample.txt
-          FUSION_DATA_NAME=data_fusions.txt
-          CNA_DATA_NAME=data_CNA.txt
 
           cd data
           curl -s $DATAHUB_URL/$MUTATION_DATA_NAME -O
           curl -s $DATAHUB_URL/$CLINICAL_DATA_NAME -O
-          curl -s $DATAHUB_URL/$FUSION_DATA_NAME -O
-          curl -s $DATAHUB_URL/$CNA_DATA_NAME -O
           cd ..
 
           # create compare folder to add all annotated files
           mkdir compare
 
           PREFIX=oncokb
-          IMAF=data/$MUTATION_DATA_NAME
-          OMAF=compare/"$PREFIX"_$MUTATION_DATA_NAME
 
-          IC=data/$CLINICAL_DATA_NAME
-          OC=compare/"$PREFIX"_$CLINICAL_DATA_NAME
+          OGCMAF="$PREFIX"_genomic_change_$MUTATION_DATA_NAME
 
-          IF=data/$FUSION_DATA_NAME
-          OF=compare/"$PREFIX"_$FUSION_DATA_NAME
-
-          ICNA=data/$CNA_DATA_NAME
-          OCNA=compare/"$PREFIX"_$CNA_DATA_NAME
-
-          python MafAnnotator.py -i $IMAF -o $OMAF -c $IC -b $ONCOKB_API_TOKEN
-          python FusionAnnotator.py -i $IF -o $OF -c $IC -b $ONCOKB_API_TOKEN
-          python CnaAnnotator.py -i $ICNA -o $OCNA -c $IC -b $ONCOKB_API_TOKEN
-          python ClinicalDataAnnotator.py -i $IC -o $OC -a $OMAF,$OCNA,$OF
+          python MafAnnotator.py -i data/$MUTATION_DATA_NAME -o compare/$OGCMAF -c data/$CLINICAL_DATA_NAME -b $ONCOKB_API_TOKEN -q Genomic_Change
 
           git config user.name oncokb-bot
           git config user.email dev.oncokb@gmail.com
@@ -78,20 +62,21 @@ jobs:
           git commit -m 'add analysis'
 
           echo "::set-output name=STUDY::$STUDY"
+          echo "::set-output name=FILE_NAME::$OGCMAF"
 
       - name: Compare annotation result with the ones from master
         id: compare
         env:
           STUDY: ${{steps.annotate.outputs.STUDY}}
+          FILE_NAME: ${{steps.annotate.outputs.FILE_NAME}}
           ONCOKB_OAUTH_TOKEN: ${{ secrets.ONCOKB_OAUTH_TOKEN }}
-          FIEL_NAME_PREFIX: 'oncokb_data'
         run: |
           # remove everything under compare folder and replace wiht the ones from oncokb-data
           rm -f compare/*.txt
 
           cd compare
           curl -s -H "Authorization: token ${ONCOKB_OAUTH_TOKEN}" https://api.github.com/repos/knowledgesystems/oncokb-data/contents/annotation/$STUDY | jq -r '.[] | .download_url + " " + .name' | while IFS=' ' read -r downloadurl name; do
-            if [[ "$name" == "$FIEL_NAME_PREFIX"* ]]; then
+            if [[ "$name" == "$FILE_NAME" ]]; then
               curl -s "$downloadurl" -o $name
             fi
           done
