@@ -367,16 +367,17 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
         outf.write("\t" + VARIANT_IN_ONCOKB_HEADER)
 
         outf.write("\tMUTATION_EFFECT")
+        outf.write("\tMUTATION_EFFECT_CITATIONS")
         outf.write("\tONCOGENIC")
 
-        newncols += 4
+        newncols += 5
 
         for l in levels:
             outf.write('\t' + l)
         newncols += len(levels)
 
         outf.write("\tHIGHEST_LEVEL")
-        outf.write("\tCITATIONS")
+        outf.write("\tTX_CITATIONS")
         newncols += 2
 
         for l in dxLevels:
@@ -384,14 +385,16 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
         newncols += len(dxLevels)
 
         outf.write("\tHIGHEST_DX_LEVEL")
-        newncols += 1
+        outf.write("\tDX_CITATIONS")
+        newncols += 2
 
         for l in pxLevels:
             outf.write('\t' + l)
         newncols += len(pxLevels)
 
         outf.write("\tHIGHEST_PX_LEVEL")
-        newncols += 1
+        outf.write("\tPX_CITATIONS")
+        newncols += 2
 
         outf.write("\n")
 
@@ -1417,8 +1420,11 @@ def gettumortypename(tumortype):
         return tumortype['mainType']['name']
 
 
-def getimplications(oncokbdata, levels, implications):
+def getimplications(oncokbdata, implication_type, levels, implications):
+    citation_column_key = implication_type + '_citations'
     for implication in implications:
+        oncokbdata[citation_column_key] = appendoncokbcitations(oncokbdata[citation_column_key], implication['pmids'],
+                                                                implication['abstracts'])
         level = implication['levelOfEvidence']
 
         if level is not None:
@@ -1629,8 +1635,12 @@ def process_oncokb_annotation(annotation, annotate_hotspot):
     oncokbdata[GENE_IN_ONCOKB_HEADER] = GENE_IN_ONCOKB_DEFAULT
     oncokbdata[VARIANT_IN_ONCOKB_HEADER] = VARIANT_IN_ONCOKB_DEFAULT
     oncokbdata['mutation_effect'] = ""
+    oncokbdata['mutation_effect_citations'] = []
     oncokbdata['citations'] = []
     oncokbdata['oncogenic'] = ""
+    oncokbdata['tx_citations'] = []
+    oncokbdata['dx_citations'] = []
+    oncokbdata['px_citations'] = []
 
     try:
         # oncogenic
@@ -1646,7 +1656,7 @@ def process_oncokb_annotation(annotation, annotate_hotspot):
         # mutation effect
         if (annotation['mutationEffect'] is not None):
             oncokbdata['mutation_effect'] = annotation['mutationEffect']['knownEffect']
-            oncokbdata['citations'] = appendoncokbcitations(oncokbdata['citations'],
+            oncokbdata['mutation_effect_citations'] = appendoncokbcitations(oncokbdata['mutation_effect_citations'],
                                                             annotation['mutationEffect']['citations']['pmids'],
                                                             annotation['mutationEffect']['citations']['abstracts'])
 
@@ -1663,7 +1673,7 @@ def process_oncokb_annotation(annotation, annotate_hotspot):
             else:
                 drugs = treatment['drugs']
 
-                oncokbdata['citations'] = appendoncokbcitations(oncokbdata['citations'], treatment['pmids'],
+                oncokbdata['tx_citations'] = appendoncokbcitations(oncokbdata['tx_citations'], treatment['pmids'],
                                                                 treatment['abstracts'])
 
                 if len(drugs) == 0:
@@ -1676,10 +1686,10 @@ def process_oncokb_annotation(annotation, annotate_hotspot):
                     if treatmentname not in oncokbdata[level]:
                         oncokbdata[level].append('+'.join(drugnames))
         if annotation['diagnosticImplications'] is not None:
-            getimplications(oncokbdata, dxLevels, annotation['diagnosticImplications'])
+            getimplications(oncokbdata, 'dx', dxLevels, annotation['diagnosticImplications'])
 
         if annotation['prognosticImplications'] is not None:
-            getimplications(oncokbdata, pxLevels, annotation['prognosticImplications'])
+            getimplications(oncokbdata, 'px', pxLevels, annotation['prognosticImplications'])
 
         oncokbdata['highestDiagnosticImplicationLevel'] = annotation['highestDiagnosticImplicationLevel']
         oncokbdata['highestPrognosticImplicationLevel'] = annotation['highestPrognosticImplicationLevel']
@@ -1701,18 +1711,22 @@ def process_oncokb_annotation(annotation, annotate_hotspot):
     ret.append(oncokbdata[GENE_IN_ONCOKB_HEADER])
     ret.append(oncokbdata[VARIANT_IN_ONCOKB_HEADER])
     ret.append(oncokbdata['mutation_effect'])
+    ret.append(';'.join(oncokbdata['mutation_effect_citations']))
     ret.append(oncokbdata['oncogenic'])
     for l in levels:
         ret.append(','.join(oncokbdata[l]))
     ret.append(gethighestsensitivitylevel(oncokbdata))
-    ret.append(';'.join(oncokbdata['citations']))
+    ret.append(';'.join(oncokbdata['tx_citations']))
+
     for l in dxLevels:
         ret.append(','.join(oncokbdata[l]))
     ret.append(gethighestDxPxlevel(dxLevels, [oncokbdata['highestDiagnosticImplicationLevel']]))
+    ret.append(';'.join(oncokbdata['dx_citations']))
 
     for l in pxLevels:
         ret.append(','.join(oncokbdata[l]))
     ret.append(gethighestDxPxlevel(pxLevels, [oncokbdata['highestPrognosticImplicationLevel']]))
+    ret.append(';'.join(oncokbdata['px_citations']))
 
     return ret
 
