@@ -163,7 +163,7 @@ POST_QUERIES_THRESHOLD_GC_HGVSG = 100
 def getOncokbInfo():
     ret = ['Files annotated on ' + date.today().strftime('%m/%d/%Y') + "\nOncoKB API URL: "+oncokbapiurl]
     try:
-        info = requests.get(oncokbapiurl + "/info").json()
+        info = requests.get(oncokbapiurl + "/info", timeout=120).json()
         ret.append('\nOncoKB data version: ' + info['dataVersion']['version']+', released on ' + info['dataVersion']['date'])
     except:
         log.error("error when fetch OncoKB info")
@@ -177,7 +177,7 @@ def generateReadme(outfile):
 
 def gethotspots(url, type):
     hotspots = {}
-    response = requests.get(url)
+    response = requests.get(url, timeout=120)
     if response.status_code == 200:
         hotspotsjson = response.json()
 
@@ -201,7 +201,7 @@ def makeoncokbpostrequest(url, body):
         'Content-Type': 'application/json',
         'Authorization': 'Bearer %s' % oncokbapibearertoken
     }
-    return requests.post(url, headers=headers, data=json.dumps(body, default=lambda o: o.__dict__))
+    return requests.post(url, headers=headers, data=json.dumps(body, default=lambda o: o.__dict__), timeout=120)
 
 
 def makeoncokbgetrequest(url):
@@ -209,7 +209,7 @@ def makeoncokbgetrequest(url):
         'Content-Type': 'application/json',
         'Authorization': 'Bearer %s' % oncokbapibearertoken
     }
-    return requests.get(url, headers=headers)
+    return requests.get(url, headers=headers, timeout=120)
 
 
 _3dhotspots = None
