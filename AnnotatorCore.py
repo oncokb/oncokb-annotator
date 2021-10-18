@@ -20,7 +20,10 @@ logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 log = logging.getLogger('AnnotatorCore')
 
-csv.field_size_limit(int(ct.c_ulong(-1).value // 2)) # Deal with overflow problem on Windows, https://stackoverflow.com/questions/15063936/csv-error-field-larger-than-field-limit-131072
+# API timeout is set to two minutes
+REQUEST_TIMEOUT = 120
+
+csv.field_size_limit(int(ct.c_ulong(-1).value // 2)) # Deal with overflow problem on Windows, https://stackoverflow.co/120m/questions/15063936/csv-error-field-larger-than-field-limit-131072
 sizeLimit = csv.field_size_limit()
 csv.field_size_limit(sizeLimit) # for reading large files
 
@@ -163,7 +166,7 @@ POST_QUERIES_THRESHOLD_GC_HGVSG = 100
 def getOncokbInfo():
     ret = ['Files annotated on ' + date.today().strftime('%m/%d/%Y') + "\nOncoKB API URL: "+oncokbapiurl]
     try:
-        info = requests.get(oncokbapiurl + "/info", timeout=120).json()
+        info = requests.get(oncokbapiurl + "/info", timeout=REQUEST_TIMEOUT).json()
         ret.append('\nOncoKB data version: ' + info['dataVersion']['version']+', released on ' + info['dataVersion']['date'])
     except:
         log.error("error when fetch OncoKB info")
@@ -177,7 +180,7 @@ def generateReadme(outfile):
 
 def gethotspots(url, type):
     hotspots = {}
-    response = requests.get(url, timeout=120)
+    response = requests.get(url, timeout=REQUEST_TIMEOUT)
     if response.status_code == 200:
         hotspotsjson = response.json()
 
@@ -201,7 +204,8 @@ def makeoncokbpostrequest(url, body):
         'Content-Type': 'application/json',
         'Authorization': 'Bearer %s' % oncokbapibearertoken
     }
-    return requests.post(url, headers=headers, data=json.dumps(body, default=lambda o: o.__dict__), timeout=120)
+    return requests.post(url, headers=headers, data=json.dumps(body, default=lambda o: o.__dict__),
+                         timeout=REQUEST_TIMEOUT)
 
 
 def makeoncokbgetrequest(url):
@@ -209,7 +213,7 @@ def makeoncokbgetrequest(url):
         'Content-Type': 'application/json',
         'Authorization': 'Bearer %s' % oncokbapibearertoken
     }
-    return requests.get(url, headers=headers, timeout=120)
+    return requests.get(url, headers=headers, timeout=REQUEST_TIMEOUT)
 
 
 _3dhotspots = None
