@@ -1768,6 +1768,7 @@ def readheaders(reader):
             headers["length"] = len(row)
             i = 0
             for h in row:
+                h=h.strip()
                 headers[h.upper()] = i
                 headers[h] = i
                 i = i + 1
