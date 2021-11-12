@@ -1,9 +1,12 @@
-# This workflow will install Python dependencies, run annotation against the master annotation for a particular study
+# This workflow will install Python dependencies, run annotation against the master annotation
 
-name: Compare Study Annotation
+name: Compare Annotation
 
 on:
   push:
+    branches:
+      - master
+  pull_request:
     branches:
       - master
 jobs:
@@ -27,7 +30,7 @@ jobs:
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
           # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-      - name: Annotate msk_impact_2017 study
+      - name: Annotate
         id: annotate
         env:
           ONCOKB_API_TOKEN: ${{ secrets.ONCOKB_BOT_API_TOKEN }}
@@ -35,19 +38,17 @@ jobs:
         run: |
           git checkout -b compare
 
-          STUDY=msk_impact_2017
-          DATAHUB_URL=https://media.githubusercontent.com/media/cBioPortal/datahub/42afc279efb8d9104aba36fa35bad3ec41921949/public/"$STUDY"
-
-          MUTATION_DATA_NAME=data_mutations_extended.txt
+          MUTATION_DATA_NAME=data_mutations_mskcc.txt
           CLINICAL_DATA_NAME=data_clinical_sample.txt
           FUSION_DATA_NAME=data_fusions.txt
           CNA_DATA_NAME=data_CNA.txt
 
           cd data || exit
-          curl -s "$DATAHUB_URL"/"$MUTATION_DATA_NAME" -O
-          curl -s "$DATAHUB_URL"/"$CLINICAL_DATA_NAME" -O
-          curl -s "$DATAHUB_URL"/"$FUSION_DATA_NAME" -O
-          curl -s "$DATAHUB_URL"/"$CNA_DATA_NAME" -O
+          curl -s -H "Authorization: token ${ONCOKB_OAUTH_TOKEN}" https://api.github.com/repos/knowledgesystems/oncokb-data/contents/annotation/annotator-test/data | jq -r '.[] | .download_url + " " + .name' | while IFS=' ' read -r downloadurl name; do
+            if [[ "$name" == "$FIEL_NAME_PREFIX"* ]]; then
+              curl -s "$downloadurl" -o $name
+            fi
+          done
           cd ..
 
           # create compare folder to add all annotated files
@@ -77,12 +78,9 @@ jobs:
           git add .
           git commit -m 'add analysis'
 
-          echo "::set-output name=STUDY::$STUDY"
-
       - name: Compare annotation result with the ones from master
         id: compare
         env:
-          STUDY: ${{steps.annotate.outputs.STUDY}}
           ONCOKB_OAUTH_TOKEN: ${{ secrets.ONCOKB_OAUTH_TOKEN }}
           FIEL_NAME_PREFIX: 'oncokb_data'
         run: |
@@ -90,7 +88,7 @@ jobs:
           rm -f compare/*.txt
 
           cd compare || exit
-          curl -s -H "Authorization: token ${ONCOKB_OAUTH_TOKEN}" https://api.github.com/repos/knowledgesystems/oncokb-data/contents/annotation/$STUDY | jq -r '.[] | .download_url + " " + .name' | while IFS=' ' read -r downloadurl name; do
+          curl -s -H "Authorization: token ${ONCOKB_OAUTH_TOKEN}" https://api.github.com/repos/knowledgesystems/oncokb-data/contents/annotation/annotator-test/annotation | jq -r '.[] | .download_url + " " + .name' | while IFS=' ' read -r downloadurl name; do
             if [[ "$name" == "$FIEL_NAME_PREFIX"* ]]; then
               curl -s "$downloadurl" -o $name
             fi
