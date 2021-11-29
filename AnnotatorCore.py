@@ -661,21 +661,25 @@ def processsv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap
         outf.write("\t" + GENE_IN_ONCOKB_HEADER)
         outf.write("\t" + VARIANT_IN_ONCOKB_HEADER)
         outf.write("\tMUTATION_EFFECT")
+        outf.write("\tMUTATION_EFFECT_CITATIONS")
         outf.write("\tONCOGENIC")
         for l in levels:
             outf.write('\t' + l)
         outf.write("\tHIGHEST_LEVEL")
-        outf.write("\tCITATIONS")
+        outf.write("\tTX_CITATIONS")
 
         for l in dxLevels:
             outf.write('\t' + l)
         outf.write("\tHIGHEST_DX_LEVEL")
+        outf.write("\tDX_CITATIONS")
 
         for l in pxLevels:
             outf.write('\t' + l)
-        outf.write("\tHIGHEST_PX_LEVEL\n")
+        outf.write("\tHIGHEST_PX_LEVEL")
+        outf.write("\tPX_CITATIONS")
+        outf.write("\n")
 
-        newcols = ncols + 8 + len(levels) + len(dxLevels) + len(pxLevels)
+        newcols = ncols + 11 + len(levels) + len(dxLevels) + len(pxLevels)
 
         igene1 = geIndexOfHeader(headers, ['GENE1'])
         igene2 = geIndexOfHeader(headers, ['GENE2'])
@@ -767,21 +771,25 @@ def processcnagisticdata(cnafile, outfile, previousoutfile, defaultCancerType, c
         outf.write("\t"+GENE_IN_ONCOKB_HEADER)
         outf.write("\t"+VARIANT_IN_ONCOKB_HEADER)
         outf.write("\tMUTATION_EFFECT")
+        outf.write("\tMUTATION_EFFECT_CITATIONS")
         outf.write("\tONCOGENIC")
         for l in levels:
             outf.write('\t' + l)
         outf.write("\tHIGHEST_LEVEL")
-        outf.write("\tCITATIONS")
+        outf.write("\tTX_CITATIONS")
 
         for l in dxLevels:
             outf.write('\t' + l)
         outf.write("\tHIGHEST_DX_LEVEL")
+        outf.write("\tDX_CITATIONS")
 
         for l in pxLevels:
             outf.write('\t' + l)
-        outf.write("\tHIGHEST_PX_LEVEL\n")
+        outf.write("\tHIGHEST_PX_LEVEL")
+        outf.write("\tPX_CITATIONS")
+        outf.write("\n")
 
-        ncols = 12 + len(levels) + len(dxLevels) + len(pxLevels)
+        ncols = 15 + len(levels) + len(dxLevels) + len(pxLevels)
 
         i = 0
         rows = []
