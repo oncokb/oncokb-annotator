@@ -21,7 +21,7 @@ logging.getLogger("urllib3").setLevel(logging.WARNING)
 log = logging.getLogger('AnnotatorCore')
 
 # API timeout is set to two minutes
-REQUEST_TIMEOUT = 120
+REQUEST_TIMEOUT = 256
 
 csv.field_size_limit(int(ct.c_ulong(-1).value // 2)) # Deal with overflow problem on Windows, https://stackoverflow.co/120m/questions/15063936/csv-error-field-larger-than-field-limit-131072
 sizeLimit = csv.field_size_limit()
@@ -160,7 +160,7 @@ REQUIRED_QUERY_TYPE_COLUMNS = {
     QueryType.GENOMIC_CHANGE: GENOMIC_CHANGE_HEADERS
 }
 
-POST_QUERIES_THRESHOLD = 1000
+POST_QUERIES_THRESHOLD = 256
 POST_QUERIES_THRESHOLD_GC_HGVSG = 100
 
 def getOncokbInfo():
