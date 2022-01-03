@@ -131,9 +131,12 @@ def test_check_atypical_alts():
 @pytest.mark.skipif(ONCOKB_API_TOKEN in (None, ''), reason="oncokb api token required")
 def test_check_hgvsg():
     queries = [
+        # KRAF G12C
         HGVSgQuery('12:g.25398285C>A', 'LUAD'),
+        # KRAF G12C
         HGVSgQuery('12:g.25398285_25398286delinsAG', 'LUAD'),
-        HGVSgQuery('5:g.1295228G>A', 'LUAD'),
+        # TERT Promoter
+        HGVSgQuery('5:g.1295167_1295168delinsAATG', 'LUAD'),
     ]
 
     annotations = pull_hgvsg_info(queries, False)
@@ -160,9 +163,12 @@ def test_check_hgvsg():
 @pytest.mark.skipif(ONCOKB_API_TOKEN in (None, ''), reason="oncokb api token required")
 def test_check_genomic_change():
     queries = [
+        # KRAF G12C
         GenomicChangeQuery('12', '25398285', '25398285', 'C', 'A', 'LUAD'),
+        # KRAF G12C
         GenomicChangeQuery('12', '25398285', '25398286', 'CA', 'AG', 'LUAD'),
-        GenomicChangeQuery('5', '1295228', '1295228', 'G', 'A', 'LUAD'),
+        # TERT Promoter
+        GenomicChangeQuery('5', '1295167', '1295168', 'TC', 'AATG', 'LUAD'),
     ]
 
     annotations = pull_genomic_change_info(queries, False)
