@@ -283,8 +283,8 @@ def get_tumor_type_from_row(row, row_index, defaultCancerType, icancertype, canc
             cancertype = row_cancer_type
     if sample in cancerTypeMap:
         cancertype = cancerTypeMap[sample]
-    if cancertype == "":
-        log.info("Cancer type for the sample should be defined for a more accurate result\nline %s: %s\n" % (row_index, row))
+#     if cancertype == "":
+#         log.info("Cancer type for the sample should be defined for a more accurate result\nline %s: %s\n" % (row_index, row))
         # continue
     return cancertype
 
@@ -363,14 +363,19 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
             outf.write("\tIS-A-3D-HOTSPOT")
             newncols += 2
 
+        outf.write("\t" + 'CANCER_TYPE')
         outf.write("\t" + GENE_IN_ONCOKB_HEADER)
         outf.write("\t" + VARIANT_IN_ONCOKB_HEADER)
+        outf.write("\t" + 'IS_HOTSPOT')
+        outf.write("\t" + 'IS_VUS')
+        outf.write("\t" + 'HAS_ALTERNATIVE_ALLELE')
 
         outf.write("\tMUTATION_EFFECT")
         outf.write("\tMUTATION_EFFECT_CITATIONS")
         outf.write("\tONCOGENIC")
+        outf.write("\tVARIANT_SUMMARY")
 
-        newncols += 5
+        newncols += 10
 
         for l in levels:
             outf.write('\t' + l)
@@ -1502,6 +1507,7 @@ def pull_protein_change_info(queries, annotate_hotspot):
                 # to keep the same length of the queries
                 annotation.append(None)
 
+    print(annotation)
     processed_annotation = []
     for query_annotation in annotation:
         processed_annotation.append(process_oncokb_annotation(query_annotation, annotate_hotspot))
@@ -1646,17 +1652,25 @@ def process_oncokb_annotation(annotation, annotate_hotspot):
     oncokbdata['mutation_effect_citations'] = []
     oncokbdata['citations'] = []
     oncokbdata['oncogenic'] = ""
+    oncokbdata['variant_summary'] = ""
+    oncokbdata['is_hotspot'] = ""
+    oncokbdata['is_vus'] = ""
     oncokbdata['tx_citations'] = []
     oncokbdata['dx_citations'] = []
     oncokbdata['px_citations'] = []
 
     try:
         # oncogenic
+        oncokbdata['cancer_type'] = annotation['query']['tumorType']
         oncokbdata[GENE_IN_ONCOKB_HEADER] = GENE_IN_ONCOKB_DEFAULT if annotation['geneExist'] is None else str(annotation['geneExist'])
         oncokbdata[VARIANT_IN_ONCOKB_HEADER] = VARIANT_IN_ONCOKB_DEFAULT if annotation['variantExist'] is None else str(annotation['variantExist'])
 
         # oncogenic
         oncokbdata['oncogenic'] = annotation['oncogenic']
+        oncokbdata['variant_summary'] = annotation['variantSummary']
+        oncokbdata['is_hotspot'] = annotation['hotspot']
+        oncokbdata['is_vus'] = annotation['vus']
+        oncokbdata['has_alternative_allele'] = annotation['alleleExist']
 
         # if not evidences['geneExist'] or (not evidences['variantExist'] and not evidences['alleleExist']):
         #     return ''
@@ -1680,6 +1694,7 @@ def process_oncokb_annotation(annotation, annotate_hotspot):
                 # oncokbdata[level].append('')
             else:
                 drugs = treatment['drugs']
+                drugAlts = treatment['alterations']
 
                 oncokbdata['tx_citations'] = appendoncokbcitations(oncokbdata['tx_citations'], treatment['pmids'],
                                                                 treatment['abstracts'])
@@ -1690,9 +1705,9 @@ def process_oncokb_annotation(annotation, annotate_hotspot):
                     drugnames = []
                     for drug in drugs:
                         drugnames.append(drug['drugName'])
-                    treatmentname = '+'.join(drugnames)
+                    treatmentname = '+'.join(drugnames) + '(' + ', '.join(drugAlts) + ')'
                     if treatmentname not in oncokbdata[level]:
-                        oncokbdata[level].append('+'.join(drugnames))
+                        oncokbdata[level].append(treatmentname)
         if annotation['diagnosticImplications'] is not None:
             getimplications(oncokbdata, 'dx', dxLevels, annotation['diagnosticImplications'])
 
@@ -1716,11 +1731,16 @@ def process_oncokb_annotation(annotation, annotate_hotspot):
         _3dhotspot = pull3dhotspots(annotation['query']['hugoSymbol'], annotation['query']['consequence'], annotation['query']['proteinStart'], annotation['query']['proteinEnd'])
         ret.append(_3dhotspot)
 
+    ret.append(oncokbdata['cancer_type'])
     ret.append(oncokbdata[GENE_IN_ONCOKB_HEADER])
     ret.append(oncokbdata[VARIANT_IN_ONCOKB_HEADER])
+    ret.append(str(oncokbdata['is_hotspot']))
+    ret.append(str(oncokbdata['is_vus']))
+    ret.append(str(oncokbdata['has_alternative_allele']))
     ret.append(oncokbdata['mutation_effect'])
     ret.append(';'.join(oncokbdata['mutation_effect_citations']))
     ret.append(oncokbdata['oncogenic'])
+    ret.append(oncokbdata['variant_summary'])
     for l in levels:
         ret.append(','.join(oncokbdata[l]))
     ret.append(gethighestsensitivitylevel(oncokbdata))
