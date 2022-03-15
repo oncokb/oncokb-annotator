@@ -287,8 +287,8 @@ def check_brca2_n3214i_without_cancertype(annotation):
     assert annotation[MUTATION_EFFECT_INDEX] == 'Likely Loss-of-function'
     assert annotation[ONCOGENIC_INDEX] == 'Likely Oncogenic'
     assert annotation[HIGHEST_LEVEL_INDEX] == 'LEVEL_1'
-    assert annotation[LEVEL_1_INDEX] == 'Olaparib,Rucaparib,Olaparib+Bevacizumab,Niraparib'
-    assert annotation[LEVEL_3A_INDEX] == 'Olaparib,Rucaparib,Talazoparib'
+    assert annotation[LEVEL_1_INDEX] == 'Olaparib,Olaparib+Bevacizumab,Rucaparib,Niraparib'
+    assert annotation[LEVEL_3A_INDEX] == 'Rucaparib,Talazoparib,Olaparib'
     
 @pytest.mark.skipif(ONCOKB_API_TOKEN in (None, ''), reason="oncokb api token required")
 def test_duplicated_treatments():
