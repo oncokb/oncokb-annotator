@@ -207,7 +207,7 @@ def requests_retry_session(
     retries=3,
     backoff_factor=0.3,
     status_forcelist=API_REQUEST_RETRY_STATUS_FORCELIST,
-    method_whitelist=('GET', 'HEAD'),
+    allowed_methods=('GET', 'HEAD'),
     session=None,
 ):
     session = session or requests.Session()
@@ -217,7 +217,7 @@ def requests_retry_session(
         connect=retries,
         backoff_factor=backoff_factor,
         status_forcelist=status_forcelist,
-        method_whitelist=method_whitelist,
+        allowed_methods=allowed_methods,
     )
     adapter = HTTPAdapter(max_retries=retry)
     session.mount('http://', adapter)
@@ -229,7 +229,7 @@ def makeoncokbpostrequest(url, body):
         'Content-Type': 'application/json',
         'Authorization': 'Bearer %s' % oncokbapibearertoken
     }
-    return requests_retry_session(method_whitelist=["POST"]).post(url, headers=headers, data=json.dumps(body, default=lambda o: o.__dict__),
+    return requests_retry_session(allowed_methods=["POST"]).post(url, headers=headers, data=json.dumps(body, default=lambda o: o.__dict__),
                          timeout=REQUEST_TIMEOUT)
 
 
@@ -238,7 +238,7 @@ def makeoncokbgetrequest(url):
         'Content-Type': 'application/json',
         'Authorization': 'Bearer %s' % oncokbapibearertoken
     }
-    return requests_retry_session(method_whitelist=["HEAD", "GET"]).get(url, headers=headers, timeout=REQUEST_TIMEOUT)
+    return requests_retry_session(allowed_methods=["HEAD", "GET"]).get(url, headers=headers, timeout=REQUEST_TIMEOUT)
 
 
 _3dhotspots = None
