@@ -9,6 +9,9 @@ import os.path
 import logging
 import re
 import matplotlib
+from requests.adapters import HTTPAdapter
+from urllib3 import Retry
+
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from datetime import date
@@ -22,6 +25,8 @@ log = logging.getLogger('AnnotatorCore')
 
 # API timeout is set to two minutes
 REQUEST_TIMEOUT = 240
+
+API_REQUEST_RETRY_STATUS_FORCELIST = [429, 500, 502, 503, 504]
 
 csv.field_size_limit(int(ct.c_ulong(-1).value // 2)) # Deal with overflow problem on Windows, https://stackoverflow.co/120m/questions/15063936/csv-error-field-larger-than-field-limit-131072
 sizeLimit = csv.field_size_limit()
@@ -198,13 +203,33 @@ def gethotspots(url, type):
                   "reason: %s" % response.reason)
     return hotspots
 
+def requests_retry_session(
+    retries=3,
+    backoff_factor=0.3,
+    status_forcelist=API_REQUEST_RETRY_STATUS_FORCELIST,
+    method_whitelist=('GET', 'HEAD'),
+    session=None,
+):
+    session = session or requests.Session()
+    retry = Retry(
+        total=retries,
+        read=retries,
+        connect=retries,
+        backoff_factor=backoff_factor,
+        status_forcelist=status_forcelist,
+        method_whitelist=method_whitelist,
+    )
+    adapter = HTTPAdapter(max_retries=retry)
+    session.mount('http://', adapter)
+    session.mount('https://', adapter)
+    return session
 
 def makeoncokbpostrequest(url, body):
     headers = {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer %s' % oncokbapibearertoken
     }
-    return requests.post(url, headers=headers, data=json.dumps(body, default=lambda o: o.__dict__),
+    return requests_retry_session(method_whitelist=["POST"]).post(url, headers=headers, data=json.dumps(body, default=lambda o: o.__dict__),
                          timeout=REQUEST_TIMEOUT)
 
 
@@ -213,7 +238,7 @@ def makeoncokbgetrequest(url):
         'Content-Type': 'application/json',
         'Authorization': 'Bearer %s' % oncokbapibearertoken
     }
-    return requests.get(url, headers=headers, timeout=REQUEST_TIMEOUT)
+    return requests_retry_session(method_whitelist=["HEAD", "GET"]).get(url, headers=headers, timeout=REQUEST_TIMEOUT)
 
 
 _3dhotspots = None
