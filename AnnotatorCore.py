@@ -387,39 +387,12 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
             outf.write("\tIS-A-HOTSPOT")
             outf.write("\tIS-A-3D-HOTSPOT")
             newncols += 2
+            
+        oncokb_annotation_headers = get_oncokb_annotation_column_headers()
 
-        outf.write("\t" + GENE_IN_ONCOKB_HEADER)
-        outf.write("\t" + VARIANT_IN_ONCOKB_HEADER)
-
-        outf.write("\tMUTATION_EFFECT")
-        outf.write("\tMUTATION_EFFECT_CITATIONS")
-        outf.write("\tONCOGENIC")
-
-        newncols += 5
-
-        for l in levels:
-            outf.write('\t' + l)
-        newncols += len(levels)
-
-        outf.write("\tHIGHEST_LEVEL")
-        outf.write("\tTX_CITATIONS")
-        newncols += 2
-
-        for l in dxLevels:
-            outf.write('\t' + l)
-        newncols += len(dxLevels)
-
-        outf.write("\tHIGHEST_DX_LEVEL")
-        outf.write("\tDX_CITATIONS")
-        newncols += 2
-
-        for l in pxLevels:
-            outf.write('\t' + l)
-        newncols += len(pxLevels)
-
-        outf.write("\tHIGHEST_PX_LEVEL")
-        outf.write("\tPX_CITATIONS")
-        newncols += 2
+        outf.write("\t")
+        outf.write("\t".join(oncokb_annotation_headers))
+        newncols += len(oncokb_annotation_headers)
 
         outf.write("\n")
 
@@ -450,6 +423,26 @@ def get_cell_content(row, index, return_empty_string=False):
         return ''
     else:
         return None
+
+
+def get_oncokb_annotation_column_headers():
+    headers = [GENE_IN_ONCOKB_HEADER, VARIANT_IN_ONCOKB_HEADER, "MUTATION_EFFECT", "MUTATION_EFFECT_CITATIONS",
+               "ONCOGENIC"]
+    for l in levels:
+        headers.append(l)
+    headers.append("HIGHEST_LEVEL")
+    headers.append("TX_CITATIONS")
+
+    for l in dxLevels:
+        headers.append(l)
+    headers.append("HIGHEST_DX_LEVEL")
+    headers.append("DX_CITATIONS")
+
+    for l in pxLevels:
+        headers.append(l)
+    headers.append("HIGHEST_PX_LEVEL")
+    headers.append("PX_CITATIONS")
+    return headers
 
 def process_alteration(maffilereader, outf, maf_headers, alteration_column_names, ncols, nannotationcols, defaultCancerType, cancerTypeMap,
                        annotatehotspots, default_reference_genome):
@@ -683,28 +676,12 @@ def processsv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap
             return
 
         outf.write(headers['^-$'])
-        outf.write("\t" + GENE_IN_ONCOKB_HEADER)
-        outf.write("\t" + VARIANT_IN_ONCOKB_HEADER)
-        outf.write("\tMUTATION_EFFECT")
-        outf.write("\tMUTATION_EFFECT_CITATIONS")
-        outf.write("\tONCOGENIC")
-        for l in levels:
-            outf.write('\t' + l)
-        outf.write("\tHIGHEST_LEVEL")
-        outf.write("\tTX_CITATIONS")
-
-        for l in dxLevels:
-            outf.write('\t' + l)
-        outf.write("\tHIGHEST_DX_LEVEL")
-        outf.write("\tDX_CITATIONS")
-
-        for l in pxLevels:
-            outf.write('\t' + l)
-        outf.write("\tHIGHEST_PX_LEVEL")
-        outf.write("\tPX_CITATIONS")
+        oncokb_annotation_headers = get_oncokb_annotation_column_headers()
+        outf.write("\t")
+        outf.write("\t".join(oncokb_annotation_headers))
         outf.write("\n")
 
-        newcols = ncols + 11 + len(levels) + len(dxLevels) + len(pxLevels)
+        newcols = ncols + len(oncokb_annotation_headers)
 
         igene1 = geIndexOfHeader(headers, ['GENE1'])
         igene2 = geIndexOfHeader(headers, ['GENE2'])
@@ -793,28 +770,13 @@ def processcnagisticdata(cnafile, outfile, previousoutfile, defaultCancerType, c
                     samples))
 
         outf.write('SAMPLE_ID\tCANCER_TYPE\tHUGO_SYMBOL\tALTERATION')
-        outf.write("\t"+GENE_IN_ONCOKB_HEADER)
-        outf.write("\t"+VARIANT_IN_ONCOKB_HEADER)
-        outf.write("\tMUTATION_EFFECT")
-        outf.write("\tMUTATION_EFFECT_CITATIONS")
-        outf.write("\tONCOGENIC")
-        for l in levels:
-            outf.write('\t' + l)
-        outf.write("\tHIGHEST_LEVEL")
-        outf.write("\tTX_CITATIONS")
+        ncols = 4
 
-        for l in dxLevels:
-            outf.write('\t' + l)
-        outf.write("\tHIGHEST_DX_LEVEL")
-        outf.write("\tDX_CITATIONS")
-
-        for l in pxLevels:
-            outf.write('\t' + l)
-        outf.write("\tHIGHEST_PX_LEVEL")
-        outf.write("\tPX_CITATIONS")
+        oncokb_annotation_headers = get_oncokb_annotation_column_headers()
+        outf.write("\t")
+        outf.write("\t".join(oncokb_annotation_headers))
         outf.write("\n")
-
-        ncols = 15 + len(levels) + len(dxLevels) + len(pxLevels)
+        ncols += len(oncokb_annotation_headers)
 
         i = 0
         rows = []
