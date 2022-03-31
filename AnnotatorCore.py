@@ -145,6 +145,13 @@ GC_VAR_ALLELE_1_HEADER = 'TUMOR_SEQ_ALLELE1'
 GC_VAR_ALLELE_2_HEADER = 'TUMOR_SEQ_ALLELE2'
 GENOMIC_CHANGE_HEADERS = [GC_CHROMOSOME_HEADER, GC_START_POSITION_HEADER, GC_END_POSITION_HEADER, GC_REF_ALLELE_HEADER, GC_VAR_ALLELE_1_HEADER, GC_VAR_ALLELE_2_HEADER]
 
+# columns for structural variant annotation
+SV_GENE_A_HEADER = ['SITE1_GENE', 'GENEA', 'GENE1']
+SV_GENE_B_HEADER = ['SITE2_GENE', 'GENEB', 'GENE2']
+SV_TYPE_HEADER = ['SV_CLASS_NAME', 'SV_TYPE']
+SV_TYPES = ['DELETION', 'TRANSLOCATION', 'DUPLICATION', 'INSERTION', 'INVERSION', 'FUSION', 'UNKNOWN']
+
+UNKNOWN = 'UNKNOWN'
 
 class QueryType(Enum):
     HGVSP_SHORT = 'HGVSP_SHORT'
@@ -649,19 +656,19 @@ def process_hvsg(maffilereader, outf, maf_headers, alteration_column_names, ncol
 def getgenesfromfusion(fusion, nameregex=None):
     GENES_REGEX = "([A-Za-z\d]+-[A-Za-z\d]+)" if nameregex is None else nameregex
     searchresult = re.search(GENES_REGEX, fusion, flags=re.IGNORECASE)
-    gene1=None
-    gene2=None
+    geneA=None
+    geneB=None
     if searchresult:
         parts = searchresult.group(1).split("-")
-        gene1 = parts[0]
-        gene2 = gene1
+        geneA = parts[0]
+        geneB = geneA
         if len(parts) > 1 and parts[1] != "intragenic":
-            gene2 = parts[1]
+            geneB = parts[1]
     else:
-        gene1=gene2=fusion
-    return gene1, gene2
+        geneA=geneB=fusion
+    return geneA, geneB
 
-def processsv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap, nameregex):
+def process_fusion(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap, nameregex):
     if os.path.isfile(previousoutfile):
         cacheannotated(previousoutfile, defaultCancerType, cancerTypeMap)
     outf = open(outfile, 'w+')
@@ -683,8 +690,8 @@ def processsv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap
 
         newcols = ncols + len(oncokb_annotation_headers)
 
-        igene1 = geIndexOfHeader(headers, ['GENE1'])
-        igene2 = geIndexOfHeader(headers, ['GENE2'])
+        igeneA = geIndexOfHeader(headers, SV_GENE_A_HEADER)
+        igeneB = geIndexOfHeader(headers, SV_GENE_B_HEADER)
         ifusion = geIndexOfHeader(headers, FUSION_HEADERS)
         isample = geIndexOfHeader(headers, SAMPLE_HEADERS)
         icancertype = geIndexOfHeader(headers, CANCER_TYPE_HEADERS)
@@ -704,20 +711,92 @@ def processsv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap
             if sampleidsfilter and sample not in sampleidsfilter:
                 continue
 
-            gene1 = None
-            gene2 = None
-            if igene1 >= 0:
-                gene1 = row[igene1]
-            if igene2 >= 0:
-                gene2 = row[igene2]
-            if igene1 < 0 and igene2 < 0 and ifusion >= 0:
+            geneA = None
+            geneB = None
+            if igeneA >= 0:
+                geneA = row[igeneA]
+            if igeneB >= 0:
+                geneB = row[igeneB]
+            if igeneA < 0 and igeneB < 0 and ifusion >= 0:
                 fusion = row[ifusion]
-                gene1, gene2 = getgenesfromfusion(fusion, nameregex)
+                geneA, geneB = getgenesfromfusion(fusion, nameregex)
 
             cancertype = get_tumor_type_from_row(row, i, defaultCancerType, icancertype, cancerTypeMap, sample)
 
 
-            queries.append(StructuralVariantQuery(gene1, gene2, 'FUSION', cancertype))
+            queries.append(StructuralVariantQuery(geneA, geneB, 'FUSION', cancertype))
+            rows.append(row)
+
+            if len(queries) == POST_QUERIES_THRESHOLD:
+                annotations = pull_structural_variant_info(queries)
+                append_annotation_to_file(outf, newcols, rows, annotations)
+                queries = []
+                rows = []
+
+        if len(queries) > 0:
+            annotations = pull_structural_variant_info(queries)
+            append_annotation_to_file(outf, newcols, rows, annotations)
+    outf.close()
+    
+def process_sv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap):
+    if os.path.isfile(previousoutfile):
+        cacheannotated(previousoutfile, defaultCancerType, cancerTypeMap)
+    outf = open(outfile, 'w+')
+    with open(svdata, 'rU') as infile:
+        reader = csv.reader(infile, delimiter='\t')
+
+        headers = readheaders(reader)
+
+        ncols = headers["length"]
+
+        if ncols == 0:
+            return
+
+        outf.write(headers['^-$'])
+        oncokb_annotation_headers = get_oncokb_annotation_column_headers()
+        outf.write("\t")
+        outf.write("\t".join(oncokb_annotation_headers))
+        outf.write("\n")
+
+        newcols = ncols + len(oncokb_annotation_headers)
+
+        igeneA = geIndexOfHeader(headers, SV_GENE_A_HEADER)
+        igeneB = geIndexOfHeader(headers, SV_GENE_B_HEADER)
+        isvtype = geIndexOfHeader(headers, SV_TYPE_HEADER)
+        isample = geIndexOfHeader(headers, SAMPLE_HEADERS)
+        icancertype = geIndexOfHeader(headers, CANCER_TYPE_HEADERS)
+
+        i = 0
+        queries = []
+        rows = []
+        for row in reader:
+            i = i + 1
+            if i % POST_QUERIES_THRESHOLD == 0:
+                log.info(i)
+
+            row = padrow(row, ncols)
+
+            sample = row[isample]
+
+            if sampleidsfilter and sample not in sampleidsfilter:
+                continue
+                
+            if igeneA < 0 or igeneB < 0:
+                log.warning("Please specify two genes")
+                continue
+                
+            svtype = None
+            if isvtype >= 0:
+                svtype = row[isvtype].upper()
+                if svtype not in SV_TYPES:
+                    svtype = None
+            if svtype is None:
+                svtype = UNKNOWN
+
+            cancertype = get_tumor_type_from_row(row, i, defaultCancerType, icancertype, cancerTypeMap, sample)
+            
+            sv_query = StructuralVariantQuery(row[igeneA], row[igeneB], svtype, cancertype)
+            queries.append(sv_query)
             rows.append(row)
 
             if len(queries) == POST_QUERIES_THRESHOLD:
@@ -868,8 +947,8 @@ def processclinicaldata(annotatedmutfiles, clinicalfile, outfile):
             if ncols == 0:
                 return
 
-            igene1 = geIndexOfHeader(headers, ['GENE1'] + HUGO_HEADERS)  # fusion
-            igene2 = geIndexOfHeader(headers, ['GENE2'] + HUGO_HEADERS)  # fusion
+            igeneA = geIndexOfHeader(headers, SV_GENE_A_HEADER)  # fusion
+            igeneB = geIndexOfHeader(headers, SV_GENE_B_HEADER)  # fusion
             ifusion = geIndexOfHeader(headers, ['FUSION'])
 
             ihugo = geIndexOfHeader(headers, HUGO_HEADERS)
@@ -882,7 +961,7 @@ def processclinicaldata(annotatedmutfiles, clinicalfile, outfile):
             # imutationeffect = headers['MUTATION_EFFECT']
             ioncogenic = headers['ONCOGENIC']
 
-            isfusion = (igene1 != -1 & igene2 != -1) or ifusion != -1
+            isfusion = (igeneA != -1 & igeneB != -1) or ifusion != -1
             ismutorcna = ihugo != -1 & ihgvs != -1
 
             if not isfusion and not ismutorcna:
@@ -919,8 +998,8 @@ def processclinicaldata(annotatedmutfiles, clinicalfile, outfile):
 
                 hugo = row[ihugo]
                 alteration = row[ihgvs]
-                gene1 = row[igene1]
-                gene2 = row[igene2]
+                geneA = row[igeneA]
+                geneB = row[igeneB]
 
                 variant = "NA"
                 if ismutorcna:
@@ -929,10 +1008,10 @@ def processclinicaldata(annotatedmutfiles, clinicalfile, outfile):
                     if ifusion != -1:
                         variant = row[ifusion]
                     else:
-                        if gene1 == gene2:
-                            variant = gene1 + " intragenic deletion"
+                        if geneA == geneB:
+                            variant = geneA + " intragenic deletion"
                         else:
-                            variant = gene1 + "-" + gene2 + " fusion"
+                            variant = geneA + "-" + geneB + " fusion"
 
                 if oncogenic == "oncogenic" or oncogenic == "likely oncogenic" or oncogenic == "predicted oncogenic":
                     sampledrivers[sample].append(variant)
@@ -1381,6 +1460,8 @@ def appendoncokbcitations(citations, pmids, abstracts):
 class Gene:
     def __init__(self, hugo):
         self.hugoSymbol = hugo
+    def __str__(self):
+        return self.hugoSymbol
 
 
 class ProteinChangeQuery:
@@ -1459,6 +1540,8 @@ class StructuralVariantQuery:
         self.functionalFusion = is_functional_fusion
         self.structuralVariantType = structural_variant_type.upper()
         self.tumorType = cancertype
+    def __str__(self):
+        return "\t".join([self.geneA.hugoSymbol, self.geneB.hugoSymbol, str(self.functionalFusion), self.structuralVariantType, self.tumorType])
 
 
 def pull_protein_change_info(queries, annotate_hotspot):
