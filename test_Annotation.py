@@ -193,7 +193,7 @@ def test_check_genomic_change():
     assert annotation[HIGHEST_LEVEL_INDEX] == ''
 
 @pytest.mark.skipif(ONCOKB_API_TOKEN in (None, ''), reason="oncokb api token required")
-def test_check_fusions():
+def test_check_structural_variants():
     queries = [
         StructuralVariantQuery('ALK', 'EML4', 'FUSION', 'NSCLC'),
         StructuralVariantQuery('ALK', 'EML4', 'FUSION', 'Melanoma'),

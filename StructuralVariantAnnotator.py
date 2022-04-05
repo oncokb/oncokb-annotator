@@ -4,28 +4,28 @@ import argparse
 from AnnotatorCore import *
 import logging
 logging.basicConfig(level=logging.INFO)
-log = logging.getLogger('FusionAnnotator')
+log = logging.getLogger('StructuralVariantAnnotator')
 
 def main(argv):
     if argv.help:
         log.info('\n'
-        'FusionAnnotator.py -i <input Fusion file> -o <output Fusion file> [-p previous results] [-c <input clinical file>] [-s sample list filter] [-t <default tumor type>] [-u <oncokb api url>] [-b <oncokb api bear token>] [-r <structural variant name format, default: [A-Za-z\d]+-[A-Za-z\d]+>]\n'
-        '  Essential Fusion columns (case insensitive):\n'
-        '    HUGO_SYMBOL: Hugo gene symbol\n'
-        '    VARIANT_CLASSIFICATION: Translational effect of variant allele\n'
+        'StructuralVariantAnnotator.py -i <input structural variant file> -o <output structural variant file> [-p previous results] [-c <input clinical file>] [-s sample list filter] [-t <default tumor type>] [-u <oncokb api url>] [-b <oncokb api bear token>]\n'
+        '  Essential structural variant columns (case insensitive):\n'
+        '    GENEA: Hugo gene symbol for gene A\n'
+        '    GENEB: Hugo gene symbol for gene B\n'
+        '    SV_TYPE: Structural variant type. Available values: DELETION, TRANSLOCATION, DUPLICATION, INSERTION, INVERSION, FUSION, UNKNOWN. Other type will be converted to UNKNOWN\n'
         '    TUMOR_SAMPLE_BARCODE: sample ID\n'
-        '    FUSION: amino acid change, e.g. "TMPRSS2-ERG"\n'
         '  Essential clinical columns:\n'
         '    SAMPLE_ID: sample ID\n'
         '    ONCOTREE_CODE: tumor type code from oncotree (oncotree.mskcc.org)\n'
         '  Cancer type will be assigned based on the following priority:\n'
         '     1) ONCOTREE_CODE in clinical data file\n'
-        '     2) ONCOTREE_CODE exist in Fusion\n'
+        '     2) ONCOTREE_CODE exist in structural variant\n'
         '     3) default tumor type (-t)\n'
         '  Default OncoKB base url is https://www.oncokb.org')
         sys.exit()
     if argv.input_file == '' or argv.output_file == '' or argv.oncokb_api_bearer_token == '':
-        log.info('for help: python FusionAnnotator.py -h')
+        log.info('for help: python StructuralVariantAnnotator.py -h')
         sys.exit(2)
     if argv.sample_ids_filter:
         setsampleidsfileterfile(argv.sample_ids_filter)
@@ -40,8 +40,7 @@ def main(argv):
         readCancerTypes(argv.input_clinical_file, cancertypemap)
 
     log.info('annotating %s ...' % argv.input_file)
-    process_fusion(argv.input_file, argv.output_file, argv.previous_result_file, argv.default_cancer_type,
-              cancertypemap, argv.structural_variant_name_format)
+    process_sv(argv.input_file, argv.output_file, argv.previous_result_file, argv.default_cancer_type, cancertypemap)
 
     log.info('done!')
 
@@ -59,7 +58,6 @@ if __name__ == "__main__":
     parser.add_argument('-u', dest='oncokb_api_url', default='', type=str)
     parser.add_argument('-v', dest='cancer_hotspots_base_url', default='', type=str)
     parser.add_argument('-b', dest='oncokb_api_bearer_token', default='', type=str)
-    parser.add_argument('-r', dest='structural_variant_name_format', default=None, type=str)
     parser.set_defaults(func=main)
 
     args = parser.parse_args()

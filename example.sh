@@ -16,6 +16,9 @@ OATYPICALALT="data/example_atypical_alterations.oncokb.txt"
 IF="data/example_fusions.txt"
 OF="data/example_fusions.oncokb.txt"
 
+ISV="data/example_sv.txt"
+OSV="data/example_sv.oncokb.txt"
+
 ICNA="data/example_cna.txt"
 OCNA="data/example_cna.oncokb.txt"
 
@@ -38,7 +41,8 @@ python MafAnnotator.py -i "$IMAF38" -o "$OMAF38" -c "$IC" -b "$TOKEN"
 python MafAnnotator.py -i "$IATYPICALALT" -o "$OATYPICALALT" -c "$IC" -b "$TOKEN"
 
 python FusionAnnotator.py -i "$IF" -o "$OF" -c "$IC" -b "$TOKEN"
+python StructuralVariantAnnotator.py -i "$ISV" -o "$OSV" -c "$IC" -b "$TOKEN"
 python CnaAnnotator.py -i "$ICNA" -o "$OCNA" -c "$IC" -b "$TOKEN"
-python ClinicalDataAnnotator.py -i "$IC" -o "$OC" -a "$OMAF,$OATYPICALALT,$OCNA,$OF"
+python ClinicalDataAnnotator.py -i "$IC" -o "$OC" -a "$OMAF,$OATYPICALALT,$OCNA,$OF,$OSV"
 python OncoKBPlots.py -i "$OC" -o "$OCPDF" -c ONCOTREE_CODE #-n 10
 python GenerateReadMe.py -o "$README"
