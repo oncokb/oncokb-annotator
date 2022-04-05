@@ -146,8 +146,8 @@ GC_VAR_ALLELE_2_HEADER = 'TUMOR_SEQ_ALLELE2'
 GENOMIC_CHANGE_HEADERS = [GC_CHROMOSOME_HEADER, GC_START_POSITION_HEADER, GC_END_POSITION_HEADER, GC_REF_ALLELE_HEADER, GC_VAR_ALLELE_1_HEADER, GC_VAR_ALLELE_2_HEADER]
 
 # columns for structural variant annotation
-SV_GENE_A_HEADER = ['SITE1_GENE', 'GENEA', 'GENE1']
-SV_GENE_B_HEADER = ['SITE2_GENE', 'GENEB', 'GENE2']
+SV_GENEA_HEADER = ['SITE1_GENE', 'GENEA', 'GENE1']
+SV_GENEB_HEADER = ['SITE2_GENE', 'GENEB', 'GENE2']
 SV_TYPE_HEADER = ['SV_CLASS_NAME', 'SV_TYPE']
 SV_TYPES = ['DELETION', 'TRANSLOCATION', 'DUPLICATION', 'INSERTION', 'INVERSION', 'FUSION', 'UNKNOWN']
 
@@ -690,8 +690,8 @@ def process_fusion(svdata, outfile, previousoutfile, defaultCancerType, cancerTy
 
         newcols = ncols + len(oncokb_annotation_headers)
 
-        igeneA = geIndexOfHeader(headers, SV_GENE_A_HEADER)
-        igeneB = geIndexOfHeader(headers, SV_GENE_B_HEADER)
+        igeneA = geIndexOfHeader(headers, SV_GENEA_HEADER)
+        igeneB = geIndexOfHeader(headers, SV_GENEB_HEADER)
         ifusion = geIndexOfHeader(headers, FUSION_HEADERS)
         isample = geIndexOfHeader(headers, SAMPLE_HEADERS)
         icancertype = geIndexOfHeader(headers, CANCER_TYPE_HEADERS)
@@ -760,8 +760,8 @@ def process_sv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMa
 
         newcols = ncols + len(oncokb_annotation_headers)
 
-        igeneA = geIndexOfHeader(headers, SV_GENE_A_HEADER)
-        igeneB = geIndexOfHeader(headers, SV_GENE_B_HEADER)
+        igeneA = geIndexOfHeader(headers, SV_GENEA_HEADER)
+        igeneB = geIndexOfHeader(headers, SV_GENEB_HEADER)
         isvtype = geIndexOfHeader(headers, SV_TYPE_HEADER)
         isample = geIndexOfHeader(headers, SAMPLE_HEADERS)
         icancertype = geIndexOfHeader(headers, CANCER_TYPE_HEADERS)
@@ -947,8 +947,8 @@ def processclinicaldata(annotatedmutfiles, clinicalfile, outfile):
             if ncols == 0:
                 return
 
-            igeneA = geIndexOfHeader(headers, SV_GENE_A_HEADER)  # fusion
-            igeneB = geIndexOfHeader(headers, SV_GENE_B_HEADER)  # fusion
+            igeneA = geIndexOfHeader(headers, SV_GENEA_HEADER)  # fusion
+            igeneB = geIndexOfHeader(headers, SV_GENEB_HEADER)  # fusion
             ifusion = geIndexOfHeader(headers, ['FUSION'])
 
             ihugo = geIndexOfHeader(headers, HUGO_HEADERS)
