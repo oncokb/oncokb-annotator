@@ -38,11 +38,20 @@ We use GISTIC 2.0 format. For more information, please see https://docs.cbioport
 Get more details on the command line using `python CnaAnnotator.py -h`.  
 
 ### Fusion
-OncoKB offers to anntoate the strucutal variant. But in annotator, we only annotate the functional fusion.
+OncoKB offers to annotate functional fusions.
 The fusion format for intragenic deletion is `GENE-intragenic` or `GENE-GENE`.
 For other fusions, please use `GENEA-GENEB` or `GENEA-GENEB Fusion`.  
 
 Get more details on the command line using `python FusionAnnotator.py -h`.  
+
+### Structural Variant
+OncoKB offers to annotate structural variant.
+The types supported are DELETION, TRANSLOCATION, DUPLICATION, INSERTION, INVERSION, FUSION, UNKNOWN.
+All other types will be converted to UNKNOWN.
+
+All structural variants with two different gene partners, they will be considered as functional fusions.
+
+Get more details on the command line using `python StructuralVariantAnnotator.py -h`.
 
 ### Clinical Data (Combine MAF+CNA+Fusion)
 You can comebine all annotation on sample/patient level using the clinical data annotator.  
