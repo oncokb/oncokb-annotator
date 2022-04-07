@@ -136,6 +136,29 @@ mutationtypeconsequencemap = {
     'vIII deletion': ['any']
 }
 
+CNA_AMPLIFICATION_TXT = 'Amplification'
+CNA_DELETION_TXT = 'Deletion'
+CNA_LOSS_TXT = 'Loss'
+CNA_GAIN_TXT = 'Gain'
+
+CNAS = [
+    CNA_DELETION_TXT,
+    CNA_LOSS_TXT,
+    CNA_GAIN_TXT,
+    CNA_AMPLIFICATION_TXT,
+]
+
+GISTIC_CNA_MAP = {
+    "-2": CNA_DELETION_TXT,
+    "-1.5": CNA_DELETION_TXT,
+    "-1": CNA_LOSS_TXT,
+    "1": CNA_GAIN_TXT,
+    "2": CNA_AMPLIFICATION_TXT
+}
+
+CNA_FILE_FORMAT_GISTIC = 'gistic'
+CNA_FILE_FORMAT_INDIVIDUAL = 'individual'
+CND_FILE_FORMAT = [CNA_FILE_FORMAT_GISTIC, CNA_FILE_FORMAT_INDIVIDUAL]
 
 # column headers
 HUGO_HEADERS = ['HUGO_SYMBOL', 'HUGO_GENE_SYMBOL', 'GENE']
@@ -161,6 +184,9 @@ GC_REF_ALLELE_HEADER = 'REFERENCE_ALLELE'
 GC_VAR_ALLELE_1_HEADER = 'TUMOR_SEQ_ALLELE1'
 GC_VAR_ALLELE_2_HEADER = 'TUMOR_SEQ_ALLELE2'
 GENOMIC_CHANGE_HEADERS = [GC_CHROMOSOME_HEADER, GC_START_POSITION_HEADER, GC_END_POSITION_HEADER, GC_REF_ALLELE_HEADER, GC_VAR_ALLELE_1_HEADER, GC_VAR_ALLELE_2_HEADER]
+
+# columns for copy number alteration
+CNA_HEADER = ['COPY_NUMBER_ALTERATION', 'CNA', 'GISTIC']
 
 # columns for structural variant annotation
 SV_GENEA_HEADER = ['SITE1_GENE', 'GENEA', 'GENE1']
@@ -862,28 +888,22 @@ def process_sv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMa
     outf.close()
 
 
-def processcnagisticdata(cnafile, outfile, previousoutfile, defaultCancerType, cancerTypeMap, annotate_gain_loss=False):
-    CNA_AMPLIFICATION_TXT = 'Amplification'
-    CNA_DELETION_TXT = 'Deletion'
-    CNA_LOSS_TXT = 'Loss'
-    CNA_GAIN_TXT = 'Gain'
+def get_cna(cell_value, annotate_gain_loss=False):
+    cna = None
+    if cell_value is not None and cell_value != '':
+        if cell_value in GISTIC_CNA_MAP:
+            cna = GISTIC_CNA_MAP[cell_value]
+        else:
+            for default_cna in CNAS:
+                if cell_value.upper() == default_cna.upper():
+                    cna = default_cna
+    if not annotate_gain_loss and cna is not None and cna.upper() in [CNA_GAIN_TXT.upper(), CNA_LOSS_TXT.upper()]:
+        cna = None
+    return cna
 
-    cnaEventMap = {
-        "-2": CNA_DELETION_TXT,
-        "-1.5": CNA_DELETION_TXT,
-        "2": CNA_AMPLIFICATION_TXT
-    }
 
-    if annotate_gain_loss:
-        cnaEventMap.update({
-            "-1": CNA_LOSS_TXT,
-            "1": CNA_GAIN_TXT
-        })
-
-    if os.path.isfile(previousoutfile):
-        cacheannotated(previousoutfile, defaultCancerType, cancerTypeMap)
-    outf = open(outfile, 'w+', 1000)
-    with open(cnafile, 'rU') as infile:
+def process_gistic_data(outf, gistic_data_file, defaultCancerType, cancerTypeMap, annotate_gain_loss):
+    with open(gistic_data_file, 'rU') as infile:
         reader = csv.reader(infile, delimiter='\t')
         headers = readheaders(reader)
         samples = []
@@ -898,15 +918,6 @@ def processcnagisticdata(cnafile, outfile, previousoutfile, defaultCancerType, c
             log.info(
                 "Cancer type for all samples should be defined for a more accurate result\nsamples in cna file: %s\n" % (
                     samples))
-
-        outf.write('SAMPLE_ID\tCANCER_TYPE\tHUGO_SYMBOL\tALTERATION')
-        ncols = 4
-
-        oncokb_annotation_headers = get_oncokb_annotation_column_headers()
-        outf.write("\t")
-        outf.write("\t".join(oncokb_annotation_headers))
-        outf.write("\n")
-        ncols += len(oncokb_annotation_headers)
 
         i = 0
         rows = []
@@ -926,31 +937,98 @@ def processcnagisticdata(cnafile, outfile, previousoutfile, defaultCancerType, c
                     if len(row) <= headers[rawsample]:
                         log.warning('No CNA specified for ' + row[0] + ' ' + rawsample)
                         continue
-                    cna = row[headers[rawsample]]
-                    if cna in cnaEventMap:
-                        cna_type = cnaEventMap[cna]
-                        if cna_type is not None:
-                            cancertype = defaultCancerType
-                            sample = rawsample
+                    cna_type = get_cna(row[headers[rawsample]], annotate_gain_loss)
+                    if cna_type is not None:
+                        cancer_type = defaultCancerType
+                        sample = rawsample
 
-                            if sampleidsfilter and sample not in sampleidsfilter:
-                                continue
+                        if sampleidsfilter and sample not in sampleidsfilter:
+                            continue
 
-                            if sample in cancerTypeMap:
-                                cancertype = cancerTypeMap[sample]
+                        if sample in cancerTypeMap:
+                            cancer_type = cancerTypeMap[sample]
 
-                            rows.append([sample, cancertype, hugo, cna_type])
-                            queries.append(CNAQuery(hugo, cna_type, cancertype))
+                        rows.append([sample, cancer_type, hugo, cna_type])
+                        queries.append(CNAQuery(hugo, cna_type, cancer_type))
 
-                            if len(queries) == POST_QUERIES_THRESHOLD:
-                                annotations = pull_cna_info(queries)
-                                append_annotation_to_file(outf, ncols, rows, annotations)
-                                rows = []
-                                queries = []
+        headers = ['SAMPLE_ID', 'CANCER_TYPE', 'HUGO_SYMBOL', 'ALTERATION'] + get_oncokb_annotation_column_headers()
+        outf.write('\t'.join(headers))
+        outf.write('\n')
+        return headers, rows, queries
 
-        if len(queries) > 0:
-            annotations = pull_cna_info(queries)
-            append_annotation_to_file(outf, ncols, rows, annotations)
+
+def process_individual_cna_file(outf, cna_data_file, defaultCancerType, cancerTypeMap, annotate_gain_loss):
+    with open(cna_data_file, 'rU') as infile:
+        reader = csv.reader(infile, delimiter='\t')
+        headers = readheaders(reader)
+        row_headers = headers['^-$'].split('\t') + get_oncokb_annotation_column_headers()
+
+        i = 0
+        rows = []
+        queries = []
+
+        outf.write('\t'.join(row_headers))
+        outf.write('\n')
+
+        for row in reader:
+            i = i + 1
+            isample = geIndexOfHeader(headers, SAMPLE_HEADERS)
+            ihugo = geIndexOfHeader(headers, HUGO_HEADERS)
+            icancertype = geIndexOfHeader(headers, CANCER_TYPE_HEADERS)
+            icna = geIndexOfHeader(headers, CNA_HEADER)
+
+            hugo = row[ihugo] if ihugo >= 0 else None
+            cna_type = get_cna(row[icna], annotate_gain_loss)
+            sample = row[isample] if isample >= 0 else None
+            cancer_type = get_tumor_type_from_row(row, i, defaultCancerType, icancertype, cancerTypeMap, sample)
+
+            if sampleidsfilter and sample not in sampleidsfilter:
+                continue
+
+            if hugo and cna_type:
+                rows.append(row)
+                queries.append(CNAQuery(hugo, cna_type, cancer_type))
+            else:
+                outf.write('\t'.join(row))
+                outf.write('\n')
+                if not hugo:
+                    log.warning("Gene is not specified for row " + str(row))
+                if not cna_type:
+                    log.warning("CNA is not specified for row " + str(row))
+        return row_headers, rows, queries
+
+
+def process_cna_data(cnafile, outfile, previousoutfile, defaultCancerType, cancerTypeMap, annotate_gain_loss=False,
+                     cna_format=CNA_FILE_FORMAT_GISTIC):
+    if os.path.isfile(previousoutfile):
+        cacheannotated(previousoutfile, defaultCancerType, cancerTypeMap)
+
+    if not cna_format or cna_format not in CND_FILE_FORMAT:
+        log.error('The CNA file format is not supported, only gistic or individual can be used ')
+        return
+
+    outf = open(outfile, 'w+', 1000)
+
+    headers = []
+    rows = []
+    queries = []
+    if cna_format == CNA_FILE_FORMAT_GISTIC:
+        headers, rows, queries = process_gistic_data(outf, cnafile, defaultCancerType, cancerTypeMap,
+                                                     annotate_gain_loss)
+    else:
+        headers, rows, queries = process_individual_cna_file(outf, cnafile, defaultCancerType, cancerTypeMap,
+                                                       annotate_gain_loss)
+
+    ncols = len(headers)
+
+    i = 0
+    while len(rows) > 0:
+        i += POST_QUERIES_THRESHOLD
+        log.info(i)
+        rows_sec, rows = rows[:POST_QUERIES_THRESHOLD], rows[POST_QUERIES_THRESHOLD:]
+        queries_sec, queries = queries[:POST_QUERIES_THRESHOLD], queries[POST_QUERIES_THRESHOLD:]
+        annotations = pull_cna_info(queries_sec)
+        append_annotation_to_file(outf, ncols, rows_sec, annotations)
 
     outf.close()
 
@@ -1582,6 +1660,9 @@ class CNAQuery:
         self.gene = Gene(hugo)
         self.copyNameAlterationType = cnatype.upper()
         self.tumorType = cancertype
+
+    def __str__(self):
+        return "\t".join([self.gene.hugoSymbol, self.copyNameAlterationType, self.tumorType])
 
 class StructuralVariantQuery:
     def __init__(self, hugoA, hugoB, structural_variant_type, cancertype):

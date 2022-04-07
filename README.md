@@ -33,7 +33,9 @@ We recommend processing VCF files by [vcf2maf](https://github.com/mskcc/vcf2maf/
 You can still use MAF format to annotate atypical alterations, such as MSI-H, TMB-H, EGFR vIII. Please see more examples [HERE](data/example_atypical_alterations.txt).  
 
 ### Copy Number Alteration
-We use GISTIC 2.0 format. For more information, please see https://docs.cbioportal.org/5.1-data-loading/data-loading/file-formats#discrete-copy-number-data. 
+We use GISTIC 2.0 format by default. For more information, please see https://docs.cbioportal.org/5.1-data-loading/data-loading/file-formats#discrete-copy-number-data, please see examples [HERE](data/example_cna.txt).
+
+You can also list copy number alteration individually by specifying `-f individual`, please see examples [HERE](data/example_individual_cna.txt).
 
 Get more details on the command line using `python CnaAnnotator.py -h`.  
 
@@ -54,7 +56,7 @@ All structural variants with two different gene partners, they will be considere
 Get more details on the command line using `python StructuralVariantAnnotator.py -h`.
 
 ### Clinical Data (Combine MAF+CNA+Fusion)
-You can comebine all annotation on sample/patient level using the clinical data annotator.  
+You can combine all annotation on sample/patient level using the clinical data annotator.  
 
 Get more details on the command line using `python ClinicalDataAnnotator.py -h`.  
 
