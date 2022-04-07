@@ -34,6 +34,8 @@ def main(argv):
     if argv.input_clinical_file:
         readCancerTypes(argv.input_clinical_file, cancertypemap)
 
+    validate_oncokb_token()
+
     log.info('annotating %s ...' % argv.input_file)
     processcnagisticdata(argv.input_file, argv.output_file, argv.previous_result_file, argv.default_cancer_type,
                          cancertypemap, argv.annotate_gain_loss)
