@@ -89,6 +89,8 @@ def main(argv):
                 'Reference genome is not acceptable. Only the following allows(case insensitive): GRCh37, GRCh38')
             raise
 
+    validate_oncokb_token()
+
     processalterationevents(argv.input_file, argv.output_file, argv.previous_result_file, argv.default_cancer_type,
                             cancertypemap, argv.annotate_hotspots, user_input_query_type, default_reference_genome)
 

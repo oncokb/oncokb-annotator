@@ -1,4 +1,5 @@
 #!/usr/bin/python
+import datetime
 import json
 import sys
 import csv
@@ -32,17 +33,21 @@ csv.field_size_limit(int(ct.c_ulong(-1).value // 2)) # Deal with overflow proble
 sizeLimit = csv.field_size_limit()
 csv.field_size_limit(sizeLimit) # for reading large files
 
-oncokbapiurl = "https://www.oncokb.org/api/v1"
-oncokbapibearertoken = ""
+oncokb_api_url = "https://www.oncokb.org/api"
+oncokb_annotation_api_url = "https://www.oncokb.org/api/v1"
+
+oncokb_api_bearer_token = ""
 
 
 def setoncokbbaseurl(u):
-    global oncokbapiurl
-    oncokbapiurl = u.rstrip('/') + '/api/v1'
+    global oncokb_api_url
+    global oncokb_annotation_api_url
+    oncokb_api_url = u.rstrip('/') + '/api'
+    oncokb_annotation_api_url = oncokb_api_url + '/v1'
 
 def setoncokbapitoken(t):
-    global oncokbapibearertoken
-    oncokbapibearertoken = t.strip()
+    global oncokb_api_bearer_token
+    oncokb_api_bearer_token = t.strip()
 
 cancerhotspotsbaseurl = "http://www.cancerhotspots.org"
 def setcancerhotspotsbaseurl(u):
@@ -176,13 +181,45 @@ POST_QUERIES_THRESHOLD = 200
 POST_QUERIES_THRESHOLD_GC_HGVSG = 100
 
 def getOncokbInfo():
-    ret = ['Files annotated on ' + date.today().strftime('%m/%d/%Y') + "\nOncoKB API URL: "+oncokbapiurl]
+    ret = ['Files annotated on ' + date.today().strftime('%m/%d/%Y') + "\nOncoKB API URL: "+oncokb_annotation_api_url]
     try:
-        info = requests.get(oncokbapiurl + "/info", timeout=REQUEST_TIMEOUT).json()
+        info = requests.get(oncokb_annotation_api_url + "/info", timeout=REQUEST_TIMEOUT).json()
         ret.append('\nOncoKB data version: ' + info['dataVersion']['version']+', released on ' + info['dataVersion']['date'])
     except:
         log.error("error when fetch OncoKB info")
     return ''.join(ret)
+
+def validate_oncokb_token():
+    if oncokb_api_bearer_token is None or not oncokb_api_bearer_token:
+        log.error("Please specify your OncoKB token")
+        exit()
+
+    response = requests.get(oncokb_api_url + "/tokens/" + oncokb_api_bearer_token, timeout=REQUEST_TIMEOUT)
+    if response.status_code == 200:
+        token = response.json()
+        time_stamp = datetime.datetime.strptime(token['expiration'], "%Y-%m-%dT%H:%M:%SZ")
+        days_from_expiration = time_stamp - datetime.datetime.now()
+        if (days_from_expiration.days < 0):
+            log.error(
+                "Your OncoKB API token already expired. Please reach out to us to renew your token.")
+            exit()
+        elif (days_from_expiration.days < 7):
+            log.warning(
+                "Your OncoKB API token will expire soon, please be on the lookout for an OncoKB email to renew your token. Expire on " + str(
+                    time_stamp) + ' UTC')
+        else:
+            log.info("Your OncoKB API token is valid and will expire on " + str(time_stamp) + ' UTC')
+    else:
+        try:
+            response_json = response.json()
+            reason = response_json["title"]
+            if response_json["detail"]:
+                reason = response_json["detail"]
+        except:
+            reason = response.reason
+
+        log.error("Error when validating token, " + "reason: %s" % reason)
+        exit()
 
 
 def generateReadme(outfile):
@@ -234,7 +271,7 @@ def requests_retry_session(
 def makeoncokbpostrequest(url, body):
     headers = {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer %s' % oncokbapibearertoken
+        'Authorization': 'Bearer %s' % oncokb_api_bearer_token
     }
     return requests_retry_session(allowed_methods=["POST"]).post(url, headers=headers, data=json.dumps(body, default=lambda o: o.__dict__),
                          timeout=REQUEST_TIMEOUT)
@@ -243,7 +280,7 @@ def makeoncokbpostrequest(url, body):
 def makeoncokbgetrequest(url):
     headers = {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer %s' % oncokbapibearertoken
+        'Authorization': 'Bearer %s' % oncokb_api_bearer_token
     }
     return requests_retry_session(allowed_methods=["HEAD", "GET"]).get(url, headers=headers, timeout=REQUEST_TIMEOUT)
 
@@ -1545,7 +1582,7 @@ class StructuralVariantQuery:
 
 
 def pull_protein_change_info(queries, annotate_hotspot):
-    url = oncokbapiurl + '/annotate/mutations/byProteinChange'
+    url = oncokb_annotation_api_url + '/annotate/mutations/byProteinChange'
     response = makeoncokbpostrequest(url, queries)
     if response.status_code == 401:
         raise Exception('unauthorized')
@@ -1579,7 +1616,7 @@ def pull_protein_change_info(queries, annotate_hotspot):
 
 
 def pull_hgvsg_info(queries, annotate_hotspot):
-    url = oncokbapiurl + '/annotate/mutations/byHGVSg'
+    url = oncokb_annotation_api_url + '/annotate/mutations/byHGVSg'
     response = makeoncokbpostrequest(url, queries)
     if response.status_code == 401:
         raise Exception('unauthorized')
@@ -1606,7 +1643,7 @@ def pull_hgvsg_info(queries, annotate_hotspot):
     return processed_annotation
 
 def pull_genomic_change_info(queries, annotate_hotspot):
-    url = oncokbapiurl + '/annotate/mutations/byGenomicChange'
+    url = oncokb_annotation_api_url + '/annotate/mutations/byGenomicChange'
     response = makeoncokbpostrequest(url, queries)
     if response.status_code == 401:
         raise Exception('unauthorized')
@@ -1634,7 +1671,7 @@ def pull_genomic_change_info(queries, annotate_hotspot):
 
 
 def pull_cna_info(queries):
-    url = oncokbapiurl + '/annotate/copyNumberAlterations'
+    url = oncokb_annotation_api_url + '/annotate/copyNumberAlterations'
 
     response = makeoncokbpostrequest(url, queries)
     if response.status_code == 401:
@@ -1665,7 +1702,7 @@ def pull_cna_info(queries):
 
 
 def pull_structural_variant_info(queries):
-    url = oncokbapiurl + '/annotate/structuralVariants'
+    url = oncokb_annotation_api_url + '/annotate/structuralVariants'
 
     response = makeoncokbpostrequest(url, queries)
     if response.status_code == 401:

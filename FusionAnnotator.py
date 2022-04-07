@@ -39,6 +39,8 @@ def main(argv):
     if argv.input_clinical_file:
         readCancerTypes(argv.input_clinical_file, cancertypemap)
 
+    validate_oncokb_token()
+
     log.info('annotating %s ...' % argv.input_file)
     process_fusion(argv.input_file, argv.output_file, argv.previous_result_file, argv.default_cancer_type,
               cancertypemap, argv.structural_variant_name_format)
