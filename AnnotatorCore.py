@@ -34,7 +34,7 @@ sizeLimit = csv.field_size_limit()
 csv.field_size_limit(sizeLimit) # for reading large files
 
 oncokb_api_url = "https://www.oncokb.org/api"
-oncokb_annotation_api_url = "https://www.oncokb.org/api/v1"
+oncokb_annotation_api_url = oncokb_api_url + "/v1"
 
 oncokb_api_bearer_token = ""
 

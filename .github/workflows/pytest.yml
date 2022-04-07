@@ -5,9 +5,9 @@ name: Run all python tests
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, next-minor-release ]
   pull_request:
-    branches: [ master ]
+    branches: [ master, next-minor-release ]
 
 jobs:
   build:

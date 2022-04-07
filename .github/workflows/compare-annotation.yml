@@ -6,9 +6,11 @@ on:
   push:
     branches:
       - master
+      - next-minor-release
   pull_request:
     branches:
       - master
+      - next-minor-release
 jobs:
   build:
     if: github.repository == 'oncokb/oncokb-annotator'
