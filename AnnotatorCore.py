@@ -74,15 +74,27 @@ GENE_IN_ONCOKB_DEFAULT = 'False'
 VARIANT_IN_ONCOKB_DEFAULT = 'False'
 
 levels = [
+    'LEVEL_R1',
     'LEVEL_1',
     'LEVEL_2',
     'LEVEL_3A',
     'LEVEL_3B',
     'LEVEL_4',
-    'LEVEL_R1',
-    'LEVEL_R2',
-    'LEVEL_R3'
+    'LEVEL_R2'
 ]
+sensitive_levels = [
+    'LEVEL_1',
+    'LEVEL_2',
+    'LEVEL_3A',
+    'LEVEL_3B',
+    'LEVEL_4',
+]
+resistance_levels = [
+    'LEVEL_R1',
+    'LEVEL_R2'
+]
+TX_TYPE_SENSITIVE = 'sensitive'
+TX_TYPE_RESISTANCE = 'resistance'
 
 dxLevels = [
     'LEVEL_Dx1',
@@ -472,9 +484,11 @@ def get_cell_content(row, index, return_empty_string=False):
 def get_oncokb_annotation_column_headers():
     headers = [GENE_IN_ONCOKB_HEADER, VARIANT_IN_ONCOKB_HEADER, "MUTATION_EFFECT", "MUTATION_EFFECT_CITATIONS",
                "ONCOGENIC"]
-    for l in levels:
+    for l in sorted(levels):
         headers.append(l)
     headers.append("HIGHEST_LEVEL")
+    headers.append("HIGHEST_SENSITIVE_LEVEL")
+    headers.append("HIGHEST_RESISTANCE_LEVEL")
     headers.append("TX_CITATIONS")
 
     for l in dxLevels:
@@ -964,7 +978,7 @@ def file_len(fname):
     return i + 1
 
 
-def processclinicaldata(annotatedmutfiles, clinicalfile, outfile):
+def process_clinical_data(annotatedmutfiles, clinicalfile, outfile):
     samplelevels = {}
     sampledxlevels = {}
     samplepxlevels = {}
@@ -1098,9 +1112,11 @@ def processclinicaldata(annotatedmutfiles, clinicalfile, outfile):
         reader = csv.reader(clinfile, delimiter='\t')
         headers = readheaders(reader)
         outf.write(headers['^-$'])
-        for l in levels:
+        for l in sorted(levels):
             outf.write('\t' + l)
         outf.write('\tHIGHEST_LEVEL')
+        outf.write('\tHIGHEST_SENSITIVE_LEVEL')
+        outf.write('\tHIGHEST_RESISTANCE_LEVEL')
         for l in dxLevels:
             outf.write('\t' + l)
         outf.write('\tHIGHEST_DX_LEVEL')
@@ -1118,26 +1134,32 @@ def processclinicaldata(annotatedmutfiles, clinicalfile, outfile):
 
             outf.write('\t'.join(row))
 
-            for l in levels:
+            for l in sorted(levels):
                 outf.write('\t')
                 if sample in samplelevels and l in samplelevels[sample]:
                     outf.write(";".join(samplelevels[sample][l]))
 
             highestlevel = ''
+            highest_sensitive_level = ''
+            highest_resistance_level = ''
             highestdxlevel = ''
             highestpxlevel = ''
             if sample in sampleleveltreatments:
-                highestlevel = gethighestsensitivitylevel(sampleleveltreatments[sample])
+                highestlevel = get_highest_tx_level(sampleleveltreatments[sample])
+                highest_sensitive_level = get_highest_tx_level(sampleleveltreatments[sample], TX_TYPE_SENSITIVE)
+                highest_resistance_level = get_highest_tx_level(sampleleveltreatments[sample], TX_TYPE_RESISTANCE)
             if sample in sampledxlevels:
-                highestdxlevel = gethighestDxPxlevel(dxLevels, sampledxlevels[sample])
+                highestdxlevel = get_highest_dxpx_level(dxLevels, sampledxlevels[sample])
             if sample in samplepxlevels:
-                highestpxlevel = gethighestDxPxlevel(pxLevels, samplepxlevels[sample])
+                highestpxlevel = get_highest_dxpx_level(pxLevels, samplepxlevels[sample])
             # if highestlevel == '':
             #     if sample in sampledrivers and len(sampledrivers[sample])>0:
             #         highestlevel = 'Oncogenic, no level'
             #     else:
             #         highestlevel = "VUS"
             outf.write('\t' + highestlevel)
+            outf.write('\t' + highest_sensitive_level)
+            outf.write('\t' + highest_resistance_level)
 
             for l in dxLevels:
                 outf.write('\t')
@@ -1325,7 +1347,6 @@ def drawplot(ax, title, extlevels, levelcatsamplecount, catarray, catsamplecount
         'LEVEL_4': '#a8a8a8',
         'LEVEL_R1': '#EE3424',
         'LEVEL_R2': '#F79A92',
-        'LEVEL_R3': '#FCD6D3',
 
         'LEVEL_Dx1': '#33A02C',
         'LEVEL_Dx2': '#1F78B4',
@@ -1349,7 +1370,6 @@ def drawplot(ax, title, extlevels, levelcatsamplecount, catarray, catsamplecount
         'LEVEL_4': 'Level 4',
         'LEVEL_R1': 'Level R1',
         'LEVEL_R2': 'Level R2',
-        'LEVEL_R3': 'Level R3',
 
         'LEVEL_Dx1': 'Level Dx1',
         'LEVEL_Dx2': 'Level Dx2',
@@ -1784,7 +1804,6 @@ def process_oncokb_annotation(annotation, annotate_hotspot):
 
             if level not in levels:
                 log.info("%s is ignored" % level)
-                # oncokbdata[level].append('')
             else:
                 drugs = treatment['drugs']
 
@@ -1828,37 +1847,40 @@ def process_oncokb_annotation(annotation, annotate_hotspot):
     ret.append(oncokbdata['mutation_effect'])
     ret.append(';'.join(oncokbdata['mutation_effect_citations']))
     ret.append(oncokbdata['oncogenic'])
-    for l in levels:
+    for l in sorted(levels):
         ret.append(','.join(oncokbdata[l]))
-    ret.append(gethighestsensitivitylevel(oncokbdata))
+    ret.append(get_highest_tx_level(oncokbdata))
+    ret.append(get_highest_tx_level(oncokbdata, TX_TYPE_SENSITIVE))
+    ret.append(get_highest_tx_level(oncokbdata, TX_TYPE_RESISTANCE))
     ret.append(';'.join(oncokbdata['tx_citations']))
 
     for l in dxLevels:
         ret.append(','.join(oncokbdata[l]))
-    ret.append(gethighestDxPxlevel(dxLevels, [oncokbdata['highestDiagnosticImplicationLevel']]))
+    ret.append(get_highest_dxpx_level(dxLevels, [oncokbdata['highestDiagnosticImplicationLevel']]))
     ret.append(';'.join(oncokbdata['dx_citations']))
 
     for l in pxLevels:
         ret.append(','.join(oncokbdata[l]))
-    ret.append(gethighestDxPxlevel(pxLevels, [oncokbdata['highestPrognosticImplicationLevel']]))
+    ret.append(get_highest_dxpx_level(pxLevels, [oncokbdata['highestPrognosticImplicationLevel']]))
     ret.append(';'.join(oncokbdata['px_citations']))
 
     return ret
 
 
-def gethighestsensitivitylevel(oncokbdata):
-    r1 = set()
-    if "LEVEL_R1" in oncokbdata:
-        r1 = set(oncokbdata["LEVEL_R1"])
-    for l in levels:
-        if l.startswith("LEVEL_R") or l not in oncokbdata or oncokbdata[l] == '':
-            continue
-        if not r1.issuperset(set(oncokbdata[l])):
+def get_highest_tx_level(oncokb_data, tx_type=None):
+    target_levels = levels
+    if tx_type is not None and tx_type:
+        if tx_type.lower() == TX_TYPE_SENSITIVE:
+            target_levels = sensitive_levels
+        elif tx_type.lower() == TX_TYPE_RESISTANCE:
+            target_levels = resistance_levels
+    for l in target_levels:
+        if l in oncokb_data and oncokb_data[l] is not None and len(oncokb_data[l]) > 0:
             return l
     return ""
 
-def gethighestDxPxlevel(levels, oncokbdata):
-    for l in levels:
+def get_highest_dxpx_level(dxpx_levels, oncokbdata):
+    for l in dxpx_levels:
         if l not in oncokbdata:
             continue
         return l
