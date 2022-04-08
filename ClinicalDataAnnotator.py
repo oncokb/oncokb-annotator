@@ -22,7 +22,7 @@ def main(argv):
         sys.exit(2)
 
     log.info('annotating %s ...' % argv.input_file)
-    processclinicaldata(annotated_alteration_files, argv.input_file, argv.output_file)
+    process_clinical_data(annotated_alteration_files, argv.input_file, argv.output_file)
 
     log.info('done!')
 
