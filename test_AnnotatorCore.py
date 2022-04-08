@@ -102,3 +102,23 @@ def test_resolve_query_type():
         assert resolve_query_type(QueryType.HGVSG, [HGVSP_SHORT_HEADER])
     with pytest.raises(Exception):
         assert resolve_query_type(QueryType.GENOMIC_CHANGE, [GC_CHROMOSOME_HEADER, GC_START_POSITION_HEADER])
+
+
+def test_get_highest_tx_level():
+    oncokb_data = {}
+    assert get_highest_tx_level(oncokb_data) == ''
+    assert get_highest_tx_level(oncokb_data, 'random') == ''
+    assert get_highest_tx_level(oncokb_data, TX_TYPE_SENSITIVE) == ''
+    assert get_highest_tx_level(oncokb_data, TX_TYPE_RESISTANCE) == ''
+
+    oncokb_data = {'LEVEL_1': ['test'], 'LEVEL_R1': ['test'], 'LEVEL_R2': ['test']}
+    assert get_highest_tx_level(oncokb_data) == 'LEVEL_R1'
+    assert get_highest_tx_level(oncokb_data, 'random') == 'LEVEL_R1'
+    assert get_highest_tx_level(oncokb_data, TX_TYPE_SENSITIVE) == 'LEVEL_1'
+    assert get_highest_tx_level(oncokb_data, TX_TYPE_RESISTANCE) == 'LEVEL_R1'
+
+    oncokb_data = {'LEVEL_1': ['test'], 'LEVEL_R2': ['test']}
+    assert get_highest_tx_level(oncokb_data) == 'LEVEL_1'
+    assert get_highest_tx_level(oncokb_data, 'random') == 'LEVEL_1'
+    assert get_highest_tx_level(oncokb_data, TX_TYPE_SENSITIVE) == 'LEVEL_1'
+    assert get_highest_tx_level(oncokb_data, TX_TYPE_RESISTANCE) == 'LEVEL_R2'
