@@ -27,7 +27,7 @@ def fake_gene_one_query_suite(annotations):
     annotation = annotations[0]
     assert len(annotation) == NUMBER_OF_ANNOTATION_COLUMNS
     assert annotation[MUTATION_EFFECT_INDEX] == UNKNOWN
-    assert annotation[ONCOGENIC_INDEX] == ''
+    assert annotation[ONCOGENIC_INDEX] == UNKNOWN
     assert annotation[HIGHEST_LEVEL_INDEX] == ''
 
 
@@ -282,13 +282,14 @@ def test_fake_cna():
     annotations = pull_cna_info(queries)
     fake_gene_one_query_suite(annotations)
 
-def check_brca2_n3214i_without_cancertype(annotation):
+def check_brca2_s1882_without_cancertype(annotation):
     assert len(annotation) == NUMBER_OF_ANNOTATION_COLUMNS
     assert annotation[MUTATION_EFFECT_INDEX] == 'Likely Loss-of-function'
     assert annotation[ONCOGENIC_INDEX] == 'Likely Oncogenic'
     assert annotation[HIGHEST_LEVEL_INDEX] == 'LEVEL_1'
     assert annotation[LEVEL_1_INDEX] == 'Olaparib,Olaparib+Bevacizumab,Rucaparib,Niraparib'
-    assert annotation[LEVEL_3A_INDEX] == 'Rucaparib,Talazoparib,Olaparib'
+    assert annotation[LEVEL_2_INDEX] == 'Olaparib,Rucaparib,Niraparib'
+    assert annotation[LEVEL_3A_INDEX] == 'Olaparib,Talazoparib'
     
 @pytest.mark.skipif(ONCOKB_API_TOKEN in (None, ''), reason="oncokb api token required")
 def test_duplicated_treatments():
@@ -301,7 +302,7 @@ def test_duplicated_treatments():
     annotations = pull_protein_change_info(queries, False)
     assert len(annotations) == 1
 
-    check_brca2_n3214i_without_cancertype(annotations[0])
+    check_brca2_s1882_without_cancertype(annotations[0])
 
     # test genomic change query
     queries = [
@@ -310,4 +311,4 @@ def test_duplicated_treatments():
     annotations = pull_genomic_change_info(queries, False)
     assert len(annotations) == 1
 
-    check_brca2_n3214i_without_cancertype(annotations[0])
+    check_brca2_s1882_without_cancertype(annotations[0])
