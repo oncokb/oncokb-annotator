@@ -67,6 +67,7 @@ def setsampleidsfileterfile(f):
     log.info(len(sampleidsfilter))
 
 
+ANNOTATED_HEADER = 'ANNOTATED'
 GENE_IN_ONCOKB_HEADER = 'GENE_IN_ONCOKB'
 VARIANT_IN_ONCOKB_HEADER = 'VARIANT_IN_ONCOKB'
 
@@ -508,7 +509,7 @@ def get_cell_content(row, index, return_empty_string=False):
 
 
 def get_oncokb_annotation_column_headers():
-    headers = [GENE_IN_ONCOKB_HEADER, VARIANT_IN_ONCOKB_HEADER, "MUTATION_EFFECT", "MUTATION_EFFECT_CITATIONS",
+    headers = [ANNOTATED_HEADER, GENE_IN_ONCOKB_HEADER, VARIANT_IN_ONCOKB_HEADER, "MUTATION_EFFECT", "MUTATION_EFFECT_CITATIONS",
                "ONCOGENIC"]
     for l in sorted(levels):
         headers.append(l)
@@ -1838,7 +1839,7 @@ def pull_structural_variant_info(queries):
 
 def process_oncokb_annotation(annotation, annotate_hotspot):
     if annotation is None:
-        return None
+        return ['False']
 
     oncokbdata = {}
     for l in levels:
@@ -1923,6 +1924,7 @@ def process_oncokb_annotation(annotation, annotate_hotspot):
         _3dhotspot = pull3dhotspots(annotation['query']['hugoSymbol'], annotation['query']['consequence'], annotation['query']['proteinStart'], annotation['query']['proteinEnd'])
         ret.append(_3dhotspot)
 
+    ret.append('True')
     ret.append(oncokbdata[GENE_IN_ONCOKB_HEADER])
     ret.append(oncokbdata[VARIANT_IN_ONCOKB_HEADER])
     ret.append(oncokbdata['mutation_effect'])
