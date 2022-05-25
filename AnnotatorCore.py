@@ -1063,9 +1063,11 @@ def process_clinical_data(annotatedmutfiles, clinicalfile, outfile):
     samplepxlevels = {}
     sampleleveltreatments = {}
     sampledrivers = {}
+    sample_resistance = {}
     samplemutationswithdiagnosis = {}
     samplemutationswithprognosis = {}
-    sampleactionablecount = {}
+    sample_tx_sensitive_count = {}
+    sample_tx_resistance_count = {}
     samplealterationcount = {}
     for annotatedmutfile in annotatedmutfiles:
         with open(annotatedmutfile, 'rU') as mutfile:
@@ -1113,7 +1115,9 @@ def process_clinical_data(annotatedmutfiles, clinicalfile, outfile):
                     samplepxlevels[sample] = []
                     sampleleveltreatments[sample] = {}
                     sampledrivers[sample] = []
-                    sampleactionablecount[sample] = {}
+                    sample_resistance[sample] = []
+                    sample_tx_sensitive_count[sample] = {}
+                    sample_tx_resistance_count[sample] = {}
 
                 if sample not in samplemutationswithdiagnosis:
                     samplemutationswithdiagnosis[sample] = []
@@ -1145,6 +1149,8 @@ def process_clinical_data(annotatedmutfiles, clinicalfile, outfile):
 
                 if oncogenic == "oncogenic" or oncogenic == "likely oncogenic" or oncogenic == "predicted oncogenic":
                     sampledrivers[sample].append(variant)
+                if oncogenic == "resistance":
+                    sample_resistance[sample].append(variant)
 
                 for l in levels:
                     il = headers[l]
@@ -1155,8 +1161,10 @@ def process_clinical_data(annotatedmutfiles, clinicalfile, outfile):
                         samplelevels[sample][l].append(row[il] + "(" + variant + ")")
                         sampleleveltreatments[sample][l].extend(row[il].split(","))
 
-                        if not l.startswith('LEVEL_R'):
-                            sampleactionablecount[sample][variant] = True
+                        if l.startswith('LEVEL_R'):
+                            sample_tx_resistance_count[sample][variant] = True
+                        else:
+                            sample_tx_sensitive_count[sample][variant] = True
 
                 for l in dxLevels:
                     il = headers[l]
@@ -1202,7 +1210,7 @@ def process_clinical_data(annotatedmutfiles, clinicalfile, outfile):
         for l in pxLevels:
             outf.write('\t' + l)
         outf.write('\tHIGHEST_PX_LEVEL')
-        outf.write('\tONCOGENIC_MUTATIONS\t#ONCOGENIC_MUTATIONS\t#MUTATIONS_WITH_THERAPEUTIC_IMPLICATIONS\t#MUTATIONS_WITH_DIAGNOSTIC_IMPLICATIONS\t#MUTATIONS_WITH_PROGNOSTIC_IMPLICATIONS\t#MUTATIONS\n')
+        outf.write('\tONCOGENIC_MUTATIONS\t#ONCOGENIC_MUTATIONS\tRESISTANCE_MUTATIONS\t#RESISTANCE_MUTATIONS\t#MUTATIONS_WITH_SENSITIVE_THERAPEUTIC_IMPLICATIONS\t#MUTATIONS_WITH_RESISTANCE_THERAPEUTIC_IMPLICATIONS\t#MUTATIONS_WITH_DIAGNOSTIC_IMPLICATIONS\t#MUTATIONS_WITH_PROGNOSTIC_IMPLICATIONS\t#MUTATIONS\n')
         isample = headers['SAMPLE_ID']
 
         for row in reader:
@@ -1254,21 +1262,29 @@ def process_clinical_data(annotatedmutfiles, clinicalfile, outfile):
             outf.write('\t' + highestpxlevel)
 
 
-            actionablecount = 0
-            if sample in sampleactionablecount:
-                actionablecount = len(sampleactionablecount[sample].keys())
+            tx_sensitive_count = 0
+            tx_resistance_count = 0
+            if sample in sample_tx_sensitive_count:
+                tx_sensitive_count = len(sample_tx_sensitive_count[sample].keys())
+            if sample in sample_tx_resistance_count:
+                tx_resistance_count = len(sample_tx_resistance_count[sample].keys())
 
             alterationcount = 0
             if sample in samplealterationcount:
                 alterationcount = samplealterationcount[sample]
 
             drivercount = 0
+            resistance_count = 0
             diagnosiscount = 0
             prognosiscount = 0
             drivermutations = ""
+            resistance_mutations = ""
             if sample in sampledrivers:
                 drivercount = len(sampledrivers[sample])
                 drivermutations = ";".join(sampledrivers[sample])
+            if sample in sample_resistance:
+                resistance_count = len(sample_resistance[sample])
+                resistance_mutations = ";".join(sample_resistance[sample])
             if sample in samplemutationswithdiagnosis:
                 diagnosiscount = len(samplemutationswithdiagnosis[sample])
             if sample in samplemutationswithprognosis:
@@ -1276,7 +1292,10 @@ def process_clinical_data(annotatedmutfiles, clinicalfile, outfile):
 
             outf.write('\t' + drivermutations)
             outf.write('\t' + str(drivercount))
-            outf.write('\t' + str(actionablecount))
+            outf.write('\t' + str(resistance_mutations))
+            outf.write('\t' + str(resistance_count))
+            outf.write('\t' + str(tx_sensitive_count))
+            outf.write('\t' + str(tx_resistance_count))
             outf.write('\t' + str(diagnosiscount))
             outf.write('\t' + str(prognosiscount))
             outf.write('\t' + str(alterationcount))
