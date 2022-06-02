@@ -168,7 +168,9 @@ ALTERATION_HEADER = 'ALTERATION'
 HGVSP_SHORT_HEADER = 'HGVSP_SHORT'
 HGVSP_HEADER = 'HGVSP'
 HGVSG_HEADER = 'HGVSG'
-HGVS_HEADERS = [ALTERATION_HEADER, HGVSP_SHORT_HEADER, HGVSP_HEADER, HGVSG_HEADER, 'AMINO_ACID_CHANGE', 'FUSION']
+# columns for copy number alteration
+CNA_HEADERS = [ALTERATION_HEADER, 'COPY_NUMBER_ALTERATION', 'CNA', 'GISTIC']
+HGVS_HEADERS = [ALTERATION_HEADER, HGVSP_SHORT_HEADER, HGVSP_HEADER, HGVSG_HEADER, 'AMINO_ACID_CHANGE', 'FUSION'] + CNA_HEADERS
 SAMPLE_HEADERS = ['SAMPLE_ID', 'TUMOR_SAMPLE_BARCODE']
 PROTEIN_START_HEADERS = ['PROTEIN_START']
 PROTEIN_END_HEADERS = ['PROTEIN_END']
@@ -185,9 +187,6 @@ GC_REF_ALLELE_HEADER = 'REFERENCE_ALLELE'
 GC_VAR_ALLELE_1_HEADER = 'TUMOR_SEQ_ALLELE1'
 GC_VAR_ALLELE_2_HEADER = 'TUMOR_SEQ_ALLELE2'
 GENOMIC_CHANGE_HEADERS = [GC_CHROMOSOME_HEADER, GC_START_POSITION_HEADER, GC_END_POSITION_HEADER, GC_REF_ALLELE_HEADER, GC_VAR_ALLELE_1_HEADER, GC_VAR_ALLELE_2_HEADER]
-
-# columns for copy number alteration
-CNA_HEADER = ['COPY_NUMBER_ALTERATION', 'CNA', 'GISTIC']
 
 # columns for structural variant annotation
 SV_GENEA_HEADER = ['SITE1_GENE', 'GENEA', 'GENE1']
@@ -976,7 +975,7 @@ def process_individual_cna_file(outf, cna_data_file, defaultCancerType, cancerTy
             isample = geIndexOfHeader(headers, SAMPLE_HEADERS)
             ihugo = geIndexOfHeader(headers, HUGO_HEADERS)
             icancertype = geIndexOfHeader(headers, CANCER_TYPE_HEADERS)
-            icna = geIndexOfHeader(headers, CNA_HEADER)
+            icna = geIndexOfHeader(headers, CNA_HEADERS)
 
             hugo = row[ihugo] if ihugo >= 0 else None
             cna_type = get_cna(row[icna], annotate_gain_loss)
@@ -1097,7 +1096,7 @@ def process_clinical_data(annotatedmutfiles, clinicalfile, outfile):
             ismutorcna = ihugo != -1 & ihgvs != -1
 
             if not isfusion and not ismutorcna:
-                log.error("missing proper header")
+                log.error("file " + annotatedmutfile + " missing proper header")
                 exit()
 
             for row in reader:
