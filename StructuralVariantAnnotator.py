@@ -25,6 +25,15 @@ def main(argv):
         '  Default OncoKB base url is https://www.oncokb.org')
         sys.exit()
     if argv.input_file == '' or argv.output_file == '' or argv.oncokb_api_bearer_token == '':
+        required_params = []
+        if argv.input_file == '':
+            required_params.append('-i')
+        if argv.output_file == '':
+            required_params.append('-o')
+        if argv.oncokb_api_bearer_token == '':
+            required_params.append('-b')
+
+        log.error('The parameter(s) ' + ', '.join(required_params) + ' can not be empty')
         log.info('for help: python StructuralVariantAnnotator.py -h')
         sys.exit(2)
     if argv.sample_ids_filter:

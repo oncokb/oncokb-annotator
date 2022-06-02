@@ -18,6 +18,14 @@ def main(argv):
 
     annotated_alteration_files = re.split(',|, ', argv.annotated_alteration_files)
     if argv.input_file == '' or argv.output_file == '' or len(annotated_alteration_files) == 0:
+        required_params = []
+        if argv.input_file == '':
+            required_params.append('-i')
+        if argv.output_file == '':
+            required_params.append('-o')
+        if len(annotated_alteration_files) == 0:
+            required_params.append('-a')
+        log.error('The parameter(s) ' + ', '.join(required_params) + ' can not be empty')
         log.info('for help: python ClinicalDataAnnotator.py -h')
         sys.exit(2)
 
