@@ -46,7 +46,7 @@ python MafAnnotator.py -i "$IATYPICALALT" -o "$OATYPICALALT" -c "$IC" -b "$TOKEN
 python FusionAnnotator.py -i "$IF" -o "$OF" -c "$IC" -b "$TOKEN"
 python StructuralVariantAnnotator.py -i "$ISV" -o "$OSV" -c "$IC" -b "$TOKEN"
 python CnaAnnotator.py -i "$ICNA" -o "$OCNA" -c "$IC" -b "$TOKEN"
-python CnaAnnotator.py -i "$IICNA" -o "$OICNA" -c "$IC" -b "$TOKEN" -f "individual"
+python CnaAnnotator.py -i "$IICNA" -o "$OICNA" -c "$IC" -b "$TOKEN" -f "individual" -z
 python ClinicalDataAnnotator.py -i "$IC" -o "$OC" -a "$OMAF,$OATYPICALALT,$OCNA,$OF,$OSV"
-python OncoKBPlots.py -i "$OC" -o "$OCPDF" -c ONCOTREE_CODE #-n 10
+
 python GenerateReadMe.py -o "$README"
