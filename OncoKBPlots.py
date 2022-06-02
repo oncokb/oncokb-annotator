@@ -23,6 +23,13 @@ def main(argv):
         '    LEVEL_1,LEVEL_2,LEVEL_3A,LEVEL_3B,LEVEL_4,ONCOGENIC,VUS')
         sys.exit()
     if argv.input_file == '' or argv.output_file == '':
+        required_params = []
+        if argv.input_file == '':
+            required_params.append('-i')
+        if argv.output_file == '':
+            required_params.append('-o')
+
+        log.error('The parameter(s) ' + ', '.join(required_params) + ' can not be empty')
         log.info('for help: python OncoKBPlots.py -h')
         sys.exit(2)
     if argv.sample_ids_filter:
