@@ -1152,8 +1152,8 @@ def process_clinical_data(annotatedmutfiles, clinicalfile, outfile):
                     sample_resistance[sample].append(variant)
 
                 for l in levels:
-                    il = headers[l]
-                    if il < len(row) and row[il] != '':
+                    il = geIndexOfHeader(headers, [l])
+                    if 0 <= il < len(row) and row[il] != '':
                         if l not in samplelevels[sample]:
                             samplelevels[sample][l] = []
                             sampleleveltreatments[sample][l] = []
@@ -1166,15 +1166,15 @@ def process_clinical_data(annotatedmutfiles, clinicalfile, outfile):
                             sample_tx_sensitive_count[sample][variant] = True
 
                 for l in dxLevels:
-                    il = headers[l]
-                    if il < len(row) and row[il] != '':
+                    il = geIndexOfHeader(headers, [l])
+                    if 0 <= il < len(row) and row[il] != '':
                         if l not in samplelevels[sample]:
                             samplelevels[sample][l] = []
                         samplelevels[sample][l].append(row[il] + "(" + variant + ")")
 
                 for l in pxLevels:
-                    il = headers[l]
-                    if il < len(row) and row[il] != '':
+                    il = geIndexOfHeader(headers, [l])
+                    if 0 <= il < len(row) and row[il] != '':
                         if l not in samplelevels[sample]:
                             samplelevels[sample][l] = []
                         samplelevels[sample][l].append(row[il] + "(" + variant + ")")
