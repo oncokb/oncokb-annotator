@@ -10,8 +10,8 @@ log = logging.getLogger('CnaAnnotator')
 def main(argv):
     if argv.help:
         log.info('\n'
-        'CnaAnnotator.py -i <input CNA file> -o <output CNA file> [-p previous results] [-c <input clinical file>] [-s sample list filter] [-t <default tumor type>] [-u oncokb-base-url] [-b oncokb_api_bear_token] [-z annotate_gain_loss]\n'
-        '  Input CNA file should follow the GISTIC output (https://docs.cbioportal.org/5.1-data-loading/data-loading/file-formats#data-file-1)\n'
+        'CnaAnnotator.py -i <input CNA file> -o <output CNA file> [-p previous results] [-c <input clinical file>] [-s sample list filter] [-t <default tumor type>] [-u oncokb-base-url] [-b oncokb_api_bear_token] [-z annotate_gain_loss] [-f CNA file formt, gistic or individual]\n'
+        '  Input CNA file uses GISTIC output by default (https://docs.cbioportal.org/5.1-data-loading/data-loading/file-formats#data-file-1). You can also list copy number alteration individually by specifying -f=individual\n'
         '  Essential clinical columns:\n'
         '    SAMPLE_ID: sample ID\n'
         '  Cancer type will be assigned based on the following priority:\n'
@@ -22,6 +22,15 @@ def main(argv):
         '  Default OncoKB base url is https://www.oncokb.org')
         sys.exit()
     if argv.input_file == '' or argv.output_file == '' or argv.oncokb_api_bearer_token == '':
+        required_params = []
+        if argv.input_file == '':
+            required_params.append('-i')
+        if argv.output_file == '':
+            required_params.append('-o')
+        if argv.oncokb_api_bearer_token == '':
+            required_params.append('-b')
+
+        log.error('The parameter(s) ' + ', '.join(required_params) + ' can not be empty')
         log.info('for help: python CnaAnnotator.py -h')
         sys.exit(2)
     if argv.sample_ids_filter:
@@ -34,9 +43,11 @@ def main(argv):
     if argv.input_clinical_file:
         readCancerTypes(argv.input_clinical_file, cancertypemap)
 
+    validate_oncokb_token()
+
     log.info('annotating %s ...' % argv.input_file)
-    processcnagisticdata(argv.input_file, argv.output_file, argv.previous_result_file, argv.default_cancer_type,
-                         cancertypemap, argv.annotate_gain_loss)
+    process_cna_data(argv.input_file, argv.output_file, argv.previous_result_file, argv.default_cancer_type,
+                         cancertypemap, argv.annotate_gain_loss, argv.cna_file_format.lower())
 
     log.info('done!')
 
@@ -53,6 +64,7 @@ if __name__ == "__main__":
     parser.add_argument('-u', dest='oncokb_api_url', default='', type=str)
     parser.add_argument('-b', dest='oncokb_api_bearer_token', default='', type=str)
     parser.add_argument('-z', dest='annotate_gain_loss', action="store_true", default=False)
+    parser.add_argument('-f', dest='cna_file_format', default=CNA_FILE_FORMAT_GISTIC)
     parser.set_defaults(func=main)
 
     args = parser.parse_args()

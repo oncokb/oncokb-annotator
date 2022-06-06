@@ -102,3 +102,61 @@ def test_resolve_query_type():
         assert resolve_query_type(QueryType.HGVSG, [HGVSP_SHORT_HEADER])
     with pytest.raises(Exception):
         assert resolve_query_type(QueryType.GENOMIC_CHANGE, [GC_CHROMOSOME_HEADER, GC_START_POSITION_HEADER])
+
+
+def test_get_highest_tx_level():
+    oncokb_data = {}
+    assert get_highest_tx_level(oncokb_data) == ''
+    assert get_highest_tx_level(oncokb_data, 'random') == ''
+    assert get_highest_tx_level(oncokb_data, TX_TYPE_SENSITIVE) == ''
+    assert get_highest_tx_level(oncokb_data, TX_TYPE_RESISTANCE) == ''
+
+    oncokb_data = {'LEVEL_1': ['test'], 'LEVEL_R1': ['test'], 'LEVEL_R2': ['test']}
+    assert get_highest_tx_level(oncokb_data) == 'LEVEL_R1'
+    assert get_highest_tx_level(oncokb_data, 'random') == 'LEVEL_R1'
+    assert get_highest_tx_level(oncokb_data, TX_TYPE_SENSITIVE) == 'LEVEL_1'
+    assert get_highest_tx_level(oncokb_data, TX_TYPE_RESISTANCE) == 'LEVEL_R1'
+
+    oncokb_data = {'LEVEL_1': ['test'], 'LEVEL_R2': ['test']}
+    assert get_highest_tx_level(oncokb_data) == 'LEVEL_1'
+    assert get_highest_tx_level(oncokb_data, 'random') == 'LEVEL_1'
+    assert get_highest_tx_level(oncokb_data, TX_TYPE_SENSITIVE) == 'LEVEL_1'
+    assert get_highest_tx_level(oncokb_data, TX_TYPE_RESISTANCE) == 'LEVEL_R2'
+
+
+def test_cna():
+    assert get_cna(None) is None
+    assert get_cna('') is None
+    assert get_cna('test') is None
+    assert get_cna('Amplification') == CNA_AMPLIFICATION_TXT
+    assert get_cna('Gain') is None
+    assert get_cna('Deletion') == CNA_DELETION_TXT
+    assert get_cna('Loss') is None
+    assert get_cna('2') == CNA_AMPLIFICATION_TXT
+    assert get_cna('1') is None
+    assert get_cna('-2') == CNA_DELETION_TXT
+    assert get_cna('-1.5') == CNA_DELETION_TXT
+    assert get_cna('-1') is None
+    assert get_cna('0') is None
+
+    assert get_cna(None, False) is None
+    assert get_cna('', False) is None
+    assert get_cna('test', False) is None
+    assert get_cna('Amplification', False) == CNA_AMPLIFICATION_TXT
+    assert get_cna('Gain', False) is None
+    assert get_cna('Deletion', False) == CNA_DELETION_TXT
+    assert get_cna('Loss', False) is None
+
+    assert get_cna(None, True) is None
+    assert get_cna('', True) is None
+    assert get_cna('test', True) is None
+    assert get_cna('Amplification', True) == CNA_AMPLIFICATION_TXT
+    assert get_cna('Gain', True) == CNA_GAIN_TXT
+    assert get_cna('Deletion', True) == CNA_DELETION_TXT
+    assert get_cna('Loss', True) == CNA_LOSS_TXT
+    assert get_cna('2', True) == CNA_AMPLIFICATION_TXT
+    assert get_cna('1', True) == CNA_GAIN_TXT
+    assert get_cna('-2', True) == CNA_DELETION_TXT
+    assert get_cna('-1.5', True) == CNA_DELETION_TXT
+    assert get_cna('-1', True) == CNA_LOSS_TXT
+    assert get_cna('0', True) is None

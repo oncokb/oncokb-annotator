@@ -13,6 +13,7 @@ def main(argv):
                  '  Default OncoKB base url is https://www.oncokb.org')
         sys.exit()
     if argv.output_file == '':
+        log.error('The parameter -o can not be empty')
         log.info('for help: python GenerateReadMe.py -h')
         sys.exit(2)
     if argv.oncokb_api_url:

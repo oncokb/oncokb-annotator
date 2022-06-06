@@ -6,9 +6,11 @@ on:
   push:
     branches:
       - master
+      - next-minor-release
   pull_request:
     branches:
       - master
+      - next-minor-release
 jobs:
   build:
     if: github.repository == 'oncokb/oncokb-annotator'
@@ -41,7 +43,7 @@ jobs:
           MUTATION_DATA_NAME=data_mutations_mskcc.txt
           CLINICAL_DATA_NAME=data_clinical_sample.txt
           FUSION_DATA_NAME=data_fusions.txt
-          CNA_DATA_NAME=data_CNA.txt
+          INDIVIDUAL_CNA_DATA_NAME=data_individual_CNA.txt
 
           cd data || exit
           curl -s -H "Authorization: token ${ONCOKB_OAUTH_TOKEN}" https://api.github.com/repos/knowledgesystems/oncokb-data/contents/annotation/annotator-test/data | jq -r '.[] | .download_url + " " + .name' | while IFS=' ' read -r downloadurl name; do
@@ -64,13 +66,13 @@ jobs:
           IF=data/"$FUSION_DATA_NAME"
           OF=compare/"$PREFIX"_"$FUSION_DATA_NAME"
 
-          ICNA=data/"$CNA_DATA_NAME"
-          OCNA=compare/"$PREFIX"_"$CNA_DATA_NAME"
+          IICNA=data/"$INDIVIDUAL_CNA_DATA_NAME"
+          OICNA=compare/"$PREFIX"_"$INDIVIDUAL_CNA_DATA_NAME"
 
           python MafAnnotator.py -i "$IMAF" -o "$OMAF" -c "$IC" -b "$ONCOKB_API_TOKEN"
           python FusionAnnotator.py -i "$IF" -o "$OF" -c "$IC" -b "$ONCOKB_API_TOKEN"
-          python CnaAnnotator.py -i "$ICNA" -o "$OCNA" -c "$IC" -b "$ONCOKB_API_TOKEN"
-          python ClinicalDataAnnotator.py -i "$IC" -o "$OC" -a "$OMAF,$OCNA,$OF"
+          python CnaAnnotator.py -i "$IICNA" -o "$OICNA" -c "$IC" -b "$ONCOKB_API_TOKEN" -f "individual"
+          python ClinicalDataAnnotator.py -i "$IC" -o "$OC" -a "$OMAF,$OICNA,$OF"
 
           git config user.name oncokb-bot
           git config user.email dev.oncokb@gmail.com
@@ -88,7 +90,7 @@ jobs:
           rm -f compare/*.txt
 
           cd compare || exit
-          curl -s -H "Authorization: token ${ONCOKB_OAUTH_TOKEN}" https://api.github.com/repos/knowledgesystems/oncokb-data/contents/annotation/annotator-test/annotation | jq -r '.[] | .download_url + " " + .name' | while IFS=' ' read -r downloadurl name; do
+          curl -s -H "Authorization: token ${ONCOKB_OAUTH_TOKEN}" https://api.github.com/repos/knowledgesystems/oncokb-data/contents/annotation/annotator-test/annotation-3-3 | jq -r '.[] | .download_url + " " + .name' | while IFS=' ' read -r downloadurl name; do
             if [[ "$name" == "$FIEL_NAME_PREFIX"* ]]; then
               curl -s "$downloadurl" -o $name
             fi

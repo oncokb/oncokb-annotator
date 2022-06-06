@@ -54,6 +54,15 @@ def main(argv):
         )
         sys.exit()
     if argv.input_file == '' or argv.output_file == '' or argv.oncokb_api_bearer_token == '':
+        required_params = []
+        if argv.input_file == '':
+            required_params.append('-i')
+        if argv.output_file == '':
+            required_params.append('-o')
+        if argv.oncokb_api_bearer_token == '':
+            required_params.append('-b')
+
+        log.error('The parameter(s) ' + ', '.join(required_params) + ' can not be empty')
         log.info('For help: python MafAnnotator.py -h')
         sys.exit(2)
 
@@ -88,6 +97,8 @@ def main(argv):
             log.error(
                 'Reference genome is not acceptable. Only the following allows(case insensitive): GRCh37, GRCh38')
             raise
+
+    validate_oncokb_token()
 
     processalterationevents(argv.input_file, argv.output_file, argv.previous_result_file, argv.default_cancer_type,
                             cancertypemap, argv.annotate_hotspots, user_input_query_type, default_reference_genome)

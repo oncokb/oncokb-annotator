@@ -9,17 +9,17 @@ setoncokbapitoken(ONCOKB_API_TOKEN)
 
 log.info('test-----------', os.environ["ONCOKB_API_TOKEN"], '------')
 
-VARIANT_EXISTS_INDEX = 1
-MUTATION_EFFECT_INDEX = 2
-ONCOGENIC_INDEX = 4
-LEVEL_1_INDEX =5
-LEVEL_2_INDEX = 6
-LEVEL_3A_INDEX = 7
-HIGHEST_LEVEL_INDEX = 13
-HIGHEST_DX_LEVEL_INDEX = 18
-HIGHEST_PX_LEVEL_INDEX = 23
+VARIANT_EXISTS_INDEX = 2
+MUTATION_EFFECT_INDEX = VARIANT_EXISTS_INDEX + 1
+ONCOGENIC_INDEX = MUTATION_EFFECT_INDEX + 2
+LEVEL_1_INDEX = ONCOGENIC_INDEX + 1
+LEVEL_2_INDEX = LEVEL_1_INDEX + 1
+LEVEL_3A_INDEX = LEVEL_1_INDEX + 2
+HIGHEST_LEVEL_INDEX = LEVEL_1_INDEX + 7
+HIGHEST_DX_LEVEL_INDEX = HIGHEST_LEVEL_INDEX + 7
+HIGHEST_PX_LEVEL_INDEX = HIGHEST_DX_LEVEL_INDEX + 5
 UNKNOWN = 'Unknown'
-NUMBER_OF_ANNOTATION_COLUMNS = 25
+NUMBER_OF_ANNOTATION_COLUMNS = 27
 
 def fake_gene_one_query_suite(annotations):
     assert len(annotations) == 1
@@ -193,7 +193,7 @@ def test_check_genomic_change():
     assert annotation[HIGHEST_LEVEL_INDEX] == ''
 
 @pytest.mark.skipif(ONCOKB_API_TOKEN in (None, ''), reason="oncokb api token required")
-def test_check_fusions():
+def test_check_structural_variants():
     queries = [
         StructuralVariantQuery('ALK', 'EML4', 'FUSION', 'NSCLC'),
         StructuralVariantQuery('ALK', 'EML4', 'FUSION', 'Melanoma'),
