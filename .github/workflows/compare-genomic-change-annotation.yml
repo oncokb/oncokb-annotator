@@ -76,7 +76,7 @@ jobs:
           rm -f compare/*.txt
 
           cd compare
-          curl -s -H "Authorization: token ${ONCOKB_OAUTH_TOKEN}" https://api.github.com/repos/knowledgesystems/oncokb-data/contents/annotation/annotator-test/annotation-3-3 | jq -r '.[] | .download_url + " " + .name' | while IFS=' ' read -r downloadurl name; do
+          curl -s -H "Authorization: token ${ONCOKB_OAUTH_TOKEN}" https://api.github.com/repos/knowledgesystems/oncokb-data/contents/annotation/annotator-test/annotation | jq -r '.[] | .download_url + " " + .name' | while IFS=' ' read -r downloadurl name; do
             if [[ "$name" == "$FILE_NAME" ]]; then
               curl -s "$downloadurl" -o $name
             fi
