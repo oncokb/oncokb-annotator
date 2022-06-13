@@ -1,25 +1,36 @@
 #!/usr/bin/python
 
+import sys
 import argparse
-from AnnotatorCore import *
 import logging
+
+from AnnotatorCore import setsampleidsfileterfile
+from AnnotatorCore import setoncokbbaseurl
+from AnnotatorCore import setoncokbapitoken
+from AnnotatorCore import readCancerTypes
+from AnnotatorCore import validate_oncokb_token
+from AnnotatorCore import process_cna_data
+from AnnotatorCore import CNA_FILE_FORMAT_GISTIC
+
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger('CnaAnnotator')
 
 
 def main(argv):
     if argv.help:
-        log.info('\n'
-        'CnaAnnotator.py -i <input CNA file> -o <output CNA file> [-p previous results] [-c <input clinical file>] [-s sample list filter] [-t <default tumor type>] [-u oncokb-base-url] [-b oncokb_api_bear_token] [-z annotate_gain_loss] [-f CNA file formt, gistic or individual]\n'
-        '  Input CNA file uses GISTIC output by default (https://docs.cbioportal.org/5.1-data-loading/data-loading/file-formats#data-file-1). You can also list copy number alteration individually by specifying -f=individual\n'
-        '  Essential clinical columns:\n'
-        '    SAMPLE_ID: sample ID\n'
-        '  Cancer type will be assigned based on the following priority:\n'
-        '     1) ONCOTREE_CODE in clinical data file\n'
-        '     2) ONCOTREE_CODE exist in MAF\n'
-        '     3) default tumor type (-t)\n'
-        '  We do not annotate Gain and Loss by default, add -z to include the analysis. See https://github.com/oncokb/oncokb-annotator/issues/51 for more information.\n'
-        '  Default OncoKB base url is https://www.oncokb.org')
+        log.info(
+            '\n'
+            'CnaAnnotator.py -i <input CNA file> -o <output CNA file> [-p previous results] [-c <input clinical file>] [-s sample list filter] [-t <default tumor type>] [-u oncokb-base-url] [-b oncokb_api_bear_token] [-z annotate_gain_loss] [-f CNA file formt, gistic or individual]\n'
+            '  Input CNA file uses GISTIC output by default (https://docs.cbioportal.org/5.1-data-loading/data-loading/file-formats#data-file-1). You can also list copy number alteration individually by specifying -f=individual\n'
+            '  Essential clinical columns:\n'
+            '    SAMPLE_ID: sample ID\n'
+            '  Cancer type will be assigned based on the following priority:\n'
+            '     1) ONCOTREE_CODE in clinical data file\n'
+            '     2) ONCOTREE_CODE exist in MAF\n'
+            '     3) default tumor type (-t)\n'
+            '  We do not annotate Gain and Loss by default, add -z to include the analysis. See https://github.com/oncokb/oncokb-annotator/issues/51 for more information.\n'
+            '  Default OncoKB base url is https://www.oncokb.org'
+        )
         sys.exit()
     if argv.input_file == '' or argv.output_file == '' or argv.oncokb_api_bearer_token == '':
         required_params = []
@@ -46,8 +57,7 @@ def main(argv):
     validate_oncokb_token()
 
     log.info('annotating %s ...' % argv.input_file)
-    process_cna_data(argv.input_file, argv.output_file, argv.previous_result_file, argv.default_cancer_type,
-                         cancertypemap, argv.annotate_gain_loss, argv.cna_file_format.lower())
+    process_cna_data(argv.input_file, argv.output_file, argv.previous_result_file, argv.default_cancer_type, cancertypemap, argv.annotate_gain_loss, argv.cna_file_format.lower())
 
     log.info('done!')
 

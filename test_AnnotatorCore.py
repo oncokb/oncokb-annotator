@@ -1,7 +1,29 @@
 #!/usr/bin/python
 import pytest
 
-from AnnotatorCore import *
+from AnnotatorCore import getgenesfromfusion
+from AnnotatorCore import conversion
+from AnnotatorCore import replace_all
+from AnnotatorCore import resolve_query_type
+from AnnotatorCore import get_highest_tx_level
+from AnnotatorCore import get_cna
+from AnnotatorCore import QueryType
+from AnnotatorCore import ALTERATION_HEADER
+from AnnotatorCore import HGVSP_HEADER
+from AnnotatorCore import HGVSP_SHORT_HEADER
+from AnnotatorCore import HGVSG_HEADER
+from AnnotatorCore import GC_REF_ALLELE_HEADER
+from AnnotatorCore import GC_CHROMOSOME_HEADER
+from AnnotatorCore import GC_START_POSITION_HEADER
+from AnnotatorCore import GC_END_POSITION_HEADER
+from AnnotatorCore import GC_VAR_ALLELE_1_HEADER
+from AnnotatorCore import GC_VAR_ALLELE_2_HEADER
+from AnnotatorCore import TX_TYPE_SENSITIVE
+from AnnotatorCore import TX_TYPE_RESISTANCE
+from AnnotatorCore import CNA_AMPLIFICATION_TXT
+from AnnotatorCore import CNA_DELETION_TXT
+from AnnotatorCore import CNA_GAIN_TXT
+from AnnotatorCore import CNA_LOSS_TXT
 
 
 def test_getgenesfromfusion():

@@ -1,22 +1,18 @@
 #!/usr/bin/python
 import datetime
 import json
-import sys
 import csv
-from enum import Enum
-
 import requests
 import os.path
 import logging
 import re
-import matplotlib
+import ctypes as ct
+
+from enum import Enum
 from requests.adapters import HTTPAdapter
 from urllib3 import Retry
-
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
 from datetime import date
-import ctypes as ct
+
 
 logging.basicConfig(level=logging.INFO)
 logging.getLogger("requests").setLevel(logging.WARNING)
@@ -29,9 +25,9 @@ REQUEST_TIMEOUT = 240
 
 API_REQUEST_RETRY_STATUS_FORCELIST = [429, 500, 502, 503, 504]
 
-csv.field_size_limit(int(ct.c_ulong(-1).value // 2)) # Deal with overflow problem on Windows, https://stackoverflow.co/120m/questions/15063936/csv-error-field-larger-than-field-limit-131072
+csv.field_size_limit(int(ct.c_ulong(-1).value // 2))  # Deal with overflow problem on Windows, https://stackoverflow.co/120m/questions/15063936/csv-error-field-larger-than-field-limit-131072
 sizeLimit = csv.field_size_limit()
-csv.field_size_limit(sizeLimit) # for reading large files
+csv.field_size_limit(sizeLimit)  # for reading large files
 
 oncokb_api_url = "https://www.oncokb.org/api"
 oncokb_annotation_api_url = oncokb_api_url + "/v1"
@@ -45,21 +41,31 @@ def setoncokbbaseurl(u):
     oncokb_api_url = u.rstrip('/') + '/api'
     oncokb_annotation_api_url = oncokb_api_url + '/v1'
 
+
 def setoncokbapitoken(t):
     global oncokb_api_bearer_token
     oncokb_api_bearer_token = t.strip()
 
+
 cancerhotspotsbaseurl = "http://www.cancerhotspots.org"
+
+
 def setcancerhotspotsbaseurl(u):
     global cancerhotspotsbaseurl
     cancerhotspotsbaseurl = u
 
+
 _3dhotspotsbaseurl = "http://www.3dhotspots.org"
+
+
 def set3dhotspotsbaseurl(u):
     global _3dhotspotsbaseurl
     _3dhotspotsbaseurl = u
 
+
 sampleidsfilter = None
+
+
 def setsampleidsfileterfile(f):
     global sampleidsfilter
     content = [line.rstrip() for line in open(f)]
@@ -186,7 +192,8 @@ GC_END_POSITION_HEADER = 'END_POSITION'
 GC_REF_ALLELE_HEADER = 'REFERENCE_ALLELE'
 GC_VAR_ALLELE_1_HEADER = 'TUMOR_SEQ_ALLELE1'
 GC_VAR_ALLELE_2_HEADER = 'TUMOR_SEQ_ALLELE2'
-GENOMIC_CHANGE_HEADERS = [GC_CHROMOSOME_HEADER, GC_START_POSITION_HEADER, GC_END_POSITION_HEADER, GC_REF_ALLELE_HEADER, GC_VAR_ALLELE_1_HEADER, GC_VAR_ALLELE_2_HEADER]
+GENOMIC_CHANGE_HEADERS = [GC_CHROMOSOME_HEADER, GC_START_POSITION_HEADER, GC_END_POSITION_HEADER, GC_REF_ALLELE_HEADER,
+                          GC_VAR_ALLELE_1_HEADER, GC_VAR_ALLELE_2_HEADER]
 
 # columns for structural variant annotation
 SV_GENEA_HEADER = ['SITE1_GENE', 'GENEA', 'GENE1']
@@ -195,6 +202,7 @@ SV_TYPE_HEADER = ['SV_CLASS_NAME', 'SV_TYPE']
 SV_TYPES = ['DELETION', 'TRANSLOCATION', 'DUPLICATION', 'INSERTION', 'INVERSION', 'FUSION', 'UNKNOWN']
 
 UNKNOWN = 'UNKNOWN'
+
 
 class QueryType(Enum):
     HGVSP_SHORT = 'HGVSP_SHORT'
@@ -218,14 +226,17 @@ REQUIRED_QUERY_TYPE_COLUMNS = {
 POST_QUERIES_THRESHOLD = 200
 POST_QUERIES_THRESHOLD_GC_HGVSG = 100
 
+
 def getOncokbInfo():
-    ret = ['Files annotated on ' + date.today().strftime('%m/%d/%Y') + "\nOncoKB API URL: "+oncokb_annotation_api_url]
+    ret = ['Files annotated on ' + date.today().strftime('%m/%d/%Y') + "\nOncoKB API URL: " + oncokb_annotation_api_url]
     try:
         info = requests.get(oncokb_annotation_api_url + "/info", timeout=REQUEST_TIMEOUT).json()
-        ret.append('\nOncoKB data version: ' + info['dataVersion']['version']+', released on ' + info['dataVersion']['date'])
-    except:
+        ret.append(
+            '\nOncoKB data version: ' + info['dataVersion']['version'] + ', released on ' + info['dataVersion']['date'])
+    except Exception:
         log.error("error when fetch OncoKB info")
     return ''.join(ret)
+
 
 def validate_oncokb_token():
     if oncokb_api_bearer_token is None or not oncokb_api_bearer_token:
@@ -253,7 +264,7 @@ def validate_oncokb_token():
             reason = response_json["title"]
             if response_json["detail"]:
                 reason = response_json["detail"]
-        except:
+        except Exception:
             reason = response.reason
 
         log.error("Error when validating token, " + "reason: %s" % reason)
@@ -264,6 +275,7 @@ def generateReadme(outfile):
     outf = open(outfile, 'w+', 1000)
     outf.write(getOncokbInfo())
     outf.close()
+
 
 def gethotspots(url, type):
     hotspots = {}
@@ -281,16 +293,16 @@ def gethotspots(url, type):
                 for i in range(start, end + 1):
                     hotspots[gene].add(i)
     else:
-        log.error("error when processing %s \n" % url +
-                  "reason: %s" % response.reason)
+        log.error("error when processing %s \n" % url + "reason: %s" % response.reason)
     return hotspots
 
+
 def requests_retry_session(
-    retries=3,
-    backoff_factor=0.3,
-    status_forcelist=API_REQUEST_RETRY_STATUS_FORCELIST,
-    allowed_methods=('GET', 'HEAD'),
-    session=None,
+        retries=3,
+        backoff_factor=0.3,
+        status_forcelist=API_REQUEST_RETRY_STATUS_FORCELIST,
+        allowed_methods=('GET', 'HEAD'),
+        session=None,
 ):
     session = session or requests.Session()
     retry = Retry(
@@ -306,13 +318,15 @@ def requests_retry_session(
     session.mount('https://', adapter)
     return session
 
+
 def makeoncokbpostrequest(url, body):
     headers = {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer %s' % oncokb_api_bearer_token
     }
-    return requests_retry_session(allowed_methods=["POST"]).post(url, headers=headers, data=json.dumps(body, default=lambda o: o.__dict__),
-                         timeout=REQUEST_TIMEOUT)
+    return requests_retry_session(allowed_methods=["POST"]).post(url, headers=headers,
+                                                                 data=json.dumps(body, default=lambda o: o.__dict__),
+                                                                 timeout=REQUEST_TIMEOUT)
 
 
 def makeoncokbgetrequest(url):
@@ -325,9 +339,10 @@ def makeoncokbgetrequest(url):
 
 _3dhotspots = None
 
+
 def init_3d_hotspots():
     global _3dhotspots
-    _3dhotspots = gethotspots(_3dhotspotsbaseurl+"/api/hotspots/3d", None)
+    _3dhotspots = gethotspots(_3dhotspotsbaseurl + "/api/hotspots/3d", None)
 
 
 conversiondict = {'Ala': 'A',
@@ -354,12 +369,15 @@ conversiondict = {'Ala': 'A',
                   'Glx': 'Z'
                   }
 conversionlist = conversiondict.keys()
+
+
 def conversion(hgvs):
-    threecharactersearch = re.findall('[a-zA-Z]{3}\d+', hgvs, flags=re.IGNORECASE)
+    threecharactersearch = re.findall(r'[a-zA-Z]{3}\d+', hgvs, flags=re.IGNORECASE)
     if threecharactersearch:
         if any(letters.lower() in hgvs.lower() for letters in conversionlist):
             return replace_all(hgvs)
     return hgvs
+
 
 def replace_all(hgvs):
     # Author: Thomas Glaessle
@@ -391,9 +409,11 @@ def get_tumor_type_from_row(row, row_index, defaultCancerType, icancertype, canc
     if sample in cancerTypeMap:
         cancertype = cancerTypeMap[sample]
     if cancertype == "":
-        log.info("Cancer type for the sample should be defined for a more accurate result\nline %s: %s\n" % (row_index, row))
+        log.info(
+            "Cancer type for the sample should be defined for a more accurate result\nline %s: %s\n" % (row_index, row))
         # continue
     return cancertype
+
 
 def has_desired_headers(desired_headers, file_headers):
     has_required_headers = True
@@ -417,7 +437,8 @@ def resolve_query_type(user_input_query_type, headers):
     if selected_query_type is None and HGVSG_HEADER in headers:
         selected_query_type = QueryType.HGVSG
 
-    if selected_query_type is None and has_desired_headers(REQUIRED_QUERY_TYPE_COLUMNS[QueryType.GENOMIC_CHANGE], headers):
+    if selected_query_type is None and has_desired_headers(REQUIRED_QUERY_TYPE_COLUMNS[QueryType.GENOMIC_CHANGE],
+                                                           headers):
         selected_query_type = QueryType.GENOMIC_CHANGE
 
     # default to HGVSp_Short
@@ -425,12 +446,15 @@ def resolve_query_type(user_input_query_type, headers):
         selected_query_type = QueryType.HGVSP_SHORT
 
     # check the file has required columns
-    if has_desired_headers(REQUIRED_QUERY_TYPE_COLUMNS[selected_query_type], headers) == False:
+    if has_desired_headers(REQUIRED_QUERY_TYPE_COLUMNS[selected_query_type], headers) is False:
         # when it is False, it will never be GENOMIC_CHANGE. For other types, we need to check whether ALTERATION column is available
         if ALTERATION_HEADER not in headers:
-            raise Exception("The file does not have required columns "
-                            + ', '.join(REQUIRED_QUERY_TYPE_COLUMNS[user_input_query_type])
-                            + " for the query type: " + user_input_query_type.value)
+            raise Exception(
+                "The file does not have required columns "
+                + ', '.join(REQUIRED_QUERY_TYPE_COLUMNS[user_input_query_type])
+                + " for the query type: "
+                + user_input_query_type.value
+            )
 
     return selected_query_type
 
@@ -469,7 +493,7 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
             outf.write("\tIS-A-HOTSPOT")
             outf.write("\tIS-A-3D-HOTSPOT")
             newncols += 2
-            
+
         oncokb_annotation_headers = get_oncokb_annotation_column_headers()
 
         outf.write("\t")
@@ -485,7 +509,8 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
                                cancerTypeMap, annotatehotspots, default_reference_genome)
 
         if (query_type == QueryType.HGVSP):
-            process_alteration(reader, outf, headers, [HGVSP_HEADER, ALTERATION_HEADER], ncols, newncols, defaultCancerType,
+            process_alteration(reader, outf, headers, [HGVSP_HEADER, ALTERATION_HEADER], ncols, newncols,
+                               defaultCancerType,
                                cancerTypeMap, annotatehotspots, default_reference_genome)
 
         if (query_type == QueryType.HGVSG):
@@ -493,7 +518,8 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
                          cancerTypeMap, annotatehotspots, default_reference_genome)
 
         if (query_type == QueryType.GENOMIC_CHANGE):
-            process_genomic_change(reader, outf, headers, ncols, newncols, defaultCancerType, cancerTypeMap, annotatehotspots, default_reference_genome)
+            process_genomic_change(reader, outf, headers, ncols, newncols, defaultCancerType, cancerTypeMap,
+                                   annotatehotspots, default_reference_genome)
 
     outf.close()
 
@@ -508,27 +534,30 @@ def get_cell_content(row, index, return_empty_string=False):
 
 
 def get_oncokb_annotation_column_headers():
-    headers = [ANNOTATED_HEADER, GENE_IN_ONCOKB_HEADER, VARIANT_IN_ONCOKB_HEADER, "MUTATION_EFFECT", "MUTATION_EFFECT_CITATIONS",
+    headers = [ANNOTATED_HEADER, GENE_IN_ONCOKB_HEADER, VARIANT_IN_ONCOKB_HEADER, "MUTATION_EFFECT",
+               "MUTATION_EFFECT_CITATIONS",
                "ONCOGENIC"]
-    for l in sorted(levels):
-        headers.append(l)
+    for level in sorted(levels):
+        headers.append(level)
     headers.append("HIGHEST_LEVEL")
     headers.append("HIGHEST_SENSITIVE_LEVEL")
     headers.append("HIGHEST_RESISTANCE_LEVEL")
     headers.append("TX_CITATIONS")
 
-    for l in dxLevels:
-        headers.append(l)
+    for dx_level in dxLevels:
+        headers.append(dx_level)
     headers.append("HIGHEST_DX_LEVEL")
     headers.append("DX_CITATIONS")
 
-    for l in pxLevels:
-        headers.append(l)
+    for px_level in pxLevels:
+        headers.append(px_level)
     headers.append("HIGHEST_PX_LEVEL")
     headers.append("PX_CITATIONS")
     return headers
 
-def process_alteration(maffilereader, outf, maf_headers, alteration_column_names, ncols, nannotationcols, defaultCancerType, cancerTypeMap,
+
+def process_alteration(maffilereader, outf, maf_headers, alteration_column_names, ncols, nannotationcols,
+                       defaultCancerType, cancerTypeMap,
                        annotatehotspots, default_reference_genome):
     ihugo = geIndexOfHeader(maf_headers, HUGO_HEADERS)
     iconsequence = geIndexOfHeader(maf_headers, CONSEQUENCE_HEADERS)
@@ -538,7 +567,7 @@ def process_alteration(maffilereader, outf, maf_headers, alteration_column_names
     iend = geIndexOfHeader(maf_headers, PROTEIN_END_HEADERS)
     iproteinpos = geIndexOfHeader(maf_headers, PROTEIN_POSITION_HEADERS)
     icancertype = geIndexOfHeader(maf_headers, CANCER_TYPE_HEADERS)
-    ireferencegenome= geIndexOfHeader(maf_headers, REFERENCE_GENOME_HEADERS)
+    ireferencegenome = geIndexOfHeader(maf_headers, REFERENCE_GENOME_HEADERS)
 
     posp = re.compile('[0-9]+')
 
@@ -568,7 +597,8 @@ def process_alteration(maffilereader, outf, maf_headers, alteration_column_names
             hgvs = hgvs[2:]
 
         cancertype = get_tumor_type_from_row(row, i, defaultCancerType, icancertype, cancerTypeMap, sample)
-        reference_genome = get_reference_genome_from_row(get_cell_content(row, ireferencegenome), default_reference_genome)
+        reference_genome = get_reference_genome_from_row(get_cell_content(row, ireferencegenome),
+                                                         default_reference_genome)
 
         hgvs = conversion(hgvs)
 
@@ -599,14 +629,15 @@ def process_alteration(maffilereader, outf, maf_headers, alteration_column_names
         rows.append(row)
 
         if len(queries) == POST_QUERIES_THRESHOLD:
-            annotations = pull_protein_change_info(queries,annotatehotspots)
+            annotations = pull_protein_change_info(queries, annotatehotspots)
             append_annotation_to_file(outf, ncols + nannotationcols, rows, annotations)
             queries = []
             rows = []
 
     if len(queries) > 0:
-        annotations = pull_protein_change_info(queries,annotatehotspots)
+        annotations = pull_protein_change_info(queries, annotatehotspots)
         append_annotation_to_file(outf, ncols + nannotationcols, rows, annotations)
+
 
 # this method is from genome-nexus annotation-tools
 # https://github.com/genome-nexus/annotation-tools/blob/53ff7f7fe673e961282f871ebc78d2ecc0831919/standardize_mutation_data.py
@@ -622,12 +653,14 @@ def get_var_allele(ref_allele, tumor_seq_allele1, tumor_seq_allele2):
             tumor_seq_allele = tumor_seq_allele2
         elif ref_allele != tumor_seq_allele1:
             tumor_seq_allele = tumor_seq_allele1
-    except:
+    except Exception:
         tumor_seq_allele = ""
 
     return tumor_seq_allele
 
-def process_genomic_change(maffilereader, outf, maf_headers, ncols, nannotationcols, defaultCancerType, cancerTypeMap, annotatehotspots, default_reference_genome):
+
+def process_genomic_change(maffilereader, outf, maf_headers, ncols, nannotationcols, defaultCancerType, cancerTypeMap,
+                           annotatehotspots, default_reference_genome):
     ichromosome = geIndexOfHeader(maf_headers, [GC_CHROMOSOME_HEADER])
     istart = geIndexOfHeader(maf_headers, [GC_START_POSITION_HEADER])
     iend = geIndexOfHeader(maf_headers, [GC_END_POSITION_HEADER])
@@ -637,9 +670,7 @@ def process_genomic_change(maffilereader, outf, maf_headers, ncols, nannotationc
 
     isample = geIndexOfHeader(maf_headers, SAMPLE_HEADERS)
     icancertype = geIndexOfHeader(maf_headers, CANCER_TYPE_HEADERS)
-    ireferencegenome= geIndexOfHeader(maf_headers, REFERENCE_GENOME_HEADERS)
-
-    posp = re.compile('[0-9]+')
+    ireferencegenome = geIndexOfHeader(maf_headers, REFERENCE_GENOME_HEADERS)
 
     i = 0
     queries = []
@@ -657,7 +688,8 @@ def process_genomic_change(maffilereader, outf, maf_headers, ncols, nannotationc
             continue
 
         cancertype = get_tumor_type_from_row(row, i, defaultCancerType, icancertype, cancerTypeMap, sample)
-        reference_genome = get_reference_genome_from_row(get_cell_content(row, ireferencegenome), default_reference_genome)
+        reference_genome = get_reference_genome_from_row(get_cell_content(row, ireferencegenome),
+                                                         default_reference_genome)
 
         chromosome = get_cell_content(row, ichromosome, True)
         start = get_cell_content(row, istart, True)
@@ -672,20 +704,22 @@ def process_genomic_change(maffilereader, outf, maf_headers, ncols, nannotationc
         rows.append(row)
 
         if len(queries) == POST_QUERIES_THRESHOLD_GC_HGVSG:
-            annotations = pull_genomic_change_info(queries,annotatehotspots)
-            append_annotation_to_file(outf, ncols+nannotationcols, rows, annotations)
+            annotations = pull_genomic_change_info(queries, annotatehotspots)
+            append_annotation_to_file(outf, ncols + nannotationcols, rows, annotations)
             queries = []
             rows = []
 
     if len(queries) > 0:
-        annotations = pull_genomic_change_info(queries,annotatehotspots)
-        append_annotation_to_file(outf, ncols+nannotationcols, rows, annotations)
+        annotations = pull_genomic_change_info(queries, annotatehotspots)
+        append_annotation_to_file(outf, ncols + nannotationcols, rows, annotations)
 
-def process_hvsg(maffilereader, outf, maf_headers, alteration_column_names, ncols, nannotationcols, defaultCancerType, cancerTypeMap, annotatehotspots, default_reference_genome):
+
+def process_hvsg(maffilereader, outf, maf_headers, alteration_column_names, ncols, nannotationcols, defaultCancerType,
+                 cancerTypeMap, annotatehotspots, default_reference_genome):
     ihgvsg = geIndexOfHeader(maf_headers, alteration_column_names)
     isample = geIndexOfHeader(maf_headers, SAMPLE_HEADERS)
     icancertype = geIndexOfHeader(maf_headers, CANCER_TYPE_HEADERS)
-    ireferencegenome= geIndexOfHeader(maf_headers, REFERENCE_GENOME_HEADERS)
+    ireferencegenome = geIndexOfHeader(maf_headers, REFERENCE_GENOME_HEADERS)
 
     i = 0
     queries = []
@@ -705,7 +739,8 @@ def process_hvsg(maffilereader, outf, maf_headers, alteration_column_names, ncol
         hgvsg = get_cell_content(row, ihgvsg)
 
         cancertype = get_tumor_type_from_row(row, i, defaultCancerType, icancertype, cancerTypeMap, sample)
-        reference_genome = get_reference_genome_from_row(get_cell_content(row, ireferencegenome), default_reference_genome)
+        reference_genome = get_reference_genome_from_row(get_cell_content(row, ireferencegenome),
+                                                         default_reference_genome)
 
         if hgvsg is None:
             if annotatehotspots:
@@ -721,20 +756,20 @@ def process_hvsg(maffilereader, outf, maf_headers, alteration_column_names, ncol
 
         if len(queries) == POST_QUERIES_THRESHOLD_GC_HGVSG:
             annotations = pull_hgvsg_info(queries, annotatehotspots)
-            append_annotation_to_file(outf, ncols+nannotationcols, rows, annotations)
+            append_annotation_to_file(outf, ncols + nannotationcols, rows, annotations)
             queries = []
             rows = []
 
     if len(queries) > 0:
-        annotations = pull_hgvsg_info(queries,annotatehotspots)
-        append_annotation_to_file(outf, ncols+nannotationcols, rows, annotations)
+        annotations = pull_hgvsg_info(queries, annotatehotspots)
+        append_annotation_to_file(outf, ncols + nannotationcols, rows, annotations)
 
 
 def getgenesfromfusion(fusion, nameregex=None):
-    GENES_REGEX = "([A-Za-z\d]+-[A-Za-z\d]+)" if nameregex is None else nameregex
+    GENES_REGEX = r"([A-Za-z\d]+-[A-Za-z\d]+)" if nameregex is None else nameregex
     searchresult = re.search(GENES_REGEX, fusion, flags=re.IGNORECASE)
-    geneA=None
-    geneB=None
+    geneA = None
+    geneB = None
     if searchresult:
         parts = searchresult.group(1).split("-")
         geneA = parts[0]
@@ -742,8 +777,9 @@ def getgenesfromfusion(fusion, nameregex=None):
         if len(parts) > 1 and parts[1] != "intragenic":
             geneB = parts[1]
     else:
-        geneA=geneB=fusion
+        geneA = geneB = fusion
     return geneA, geneB
+
 
 def process_fusion(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap, nameregex):
     if os.path.isfile(previousoutfile):
@@ -800,7 +836,6 @@ def process_fusion(svdata, outfile, previousoutfile, defaultCancerType, cancerTy
 
             cancertype = get_tumor_type_from_row(row, i, defaultCancerType, icancertype, cancerTypeMap, sample)
 
-
             queries.append(StructuralVariantQuery(geneA, geneB, 'FUSION', cancertype))
             rows.append(row)
 
@@ -814,7 +849,8 @@ def process_fusion(svdata, outfile, previousoutfile, defaultCancerType, cancerTy
             annotations = pull_structural_variant_info(queries)
             append_annotation_to_file(outf, newcols, rows, annotations)
     outf.close()
-    
+
+
 def process_sv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMap):
     if os.path.isfile(previousoutfile):
         cacheannotated(previousoutfile, defaultCancerType, cancerTypeMap)
@@ -857,11 +893,11 @@ def process_sv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMa
 
             if sampleidsfilter and sample not in sampleidsfilter:
                 continue
-                
+
             if igeneA < 0 or igeneB < 0:
                 log.warning("Please specify two genes")
                 continue
-                
+
             svtype = None
             if isvtype >= 0:
                 svtype = row[isvtype].upper()
@@ -871,7 +907,7 @@ def process_sv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMa
                 svtype = UNKNOWN
 
             cancertype = get_tumor_type_from_row(row, i, defaultCancerType, icancertype, cancerTypeMap, sample)
-            
+
             sv_query = StructuralVariantQuery(row[igeneA], row[igeneB], svtype, cancertype)
             queries.append(sv_query)
             rows.append(row)
@@ -1017,7 +1053,7 @@ def process_cna_data(cnafile, outfile, previousoutfile, defaultCancerType, cance
                                                      annotate_gain_loss)
     else:
         headers, rows, queries = process_individual_cna_file(outf, cnafile, defaultCancerType, cancerTypeMap,
-                                                       annotate_gain_loss)
+                                                             annotate_gain_loss)
 
     ncols = len(headers)
 
@@ -1031,6 +1067,7 @@ def process_cna_data(cnafile, outfile, previousoutfile, defaultCancerType, cance
         append_annotation_to_file(outf, ncols, rows_sec, annotations)
 
     outf.close()
+
 
 def getfirstcolumnofsampleingisticdata(headers):
     header0 = headers[0].lower()
@@ -1083,13 +1120,8 @@ def process_clinical_data(annotatedmutfiles, clinicalfile, outfile):
             ifusion = geIndexOfHeader(headers, ['FUSION'])
 
             ihugo = geIndexOfHeader(headers, HUGO_HEADERS)
-            iconsequence = geIndexOfHeader(headers, CONSEQUENCE_HEADERS)
             ihgvs = geIndexOfHeader(headers, HGVS_HEADERS)
             isample = geIndexOfHeader(headers, SAMPLE_HEADERS)
-            istart = geIndexOfHeader(headers, PROTEIN_START_HEADERS)
-            iend = geIndexOfHeader(headers, PROTEIN_END_HEADERS)
-            icancertype = geIndexOfHeader(headers, CANCER_TYPE_HEADERS)
-            # imutationeffect = headers['MUTATION_EFFECT']
             ioncogenic = headers['ONCOGENIC']
 
             isfusion = (igeneA != -1 & igeneB != -1) or ifusion != -1
@@ -1151,33 +1183,33 @@ def process_clinical_data(annotatedmutfiles, clinicalfile, outfile):
                 if oncogenic == "resistance":
                     sample_resistance[sample].append(variant)
 
-                for l in levels:
-                    il = geIndexOfHeader(headers, [l])
+                for level in levels:
+                    il = geIndexOfHeader(headers, [level])
                     if 0 <= il < len(row) and row[il] != '':
-                        if l not in samplelevels[sample]:
-                            samplelevels[sample][l] = []
-                            sampleleveltreatments[sample][l] = []
-                        samplelevels[sample][l].append(row[il] + "(" + variant + ")")
-                        sampleleveltreatments[sample][l].extend(row[il].split(","))
+                        if level not in samplelevels[sample]:
+                            samplelevels[sample][level] = []
+                            sampleleveltreatments[sample][level] = []
+                        samplelevels[sample][level].append(row[il] + "(" + variant + ")")
+                        sampleleveltreatments[sample][level].extend(row[il].split(","))
 
-                        if l.startswith('LEVEL_R'):
+                        if level.startswith('LEVEL_R'):
                             sample_tx_resistance_count[sample][variant] = True
                         else:
                             sample_tx_sensitive_count[sample][variant] = True
 
-                for l in dxLevels:
-                    il = geIndexOfHeader(headers, [l])
+                for dx_level in dxLevels:
+                    il = geIndexOfHeader(headers, [dx_level])
                     if 0 <= il < len(row) and row[il] != '':
-                        if l not in samplelevels[sample]:
-                            samplelevels[sample][l] = []
-                        samplelevels[sample][l].append(row[il] + "(" + variant + ")")
+                        if dx_level not in samplelevels[sample]:
+                            samplelevels[sample][dx_level] = []
+                        samplelevels[sample][dx_level].append(row[il] + "(" + variant + ")")
 
-                for l in pxLevels:
-                    il = geIndexOfHeader(headers, [l])
+                for px_level in pxLevels:
+                    il = geIndexOfHeader(headers, [px_level])
                     if 0 <= il < len(row) and row[il] != '':
-                        if l not in samplelevels[sample]:
-                            samplelevels[sample][l] = []
-                        samplelevels[sample][l].append(row[il] + "(" + variant + ")")
+                        if px_level not in samplelevels[sample]:
+                            samplelevels[sample][px_level] = []
+                        samplelevels[sample][px_level].append(row[il] + "(" + variant + ")")
 
                 ihighestdxlevel = geIndexOfHeader(headers, ['HIGHEST_DX_LEVEL'])
                 if ihighestdxlevel != -1:
@@ -1198,18 +1230,19 @@ def process_clinical_data(annotatedmutfiles, clinicalfile, outfile):
         reader = csv.reader(clinfile, delimiter='\t')
         headers = readheaders(reader)
         outf.write(headers['^-$'])
-        for l in sorted(levels):
-            outf.write('\t' + l)
+        for level in sorted(levels):
+            outf.write('\t' + level)
         outf.write('\tHIGHEST_LEVEL')
         outf.write('\tHIGHEST_SENSITIVE_LEVEL')
         outf.write('\tHIGHEST_RESISTANCE_LEVEL')
-        for l in dxLevels:
-            outf.write('\t' + l)
+        for dx_level in dxLevels:
+            outf.write('\t' + dx_level)
         outf.write('\tHIGHEST_DX_LEVEL')
-        for l in pxLevels:
-            outf.write('\t' + l)
+        for px_level in pxLevels:
+            outf.write('\t' + px_level)
         outf.write('\tHIGHEST_PX_LEVEL')
-        outf.write('\tONCOGENIC_MUTATIONS\t#ONCOGENIC_MUTATIONS\tRESISTANCE_MUTATIONS\t#RESISTANCE_MUTATIONS\t#MUTATIONS_WITH_SENSITIVE_THERAPEUTIC_IMPLICATIONS\t#MUTATIONS_WITH_RESISTANCE_THERAPEUTIC_IMPLICATIONS\t#MUTATIONS_WITH_DIAGNOSTIC_IMPLICATIONS\t#MUTATIONS_WITH_PROGNOSTIC_IMPLICATIONS\t#MUTATIONS\n')
+        outf.write(
+            '\tONCOGENIC_MUTATIONS\t#ONCOGENIC_MUTATIONS\tRESISTANCE_MUTATIONS\t#RESISTANCE_MUTATIONS\t#MUTATIONS_WITH_SENSITIVE_THERAPEUTIC_IMPLICATIONS\t#MUTATIONS_WITH_RESISTANCE_THERAPEUTIC_IMPLICATIONS\t#MUTATIONS_WITH_DIAGNOSTIC_IMPLICATIONS\t#MUTATIONS_WITH_PROGNOSTIC_IMPLICATIONS\t#MUTATIONS\n')
         isample = headers['SAMPLE_ID']
 
         for row in reader:
@@ -1220,10 +1253,10 @@ def process_clinical_data(annotatedmutfiles, clinicalfile, outfile):
 
             outf.write('\t'.join(row))
 
-            for l in sorted(levels):
+            for level in sorted(levels):
                 outf.write('\t')
-                if sample in samplelevels and l in samplelevels[sample]:
-                    outf.write(";".join(samplelevels[sample][l]))
+                if sample in samplelevels and level in samplelevels[sample]:
+                    outf.write(";".join(samplelevels[sample][level]))
 
             highestlevel = ''
             highest_sensitive_level = ''
@@ -1247,19 +1280,18 @@ def process_clinical_data(annotatedmutfiles, clinicalfile, outfile):
             outf.write('\t' + highest_sensitive_level)
             outf.write('\t' + highest_resistance_level)
 
-            for l in dxLevels:
+            for dx_level in dxLevels:
                 outf.write('\t')
-                if sample in samplelevels and l in samplelevels[sample]:
-                    outf.write(";".join(samplelevels[sample][l]))
+                if sample in samplelevels and dx_level in samplelevels[sample]:
+                    outf.write(";".join(samplelevels[sample][dx_level]))
 
             outf.write('\t' + highestdxlevel)
 
-            for l in pxLevels:
+            for px_level in pxLevels:
                 outf.write('\t')
-                if sample in samplelevels and l in samplelevels[sample]:
-                    outf.write(";".join(samplelevels[sample][l]))
+                if sample in samplelevels and px_level in samplelevels[sample]:
+                    outf.write(";".join(samplelevels[sample][px_level]))
             outf.write('\t' + highestpxlevel)
-
 
             tx_sensitive_count = 0
             tx_resistance_count = 0
@@ -1303,222 +1335,6 @@ def process_clinical_data(annotatedmutfiles, clinicalfile, outfile):
 
     outf.close()
 
-def plotclinicalactionability(ax, annotatedclinicalfile, outfile, parameters):
-    if os.path.isfile(outfile):
-        os.remove(outfile)
-
-    extlevels = levels + ["ONCOGENIC", "VUS"]
-    if "levels" in parameters:
-        extlevels = parameters["levels"]
-
-    with open(annotatedclinicalfile, 'rU') as clinfile:
-        reader = csv.reader(clinfile, delimiter='\t')
-        headers = readheaders(reader)
-        isample = geIndexOfHeader(headers, SAMPLE_HEADERS)
-        ilevel = headers['HIGHEST_LEVEL']
-        ioncogenic = headers['ONCOGENIC_MUTATIONS']
-        icat = headers[parameters["catogerycolumn"].upper()] #e.g. "CANCER_TYPE"
-
-        catsamplecount = {}
-        catactionablesamplecount = {}
-        oncogenicsamplecount = {}
-        levelcatsamplecount = {}
-
-        for row in reader:
-            sample = row[isample]
-            if sampleidsfilter and sample not in sampleidsfilter:
-                continue
-
-            cat = row[icat]
-            if cat not in catsamplecount:
-                catsamplecount[cat] = 0
-            catsamplecount[cat] += 1
-
-            if cat not in catactionablesamplecount:
-                catactionablesamplecount[cat] = 0
-                oncogenicsamplecount[cat] = 0
-
-            level = row[ilevel]
-            oncogenic = row[ioncogenic]
-
-            exlevel = level
-
-            if level in extlevels:
-                catactionablesamplecount[cat] += 1
-                oncogenicsamplecount[cat] += 1
-            elif len(oncogenic.strip()) > 0:
-                oncogenicsamplecount[cat] += 1
-                exlevel = "ONCOGENIC"
-            else:
-                exlevel = "VUS"
-
-            if exlevel not in levelcatsamplecount:
-                levelcatsamplecount[exlevel] = {}
-            if cat not in levelcatsamplecount[exlevel]:
-                levelcatsamplecount[exlevel][cat] = 0
-            levelcatsamplecount[exlevel][cat] += 1
-
-
-    # plot
-    catarray = [] # cancer types
-    catactionabilityarray = [] # actionabiligy percentages per cancer type
-    catoncogenicarray = [] # actionabiligy percentages per cancer type
-    for cat in catsamplecount:
-        if catsamplecount[cat] >= parameters["thresholdcat"]:
-            catarray.append(cat)
-            catactionabilityarray.append(catactionablesamplecount[cat] * 100.0 / catsamplecount[cat])
-            catoncogenicarray.append(oncogenicsamplecount[cat] * 100.0 / catsamplecount[cat])
-
-    ncat = len(catarray)
-    order = reversed(sorted(range(ncat),key=lambda x:(catactionabilityarray[x],catoncogenicarray[x])))
-    drawplot(ax, 'OncoKB Actionability', extlevels, levelcatsamplecount, catarray, catsamplecount, order, parameters["thresholdcat"])
-
-def plotimplications(ax, header, title, levels, annotatedclinicalfile, outfile, parameters):
-    if os.path.isfile(outfile):
-        os.remove(outfile)
-
-    extlevels = levels
-    if "levels" in parameters:
-        extlevels = parameters["levels"]
-
-    with open(annotatedclinicalfile, 'rU') as clinfile:
-        reader = csv.reader(clinfile, delimiter='\t')
-        headers = readheaders(reader)
-        isample = headers['SAMPLE_ID']
-        ilevel = headers[header]
-        icat = headers[parameters["catogerycolumn"].upper()]
-
-        catsamplecount = {}
-        catactionablesamplecount = {}
-        levelcatsamplecount = {}
-
-        for row in reader:
-            sample = row[isample]
-            if sampleidsfilter and sample not in sampleidsfilter:
-                continue
-
-            cat = row[icat]
-            if cat not in catsamplecount:
-                catsamplecount[cat] = 0
-            catsamplecount[cat] += 1
-
-            if cat not in catactionablesamplecount:
-                catactionablesamplecount[cat] = 0
-
-            level = row[ilevel]
-
-            exlevel = level
-
-            if level in extlevels:
-                catactionablesamplecount[cat] += 1
-            else:
-                exlevel = "Other"
-
-            if exlevel not in levelcatsamplecount:
-                levelcatsamplecount[exlevel] = {}
-            if cat not in levelcatsamplecount[exlevel]:
-                levelcatsamplecount[exlevel][cat] = 0
-            levelcatsamplecount[exlevel][cat] += 1
-
-
-    # plot
-    catarray = [] # cancer types
-    catactionabilityarray = [] # actionabiligy percentages per cancer type
-    for cat in catsamplecount:
-        if catsamplecount[cat] >= parameters["thresholdcat"]:
-            catarray.append(cat)
-            catactionabilityarray.append(catactionablesamplecount[cat] * 100.0 / catsamplecount[cat])
-
-    ncat = len(catarray)
-    order = reversed(sorted(range(ncat),key=lambda x:(catactionabilityarray[x])))
-    drawplot(ax, title, extlevels, levelcatsamplecount, catarray, catsamplecount, order, parameters["thresholdcat"])
-
-def drawplot(ax, title, extlevels, levelcatsamplecount, catarray, catsamplecount, order, thresholdcat):
-
-    # level colors
-    levelcolors = {
-        'LEVEL_1': '#33A02C',
-        'LEVEL_2': '#1F78B4',
-        'LEVEL_3A': '#984EA3',
-        'LEVEL_3B': '#BE98CE',
-        'LEVEL_4': '#a8a8a8',
-        'LEVEL_R1': '#EE3424',
-        'LEVEL_R2': '#F79A92',
-
-        'LEVEL_Dx1': '#33A02C',
-        'LEVEL_Dx2': '#1F78B4',
-        'LEVEL_Dx3': '#984EA3',
-
-        'LEVEL_Px1': '#33A02C',
-        'LEVEL_Px2': '#1F78B4',
-        'LEVEL_Px3': '#984EA3',
-
-        'ONCOGENIC': '#ffdab9',
-        'VUS': '#d1d1d1',
-        'Other': 'grey'
-    }
-
-    # level legend
-    levellegend = {
-        'LEVEL_1': 'Level 1',
-        'LEVEL_2': 'Level 2',
-        'LEVEL_3A': 'Level 3A',
-        'LEVEL_3B': 'Level 3B',
-        'LEVEL_4': 'Level 4',
-        'LEVEL_R1': 'Level R1',
-        'LEVEL_R2': 'Level R2',
-
-        'LEVEL_Dx1': 'Level Dx1',
-        'LEVEL_Dx2': 'Level Dx2',
-        'LEVEL_Dx3': 'Level Dx3',
-
-        'LEVEL_Px1': 'Level Px1',
-        'LEVEL_Px2': 'Level Px2',
-        'LEVEL_Px3': 'Level Px3',
-
-        'ONCOGENIC': 'Oncogenic, no level',
-        'VUS': 'VUS',
-        'Other': 'Other'
-    }
-
-    ncat = len(catarray)
-    if ncat > 0:
-        catarray = [catarray[i] for i in order]
-
-        ind = range(ncat)
-
-        legends = []
-        plts = []
-        accumlevelcancerperc = [0] * ncat
-        for level in extlevels:
-            if level not in levelcatsamplecount:
-                continue
-
-            levelcancerperc = [0] * ncat
-            for k in ind:
-                cat = catarray[k]
-                if catsamplecount[cat] < thresholdcat:
-                    continue
-                if cat in levelcatsamplecount[level]:
-                    levelcancerperc[k] = levelcatsamplecount[level][cat] * 100.0 / catsamplecount[cat]
-
-            width = 0.75
-            plts = [ax.bar(ind, levelcancerperc, width, color=levelcolors[level], bottom=accumlevelcancerperc)] + plts
-            legends = [levellegend[level]] + legends
-            accumlevelcancerperc = list(map(sum, zip(accumlevelcancerperc,levelcancerperc)))
-
-        ax = plt.gca()
-        ax.set_axisbelow(True)
-        ax.set_aspect(0.1)
-
-        ax.tick_params(axis='y', which='major', labelsize=6)
-        ax.set_ylabel('% of samples', fontsize=6)
-        ax.set_title(title, fontsize=8)
-        ax.set_xticks([i+0.5 for i in ind])
-        ax.set_xticklabels(catarray, rotation=60, ha="right", fontsize=4)
-        # plt.yticks(np.arange(0, 81, 10))
-        ax.legend(plts, legends, fontsize=6, bbox_to_anchor=(1.01, 1), loc="upper left")
-
 
 oncokbcache = {}
 
@@ -1530,11 +1346,8 @@ def cacheannotated(annotatedfile, defaultCancerType, cancerTypeMap):
             headers = readheaders(reader)
 
             ihugo = geIndexOfHeader(headers, HUGO_HEADERS)
-            iconsequence = geIndexOfHeader(headers, CONSEQUENCE_HEADERS)
             ihgvs = geIndexOfHeader(headers, HGVS_HEADERS)
             isample = geIndexOfHeader(headers, SAMPLE_HEADERS)
-            istart = geIndexOfHeader(headers, PROTEIN_START_HEADERS)
-            iend = geIndexOfHeader(headers, PROTEIN_END_HEADERS)
             icancertype = geIndexOfHeader(headers, CANCER_TYPE_HEADERS)
             imutationeffect = headers['MUTATION_EFFECT']
             icitations = headers['CITATIONS']
@@ -1565,16 +1378,17 @@ def cacheannotated(annotatedfile, defaultCancerType, cancerTypeMap):
                     oncokbcache[key]['mutation_effect'] = row[imutationeffect]
                     oncokbcache[key]['citations'] = row[icitations]
                     oncokbcache[key]['oncogenic'] = row[ioncogenic]
-                    for l in levels:
-                        il = headers[l]
+                    for level in levels:
+                        il = headers[level]
                         if il < len(row):
-                            oncokbcache[key][l] = row[il].split(',')
+                            oncokbcache[key][level] = row[il].split(',')
                         else:
-                            oncokbcache[key][l] = []
+                            oncokbcache[key][level] = []
                 except Exception:
                     pass
         except Exception:
             pass
+
 
 def geIndexOfHeader(headers, keywords):
     for k in keywords:
@@ -1592,6 +1406,7 @@ def pull3dhotspots(hugo, consequence, start, end):
     except TypeError:
         log.error("%s: %s-%s" % (hugo, str(start), str(end)))
     return ""
+
 
 def appendoncokbcitations(citations, pmids, abstracts):
     if citations is None:
@@ -1614,6 +1429,7 @@ def appendoncokbcitations(citations, pmids, abstracts):
 class Gene:
     def __init__(self, hugo):
         self.hugoSymbol = hugo
+
     def __str__(self):
         return self.hugoSymbol
 
@@ -1674,6 +1490,7 @@ class GenomicChangeQuery:
         if reference_genome is not None:
             self.referenceGenome = reference_genome.value
 
+
 class CNAQuery:
     def __init__(self, hugo, cnatype, cancertype):
         self.gene = Gene(hugo)
@@ -1683,9 +1500,9 @@ class CNAQuery:
     def __str__(self):
         return "\t".join([self.gene.hugoSymbol, self.copyNameAlterationType, self.tumorType])
 
+
 class StructuralVariantQuery:
     def __init__(self, hugoA, hugoB, structural_variant_type, cancertype):
-
         # Assume all structural variants in the file are functional fusions
         is_functional_fusion = True
         if hugoA == hugoB:
@@ -1697,8 +1514,11 @@ class StructuralVariantQuery:
         self.functionalFusion = is_functional_fusion
         self.structuralVariantType = structural_variant_type.upper()
         self.tumorType = cancertype
+
     def __str__(self):
-        return "\t".join([self.geneA.hugoSymbol, self.geneB.hugoSymbol, str(self.functionalFusion), self.structuralVariantType, self.tumorType])
+        return "\t".join(
+            [self.geneA.hugoSymbol, self.geneB.hugoSymbol, str(self.functionalFusion), self.structuralVariantType,
+             self.tumorType])
 
 
 def pull_protein_change_info(queries, annotate_hotspot):
@@ -1717,9 +1537,11 @@ def pull_protein_change_info(queries, annotate_hotspot):
             geturl += '&tumorType=' + query.tumorType
             if hasattr(query, 'consequence') and query.consequence:
                 geturl += '&consequence=' + query.consequence
-            if hasattr(query, 'proteinStart') and query.proteinStart and query.proteinStart != '\\N' and query.proteinStart != 'NULL' and query.proteinStart != '':
+            if hasattr(query,
+                       'proteinStart') and query.proteinStart and query.proteinStart != '\\N' and query.proteinStart != 'NULL' and query.proteinStart != '':
                 geturl += '&proteinStart=' + str(query.proteinStart)
-            if hasattr(query, 'proteinEnd') and query.proteinEnd and query.proteinEnd != '\\N' and query.proteinEnd != 'NULL' and query.proteinEnd != '':
+            if hasattr(query,
+                       'proteinEnd') and query.proteinEnd and query.proteinEnd != '\\N' and query.proteinEnd != 'NULL' and query.proteinEnd != '':
                 geturl += '&proteinEnd=' + str(query.proteinEnd)
             getresponse = makeoncokbgetrequest(geturl)
             if getresponse.status_code == 200:
@@ -1761,6 +1583,7 @@ def pull_hgvsg_info(queries, annotate_hotspot):
     for query_annotation in annotation:
         processed_annotation.append(process_oncokb_annotation(query_annotation, annotate_hotspot))
     return processed_annotation
+
 
 def pull_genomic_change_info(queries, annotate_hotspot):
     url = oncokb_annotation_api_url + '/annotate/mutations/byGenomicChange'
@@ -1820,7 +1643,6 @@ def pull_cna_info(queries):
     return processed_annotation
 
 
-
 def pull_structural_variant_info(queries):
     url = oncokb_annotation_api_url + '/annotate/structuralVariants'
 
@@ -1836,7 +1658,8 @@ def pull_structural_variant_info(queries):
             geturl += 'hugoSymbolA=' + query.geneA.hugoSymbol
             geturl += '&hugoSymbolB=' + query.geneB.hugoSymbol
             geturl += '&structuralVariantType=' + query.structuralVariantType
-            geturl += '&isFunctionalFusion=' + str(query.functionalFusion).upper() if type(query.functionalFusion) is bool else query.functionalFusion
+            geturl += '&isFunctionalFusion=' + str(query.functionalFusion).upper() if type(
+                query.functionalFusion) is bool else query.functionalFusion
             geturl += '&tumorType=' + query.tumorType
 
             getresponse = makeoncokbgetrequest(geturl)
@@ -1854,18 +1677,17 @@ def pull_structural_variant_info(queries):
     return processed_annotation
 
 
-
 def process_oncokb_annotation(annotation, annotate_hotspot):
     if annotation is None:
         return ['False']
 
     oncokbdata = {}
-    for l in levels:
-        oncokbdata[l] = []
-    for l in dxLevels:
-        oncokbdata[l] = []
-    for l in pxLevels:
-        oncokbdata[l] = []
+    for level in levels:
+        oncokbdata[level] = []
+    for dx_level in dxLevels:
+        oncokbdata[dx_level] = []
+    for px_level in pxLevels:
+        oncokbdata[px_level] = []
 
     oncokbdata[GENE_IN_ONCOKB_HEADER] = GENE_IN_ONCOKB_DEFAULT
     oncokbdata[VARIANT_IN_ONCOKB_HEADER] = VARIANT_IN_ONCOKB_DEFAULT
@@ -1879,8 +1701,10 @@ def process_oncokb_annotation(annotation, annotate_hotspot):
 
     try:
         # oncogenic
-        oncokbdata[GENE_IN_ONCOKB_HEADER] = GENE_IN_ONCOKB_DEFAULT if annotation['geneExist'] is None else str(annotation['geneExist'])
-        oncokbdata[VARIANT_IN_ONCOKB_HEADER] = VARIANT_IN_ONCOKB_DEFAULT if annotation['variantExist'] is None else str(annotation['variantExist'])
+        oncokbdata[GENE_IN_ONCOKB_HEADER] = GENE_IN_ONCOKB_DEFAULT if annotation['geneExist'] is None else str(
+            annotation['geneExist'])
+        oncokbdata[VARIANT_IN_ONCOKB_HEADER] = VARIANT_IN_ONCOKB_DEFAULT if annotation['variantExist'] is None else str(
+            annotation['variantExist'])
 
         # oncogenic
         oncokbdata['oncogenic'] = annotation['oncogenic']
@@ -1892,8 +1716,10 @@ def process_oncokb_annotation(annotation, annotate_hotspot):
         if (annotation['mutationEffect'] is not None):
             oncokbdata['mutation_effect'] = annotation['mutationEffect']['knownEffect']
             oncokbdata['mutation_effect_citations'] = appendoncokbcitations(oncokbdata['mutation_effect_citations'],
-                                                            annotation['mutationEffect']['citations']['pmids'],
-                                                            annotation['mutationEffect']['citations']['abstracts'])
+                                                                            annotation['mutationEffect']['citations'][
+                                                                                'pmids'],
+                                                                            annotation['mutationEffect']['citations'][
+                                                                                'abstracts'])
 
         # oncogenic
         oncokbdata['oncogenic'] = annotation['oncogenic']
@@ -1908,7 +1734,7 @@ def process_oncokb_annotation(annotation, annotate_hotspot):
                 drugs = treatment['drugs']
 
                 oncokbdata['tx_citations'] = appendoncokbcitations(oncokbdata['tx_citations'], treatment['pmids'],
-                                                                treatment['abstracts'])
+                                                                   treatment['abstracts'])
 
                 if len(drugs) == 0:
                     oncokbdata[level].append('[NOT SPECIFIED]')
@@ -1927,10 +1753,8 @@ def process_oncokb_annotation(annotation, annotate_hotspot):
 
         oncokbdata['highestDiagnosticImplicationLevel'] = annotation['highestDiagnosticImplicationLevel']
         oncokbdata['highestPrognosticImplicationLevel'] = annotation['highestPrognosticImplicationLevel']
-    except:
+    except Exception:
         log.error("error when processing %s " % annotation)
-        # sys.exit()
-
 
     ret = []
     if annotate_hotspot:
@@ -1939,7 +1763,8 @@ def process_oncokb_annotation(annotation, annotate_hotspot):
         else:
             ret.append('')
 
-        _3dhotspot = pull3dhotspots(annotation['query']['hugoSymbol'], annotation['query']['consequence'], annotation['query']['proteinStart'], annotation['query']['proteinEnd'])
+        _3dhotspot = pull3dhotspots(annotation['query']['hugoSymbol'], annotation['query']['consequence'],
+                                    annotation['query']['proteinStart'], annotation['query']['proteinEnd'])
         ret.append(_3dhotspot)
 
     ret.append('True')
@@ -1948,20 +1773,20 @@ def process_oncokb_annotation(annotation, annotate_hotspot):
     ret.append(oncokbdata['mutation_effect'])
     ret.append(';'.join(oncokbdata['mutation_effect_citations']))
     ret.append(oncokbdata['oncogenic'])
-    for l in sorted(levels):
-        ret.append(','.join(oncokbdata[l]))
+    for level in sorted(levels):
+        ret.append(','.join(oncokbdata[level]))
     ret.append(get_highest_tx_level(oncokbdata))
     ret.append(get_highest_tx_level(oncokbdata, TX_TYPE_SENSITIVE))
     ret.append(get_highest_tx_level(oncokbdata, TX_TYPE_RESISTANCE))
     ret.append(';'.join(oncokbdata['tx_citations']))
 
-    for l in dxLevels:
-        ret.append(','.join(oncokbdata[l]))
+    for dx_level in dxLevels:
+        ret.append(','.join(oncokbdata[dx_level]))
     ret.append(get_highest_dxpx_level(dxLevels, [oncokbdata['highestDiagnosticImplicationLevel']]))
     ret.append(';'.join(oncokbdata['dx_citations']))
 
-    for l in pxLevels:
-        ret.append(','.join(oncokbdata[l]))
+    for px_level in pxLevels:
+        ret.append(','.join(oncokbdata[px_level]))
     ret.append(get_highest_dxpx_level(pxLevels, [oncokbdata['highestPrognosticImplicationLevel']]))
     ret.append(';'.join(oncokbdata['px_citations']))
 
@@ -1975,17 +1800,19 @@ def get_highest_tx_level(oncokb_data, tx_type=None):
             target_levels = sensitive_levels
         elif tx_type.lower() == TX_TYPE_RESISTANCE:
             target_levels = resistance_levels
-    for l in target_levels:
-        if l in oncokb_data and oncokb_data[l] is not None and len(oncokb_data[l]) > 0:
-            return l
+    for level in target_levels:
+        if level in oncokb_data and oncokb_data[level] is not None and len(oncokb_data[level]) > 0:
+            return level
     return ""
 
+
 def get_highest_dxpx_level(dxpx_levels, oncokbdata):
-    for l in dxpx_levels:
-        if l not in oncokbdata:
+    for level in dxpx_levels:
+        if level not in oncokbdata:
             continue
-        return l
+        return level
     return ""
+
 
 def gettreatments(evidence):
     treatments = []
@@ -2020,12 +1847,13 @@ def readheaders(reader):
             headers["length"] = len(row)
             i = 0
             for h in row:
-                h=h.strip()
+                h = h.strip()
                 headers[h.upper()] = i
                 headers[h] = i
                 i = i + 1
             break
     return headers
+
 
 def padrow(row, n):
     nr = len(row)

@@ -1,8 +1,12 @@
 #!/usr/bin/python
 
+import sys
 import argparse
-from AnnotatorCore import *
 import logging
+
+from AnnotatorCore import setoncokbbaseurl
+from AnnotatorCore import generateReadme
+
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger('GenerateReadMe')
 

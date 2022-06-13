@@ -1,28 +1,40 @@
 #!/usr/bin/python
 
+import sys
 import argparse
-from AnnotatorCore import *
 import logging
+
+from AnnotatorCore import setsampleidsfileterfile
+from AnnotatorCore import setcancerhotspotsbaseurl
+from AnnotatorCore import setoncokbbaseurl
+from AnnotatorCore import setoncokbapitoken
+from AnnotatorCore import readCancerTypes
+from AnnotatorCore import validate_oncokb_token
+from AnnotatorCore import process_sv
+
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger('StructuralVariantAnnotator')
 
+
 def main(argv):
     if argv.help:
-        log.info('\n'
-        'StructuralVariantAnnotator.py -i <input structural variant file> -o <output structural variant file> [-p previous results] [-c <input clinical file>] [-s sample list filter] [-t <default tumor type>] [-u <oncokb api url>] [-b <oncokb api bear token>]\n'
-        '  Essential structural variant columns (case insensitive):\n'
-        '    GENEA: Hugo gene symbol for gene A\n'
-        '    GENEB: Hugo gene symbol for gene B\n'
-        '    SV_TYPE: Structural variant type. Available values: DELETION, TRANSLOCATION, DUPLICATION, INSERTION, INVERSION, FUSION, UNKNOWN. Other type will be converted to UNKNOWN\n'
-        '    TUMOR_SAMPLE_BARCODE: sample ID\n'
-        '  Essential clinical columns:\n'
-        '    SAMPLE_ID: sample ID\n'
-        '    ONCOTREE_CODE: tumor type code from oncotree (oncotree.mskcc.org)\n'
-        '  Cancer type will be assigned based on the following priority:\n'
-        '     1) ONCOTREE_CODE in clinical data file\n'
-        '     2) ONCOTREE_CODE exist in structural variant\n'
-        '     3) default tumor type (-t)\n'
-        '  Default OncoKB base url is https://www.oncokb.org')
+        log.info(
+            '\n'
+            'StructuralVariantAnnotator.py -i <input structural variant file> -o <output structural variant file> [-p previous results] [-c <input clinical file>] [-s sample list filter] [-t <default tumor type>] [-u <oncokb api url>] [-b <oncokb api bear token>]\n'
+            '  Essential structural variant columns (case insensitive):\n'
+            '    GENEA: Hugo gene symbol for gene A\n'
+            '    GENEB: Hugo gene symbol for gene B\n'
+            '    SV_TYPE: Structural variant type. Available values: DELETION, TRANSLOCATION, DUPLICATION, INSERTION, INVERSION, FUSION, UNKNOWN. Other type will be converted to UNKNOWN\n'
+            '    TUMOR_SAMPLE_BARCODE: sample ID\n'
+            '  Essential clinical columns:\n'
+            '    SAMPLE_ID: sample ID\n'
+            '    ONCOTREE_CODE: tumor type code from oncotree (oncotree.mskcc.org)\n'
+            '  Cancer type will be assigned based on the following priority:\n'
+            '     1) ONCOTREE_CODE in clinical data file\n'
+            '     2) ONCOTREE_CODE exist in structural variant\n'
+            '     3) default tumor type (-t)\n'
+            '  Default OncoKB base url is https://www.oncokb.org'
+        )
         sys.exit()
     if argv.input_file == '' or argv.output_file == '' or argv.oncokb_api_bearer_token == '':
         required_params = []
