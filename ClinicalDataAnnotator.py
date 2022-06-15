@@ -1,17 +1,25 @@
 #!/usr/bin/python
 
+import sys
+import re
 import argparse
-from AnnotatorCore import *
 import logging
+
+from AnnotatorCore import setsampleidsfileterfile
+from AnnotatorCore import process_clinical_data
+
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger('ClinicalDataAnnotator')
 
+
 def main(argv):
     if argv.help:
-        log.info('\n'
-        'ClinicalDataAnnotator.py -i <input clinical file> -o <output clinical file> -a <annotated alteration files, separate by ,> [-s sample list filter]\n'
-        '  Essential clinical columns:\n'
-        '    SAMPLE_ID: sample ID')
+        log.info(
+            '\n'
+            'ClinicalDataAnnotator.py -i <input clinical file> -o <output clinical file> -a <annotated alteration files, separate by ,> [-s sample list filter]\n'
+            '  Essential clinical columns:\n'
+            '    SAMPLE_ID: sample ID'
+        )
         sys.exit()
     if argv.sample_ids_filter:
         setsampleidsfileterfile(argv.sample_ids_filter)

@@ -1,12 +1,25 @@
 #!/usr/bin/python
 import pytest
-
-from AnnotatorCore import *
 import os
+import logging
+
+from AnnotatorCore import pull_hgvsg_info
+from AnnotatorCore import pull_genomic_change_info
+from AnnotatorCore import pull_protein_change_info
+from AnnotatorCore import pull_structural_variant_info
+from AnnotatorCore import pull_cna_info
+from AnnotatorCore import setoncokbapitoken
+from AnnotatorCore import ProteinChangeQuery
+from AnnotatorCore import GenomicChangeQuery
+from AnnotatorCore import StructuralVariantQuery
+from AnnotatorCore import CNAQuery
+from AnnotatorCore import HGVSgQuery
+from AnnotatorCore import ReferenceGenome
 
 ONCOKB_API_TOKEN = os.environ["ONCOKB_API_TOKEN"]
 setoncokbapitoken(ONCOKB_API_TOKEN)
 
+log = logging.getLogger('test_Annotation')
 log.info('test-----------', os.environ["ONCOKB_API_TOKEN"], '------')
 
 VARIANT_EXISTS_INDEX = 2
@@ -20,6 +33,7 @@ HIGHEST_DX_LEVEL_INDEX = HIGHEST_LEVEL_INDEX + 7
 HIGHEST_PX_LEVEL_INDEX = HIGHEST_DX_LEVEL_INDEX + 5
 UNKNOWN = 'Unknown'
 NUMBER_OF_ANNOTATION_COLUMNS = 27
+
 
 def fake_gene_one_query_suite(annotations):
     assert len(annotations) == 1
@@ -160,6 +174,7 @@ def test_check_hgvsg():
     assert annotation[ONCOGENIC_INDEX] == 'Oncogenic'
     assert annotation[HIGHEST_LEVEL_INDEX] == ''
 
+
 @pytest.mark.skipif(ONCOKB_API_TOKEN in (None, ''), reason="oncokb api token required")
 def test_check_genomic_change():
     queries = [
@@ -191,6 +206,7 @@ def test_check_genomic_change():
     assert annotation[MUTATION_EFFECT_INDEX] == 'Gain-of-function'
     assert annotation[ONCOGENIC_INDEX] == 'Oncogenic'
     assert annotation[HIGHEST_LEVEL_INDEX] == ''
+
 
 @pytest.mark.skipif(ONCOKB_API_TOKEN in (None, ''), reason="oncokb api token required")
 def test_check_structural_variants():
@@ -282,6 +298,7 @@ def test_fake_cna():
     annotations = pull_cna_info(queries)
     fake_gene_one_query_suite(annotations)
 
+
 def check_brca2_s1882_without_cancertype(annotation):
     assert len(annotation) == NUMBER_OF_ANNOTATION_COLUMNS
     assert annotation[MUTATION_EFFECT_INDEX] == 'Likely Loss-of-function'
@@ -290,11 +307,12 @@ def check_brca2_s1882_without_cancertype(annotation):
     assert annotation[LEVEL_1_INDEX] == 'Olaparib,Olaparib+Bevacizumab,Rucaparib,Niraparib'
     assert annotation[LEVEL_2_INDEX] == 'Olaparib,Rucaparib,Niraparib'
     assert annotation[LEVEL_3A_INDEX] == 'Olaparib,Talazoparib'
-    
+
+
 @pytest.mark.skipif(ONCOKB_API_TOKEN in (None, ''), reason="oncokb api token required")
 def test_duplicated_treatments():
     # there should not be any duplicated treatment listed when cancer type is not specified
-    
+
     # test protein change query
     queries = [
         ProteinChangeQuery('BRCA2', 'S1882*', ''),

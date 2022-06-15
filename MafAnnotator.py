@@ -1,8 +1,18 @@
 #!/usr/bin/python
 
+import sys
 import argparse
-from AnnotatorCore import *
 import logging
+
+from AnnotatorCore import setsampleidsfileterfile
+from AnnotatorCore import setcancerhotspotsbaseurl
+from AnnotatorCore import setoncokbbaseurl
+from AnnotatorCore import setoncokbapitoken
+from AnnotatorCore import readCancerTypes
+from AnnotatorCore import validate_oncokb_token
+from AnnotatorCore import processalterationevents
+from AnnotatorCore import QueryType
+from AnnotatorCore import ReferenceGenome
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger('MafAnnotator')

@@ -1,28 +1,40 @@
 #!/usr/bin/python
 
+import sys
 import argparse
-from AnnotatorCore import *
 import logging
+
+from AnnotatorCore import setsampleidsfileterfile
+from AnnotatorCore import setcancerhotspotsbaseurl
+from AnnotatorCore import setoncokbbaseurl
+from AnnotatorCore import setoncokbapitoken
+from AnnotatorCore import readCancerTypes
+from AnnotatorCore import validate_oncokb_token
+from AnnotatorCore import process_fusion
+
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger('FusionAnnotator')
 
+
 def main(argv):
     if argv.help:
-        log.info('\n'
-        'FusionAnnotator.py -i <input Fusion file> -o <output Fusion file> [-p previous results] [-c <input clinical file>] [-s sample list filter] [-t <default tumor type>] [-u <oncokb api url>] [-b <oncokb api bear token>] [-r <structural variant name format, default: [A-Za-z\d]+-[A-Za-z\d]+>]\n'
-        '  Essential Fusion columns (case insensitive):\n'
-        '    HUGO_SYMBOL: Hugo gene symbol\n'
-        '    VARIANT_CLASSIFICATION: Translational effect of variant allele\n'
-        '    TUMOR_SAMPLE_BARCODE: sample ID\n'
-        '    FUSION: amino acid change, e.g. "TMPRSS2-ERG"\n'
-        '  Essential clinical columns:\n'
-        '    SAMPLE_ID: sample ID\n'
-        '    ONCOTREE_CODE: tumor type code from oncotree (oncotree.mskcc.org)\n'
-        '  Cancer type will be assigned based on the following priority:\n'
-        '     1) ONCOTREE_CODE in clinical data file\n'
-        '     2) ONCOTREE_CODE exist in Fusion\n'
-        '     3) default tumor type (-t)\n'
-        '  Default OncoKB base url is https://www.oncokb.org')
+        log.info(
+            '\n'
+            "FusionAnnotator.py -i <input Fusion file> -o <output Fusion file> [-p previous results] [-c <input clinical file>] [-s sample list filter] [-t <default tumor type>] [-u <oncokb api url>] [-b <oncokb api bear token>] [-r <structural variant name format, default: [A-Za-z\\d]+-[A-Za-z\\d]+>]\n"
+            '  Essential Fusion columns (case insensitive):\n'
+            '    HUGO_SYMBOL: Hugo gene symbol\n'
+            '    VARIANT_CLASSIFICATION: Translational effect of variant allele\n'
+            '    TUMOR_SAMPLE_BARCODE: sample ID\n'
+            '    FUSION: amino acid change, e.g. "TMPRSS2-ERG"\n'
+            '  Essential clinical columns:\n'
+            '    SAMPLE_ID: sample ID\n'
+            '    ONCOTREE_CODE: tumor type code from oncotree (oncotree.mskcc.org)\n'
+            '  Cancer type will be assigned based on the following priority:\n'
+            '     1) ONCOTREE_CODE in clinical data file\n'
+            '     2) ONCOTREE_CODE exist in Fusion\n'
+            '     3) default tumor type (-t)\n'
+            '  Default OncoKB base url is https://www.oncokb.org'
+        )
         sys.exit()
     if argv.input_file == '' or argv.output_file == '' or argv.oncokb_api_bearer_token == '':
         required_params = []
@@ -51,8 +63,7 @@ def main(argv):
     validate_oncokb_token()
 
     log.info('annotating %s ...' % argv.input_file)
-    process_fusion(argv.input_file, argv.output_file, argv.previous_result_file, argv.default_cancer_type,
-              cancertypemap, argv.structural_variant_name_format)
+    process_fusion(argv.input_file, argv.output_file, argv.previous_result_file, argv.default_cancer_type, cancertypemap, argv.structural_variant_name_format)
 
     log.info('done!')
 
