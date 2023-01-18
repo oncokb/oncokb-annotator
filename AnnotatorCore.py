@@ -1453,6 +1453,7 @@ class ProteinChangeQuery:
         self.tumorType = cancertype
         if reference_genome is not None:
             self.referenceGenome = reference_genome.value
+
     def __repr__(self):
         return ",".join([self.gene.hugoSymbol, self.alteration, self.tumorType, self.consequence, self.proteinStart, self.proteinEnd, self.referenceGenome])
 
@@ -1500,6 +1501,7 @@ class GenomicChangeQuery:
         self.tumorType = cancertype
         if reference_genome is not None:
             self.referenceGenome = reference_genome.value
+
     def __repr__(self):
         return " ".join([self.genomicLocation, self.tumorType, self.referenceGenome])
 
