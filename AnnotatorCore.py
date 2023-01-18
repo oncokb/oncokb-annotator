@@ -29,17 +29,19 @@ csv.field_size_limit(int(ct.c_ulong(-1).value // 2))  # Deal with overflow probl
 sizeLimit = csv.field_size_limit()
 csv.field_size_limit(sizeLimit)  # for reading large files
 
-oncokb_api_url = "https://www.oncokb.org/api"
+DEFAULT_ONCOKB_URL = "https://www.oncokb.org"
+oncokb_api_url = DEFAULT_ONCOKB_URL + "/api"
 oncokb_annotation_api_url = oncokb_api_url + "/v1"
 
 oncokb_api_bearer_token = ""
 
 
 def setoncokbbaseurl(u):
-    global oncokb_api_url
-    global oncokb_annotation_api_url
-    oncokb_api_url = u.rstrip('/') + '/api'
-    oncokb_annotation_api_url = oncokb_api_url + '/v1'
+    if u and u is not None:
+        global oncokb_api_url
+        global oncokb_annotation_api_url
+        oncokb_api_url = u.rstrip('/') + '/api'
+        oncokb_annotation_api_url = oncokb_api_url + '/v1'
 
 
 def setoncokbapitoken(t):
@@ -239,6 +241,10 @@ def getOncokbInfo():
 
 
 def validate_oncokb_token():
+    if not oncokb_annotation_api_url.startswith(DEFAULT_ONCOKB_URL):
+        log.warning("OncoKB base url has been specified by the user that is different from the default www.oncokb.org. The token validation is skipped.")
+        return None
+
     if oncokb_api_bearer_token is None or not oncokb_api_bearer_token:
         log.error("Please specify your OncoKB token")
         exit()
