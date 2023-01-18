@@ -2,6 +2,8 @@
 import datetime
 import json
 import csv
+import sys
+
 import requests
 import os.path
 import logging
@@ -34,6 +36,11 @@ oncokb_api_url = DEFAULT_ONCOKB_URL + "/api"
 oncokb_annotation_api_url = oncokb_api_url + "/v1"
 
 oncokb_api_bearer_token = ""
+
+# 'U', which no longer has any effect in python 3. 3.11 completely removed the option.
+# It will throw error if we don't do condition check.
+# https://stackoverflow.com/questions/56791545/what-is-the-non-deprecated-version-of-open-u-mode
+DEFAULT_READ_FILE_MODE = 'r' if sys.version_info.major > 2 else 'rU'
 
 
 def setoncokbbaseurl(u):
@@ -483,7 +490,7 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
     if os.path.isfile(previousoutfile):
         cacheannotated(previousoutfile, defaultCancerType, cancerTypeMap)
     outf = open(outfile, 'w+', 1000)
-    with open(eventfile, 'rU') as infile:
+    with open(eventfile, DEFAULT_READ_FILE_MODE) as infile:
         reader = csv.reader(infile, delimiter='\t')
 
         headers = readheaders(reader)
@@ -791,7 +798,7 @@ def process_fusion(svdata, outfile, previousoutfile, defaultCancerType, cancerTy
     if os.path.isfile(previousoutfile):
         cacheannotated(previousoutfile, defaultCancerType, cancerTypeMap)
     outf = open(outfile, 'w+')
-    with open(svdata, 'rU') as infile:
+    with open(svdata, DEFAULT_READ_FILE_MODE) as infile:
         reader = csv.reader(infile, delimiter='\t')
 
         headers = readheaders(reader)
@@ -861,7 +868,7 @@ def process_sv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMa
     if os.path.isfile(previousoutfile):
         cacheannotated(previousoutfile, defaultCancerType, cancerTypeMap)
     outf = open(outfile, 'w+')
-    with open(svdata, 'rU') as infile:
+    with open(svdata, DEFAULT_READ_FILE_MODE) as infile:
         reader = csv.reader(infile, delimiter='\t')
 
         headers = readheaders(reader)
@@ -945,7 +952,7 @@ def get_cna(cell_value, annotate_gain_loss=False):
 
 
 def process_gistic_data(outf, gistic_data_file, defaultCancerType, cancerTypeMap, annotate_gain_loss):
-    with open(gistic_data_file, 'rU') as infile:
+    with open(gistic_data_file, DEFAULT_READ_FILE_MODE) as infile:
         reader = csv.reader(infile, delimiter='\t')
         headers = readheaders(reader)
         samples = []
@@ -1000,7 +1007,7 @@ def process_gistic_data(outf, gistic_data_file, defaultCancerType, cancerTypeMap
 
 
 def process_individual_cna_file(outf, cna_data_file, defaultCancerType, cancerTypeMap, annotate_gain_loss):
-    with open(cna_data_file, 'rU') as infile:
+    with open(cna_data_file, DEFAULT_READ_FILE_MODE) as infile:
         reader = csv.reader(infile, delimiter='\t')
         headers = readheaders(reader)
         row_headers = headers['^-$'].split('\t') + get_oncokb_annotation_column_headers()
@@ -1112,7 +1119,7 @@ def process_clinical_data(annotatedmutfiles, clinicalfile, outfile):
     sample_tx_resistance_count = {}
     samplealterationcount = {}
     for annotatedmutfile in annotatedmutfiles:
-        with open(annotatedmutfile, 'rU') as mutfile:
+        with open(annotatedmutfile, DEFAULT_READ_FILE_MODE) as mutfile:
             reader = csv.reader(mutfile, delimiter='\t')
             headers = readheaders(reader)
 
@@ -1232,7 +1239,7 @@ def process_clinical_data(annotatedmutfiles, clinicalfile, outfile):
     outf = open(outfile, 'w+')
 
     # export to anntoated file
-    with open(clinicalfile, 'rU') as clinfile:
+    with open(clinicalfile, DEFAULT_READ_FILE_MODE) as clinfile:
         reader = csv.reader(clinfile, delimiter='\t')
         headers = readheaders(reader)
         outf.write(headers['^-$'])
@@ -1346,7 +1353,7 @@ oncokbcache = {}
 
 
 def cacheannotated(annotatedfile, defaultCancerType, cancerTypeMap):
-    with open(annotatedfile, 'rU') as infile:
+    with open(annotatedfile, DEFAULT_READ_FILE_MODE) as infile:
         try:
             reader = csv.reader(infile, delimiter='\t')
             headers = readheaders(reader)
@@ -1840,7 +1847,7 @@ def gettreatments(evidence):
 
 
 def readCancerTypes(clinicalFile, data):
-    with open(clinicalFile, 'rU') as infile:
+    with open(clinicalFile, DEFAULT_READ_FILE_MODE) as infile:
         reader = csv.reader(infile, delimiter='\t')
         headers = readheaders(reader)
 
