@@ -416,7 +416,7 @@ def get_tumor_type_from_row(row, row_index, defaultCancerType, icancertype, canc
         cancertype = cancerTypeMap[sample]
     if cancertype == "":
         log.info(
-            "Cancer type for the sample should be defined for a more accurate result\nline %s: %s\n" % (row_index, row))
+            "Cancer type for the sample should be defined for a more accurate result. \tLine %s" % (row_index))
         # continue
     return cancertype
 
@@ -1453,6 +1453,8 @@ class ProteinChangeQuery:
         self.tumorType = cancertype
         if reference_genome is not None:
             self.referenceGenome = reference_genome.value
+    def __repr__(self):
+        return ",".join([self.gene.hugoSymbol, self.alteration, self.tumorType, self.consequence, self.proteinStart, self.proteinEnd, self.referenceGenome])
 
 
 class HGVSgQuery:
@@ -1461,6 +1463,9 @@ class HGVSgQuery:
         self.tumorType = cancertype
         if reference_genome is not None:
             self.referenceGenome = reference_genome.value
+
+    def __repr__(self):
+        return ",".join([self.hgvsg, self.tumorType, self.referenceGenome])
 
 
 def gettumortypename(tumortype):
@@ -1495,6 +1500,8 @@ class GenomicChangeQuery:
         self.tumorType = cancertype
         if reference_genome is not None:
             self.referenceGenome = reference_genome.value
+    def __repr__(self):
+        return " ".join([self.genomicLocation, self.tumorType, self.referenceGenome])
 
 
 class CNAQuery:
@@ -1503,8 +1510,8 @@ class CNAQuery:
         self.copyNameAlterationType = cnatype.upper()
         self.tumorType = cancertype
 
-    def __str__(self):
-        return "\t".join([self.gene.hugoSymbol, self.copyNameAlterationType, self.tumorType])
+    def __repr__(self):
+        return ",".join([self.gene.hugoSymbol, self.copyNameAlterationType, self.tumorType])
 
 
 class StructuralVariantQuery:
@@ -1521,8 +1528,8 @@ class StructuralVariantQuery:
         self.structuralVariantType = structural_variant_type.upper()
         self.tumorType = cancertype
 
-    def __str__(self):
-        return "\t".join(
+    def __repr__(self):
+        return ",".join(
             [self.geneA.hugoSymbol, self.geneB.hugoSymbol, str(self.functionalFusion), self.structuralVariantType,
              self.tumorType])
 
