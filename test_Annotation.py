@@ -133,8 +133,8 @@ def test_check_atypical_alts():
 
     annotation = annotations[2]
     assert len(annotation) == NUMBER_OF_ANNOTATION_COLUMNS
-    assert annotation[MUTATION_EFFECT_INDEX] == 'Gain-of-function'
-    assert annotation[ONCOGENIC_INDEX] == 'Oncogenic'
+    assert annotation[MUTATION_EFFECT_INDEX] == 'Likely Gain-of-function'
+    assert annotation[ONCOGENIC_INDEX] == 'Likely Oncogenic'
     assert annotation[HIGHEST_LEVEL_INDEX] == ''
 
     annotation_dup = annotations[3]
@@ -170,8 +170,8 @@ def test_check_hgvsg():
 
     annotation = annotations[2]
     assert len(annotation) == NUMBER_OF_ANNOTATION_COLUMNS
-    assert annotation[MUTATION_EFFECT_INDEX] == 'Gain-of-function'
-    assert annotation[ONCOGENIC_INDEX] == 'Oncogenic'
+    assert annotation[MUTATION_EFFECT_INDEX] == 'Likely Gain-of-function'
+    assert annotation[ONCOGENIC_INDEX] == 'Likely Oncogenic'
     assert annotation[HIGHEST_LEVEL_INDEX] == ''
 
 
@@ -203,8 +203,8 @@ def test_check_genomic_change():
 
     annotation = annotations[2]
     assert len(annotation) == NUMBER_OF_ANNOTATION_COLUMNS
-    assert annotation[MUTATION_EFFECT_INDEX] == 'Gain-of-function'
-    assert annotation[ONCOGENIC_INDEX] == 'Oncogenic'
+    assert annotation[MUTATION_EFFECT_INDEX] == 'Likely Gain-of-function'
+    assert annotation[ONCOGENIC_INDEX] == 'Likely Oncogenic'
     assert annotation[HIGHEST_LEVEL_INDEX] == ''
 
 
