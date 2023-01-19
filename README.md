@@ -6,7 +6,7 @@
 
 ## Status
 
-[![Run all python tests](https://github.com/oncokb/oncokb-annotator/workflows/Run%20all%20python%20tests/badge.svg)](https://github.com/oncokb/oncokb-annotator/actions?query=workflow%3A%22Run+all+python+tests%22) [![Compare Study Annotation](https://github.com/oncokb/oncokb-annotator/workflows/Compare%20Study%20Annotation/badge.svg)](https://github.com/oncokb/oncokb-annotator/actions?query=workflow%3A%22Compare+Study+Annotation%22)
+[![Run all python tests](https://github.com/oncokb/oncokb-annotator/workflows/Run%20all%20python%20tests/badge.svg)](https://github.com/oncokb/oncokb-annotator/actions?query=workflow%3A%22Run+all+python+tests%22) [![Compare Annotation](https://github.com/oncokb/oncokb-annotator/workflows/Compare%20Annotation/badge.svg)](https://github.com/oncokb/oncokb-annotator/actions?query=workflow%3A%22Compare+Annotation%22)
 
 ## Install dependencies
 For python 3
