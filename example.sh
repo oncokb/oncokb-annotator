@@ -28,8 +28,6 @@ OICNA="data/example_individual_cna.oncokb.txt"
 IC="data/example_clinical.txt"
 OC="data/example_clinical.oncokb.txt"
 
-OCPDF="data/example_clinical.oncokb.pdf"
-
 TOKEN="" #OncoKB API Token
 README="data/example_README.txt"
 
