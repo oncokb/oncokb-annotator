@@ -713,7 +713,6 @@ def process_genomic_change(maffilereader, outf, maf_headers, ncols, nannotationc
         var_allele = get_var_allele(ref_allele, var_allele_1, var_allele_2)
 
         query = GenomicChangeQuery(chromosome, start, end, ref_allele, var_allele, cancertype, reference_genome)
-        print(query)
         queries.append(query)
         rows.append(row)
 
@@ -1508,7 +1507,7 @@ class GenomicChangeQuery:
         if chromosome is not None:
             chromosome = chromosome.strip()
             if chromosome.startswith('chr'):
-                chromosome = chromosome.strip()[3:]
+                chromosome = chromosome[3:]
         self.genomicLocation = ','.join([chromosome, start, end, ref_allele, var_allele])
         self.tumorType = cancertype
         if reference_genome is not None:
