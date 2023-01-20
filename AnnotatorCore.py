@@ -1504,7 +1504,7 @@ def getimplications(oncokbdata, implication_type, levels, implications):
 
 
 class GenomicChangeQuery:
-    def __init__(self, chromosome:str, start, end, ref_allele, var_allele, cancertype, reference_genome=None):
+    def __init__(self, chromosome, start, end, ref_allele, var_allele, cancertype, reference_genome=None):
         if chromosome is not None:
             chromosome = chromosome.strip()
             if chromosome.startswith('chr'):
