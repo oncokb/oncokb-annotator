@@ -202,7 +202,7 @@ GC_REF_ALLELE_HEADER = 'REFERENCE_ALLELE'
 GC_VAR_ALLELE_1_HEADER = 'TUMOR_SEQ_ALLELE1'
 GC_VAR_ALLELE_2_HEADER = 'TUMOR_SEQ_ALLELE2'
 GENOMIC_CHANGE_HEADERS = [GC_CHROMOSOME_HEADER, GC_START_POSITION_HEADER, GC_END_POSITION_HEADER, GC_REF_ALLELE_HEADER,
-                          GC_VAR_ALLELE_1_HEADER, GC_VAR_ALLELE_2_HEADER]
+                          GC_VAR_ALLELE_2_HEADER]
 
 # columns for structural variant annotation
 SV_GENEA_HEADER = ['SITE1_GENE', 'GENEA', 'GENE1', 'SITE1_HUGO_SYMBOL']
@@ -1504,13 +1504,17 @@ def getimplications(oncokbdata, implication_type, levels, implications):
 
 class GenomicChangeQuery:
     def __init__(self, chromosome, start, end, ref_allele, var_allele, cancertype, reference_genome=None):
+        if chromosome is not None:
+            chromosome = chromosome.strip()
+            if chromosome.startswith('chr'):
+                chromosome = chromosome[3:]
         self.genomicLocation = ','.join([chromosome, start, end, ref_allele, var_allele])
         self.tumorType = cancertype
         if reference_genome is not None:
             self.referenceGenome = reference_genome.value
 
     def __repr__(self):
-        return " ".join([self.genomicLocation, self.tumorType, self.referenceGenome])
+        return " ".join([self.genomicLocation, self.tumorType])
 
 
 class CNAQuery:

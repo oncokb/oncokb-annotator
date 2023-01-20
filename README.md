@@ -67,10 +67,19 @@ OncoKB™ MafAnnotator supports annotating the alteration with HGVSp, HGVSp_Shor
 The acceptable values are HGVSp_Short, HGVSp, HGVSg and Genomic_Change(case-insensitive). Please see data/example.sh for examples.  
 If you do not specify query type, the MafAnnotator will try to figure out the query type based on the headers.  
 
-For HGVSp_Short, the annotator takes alteration from the column HGVSp_Short or Alteration  
-For HGVSp, the annotator takes alteration from the column HGVSp or Alteration  
-For HGVSg, the annotator takes alteration from the column HGVSg or Alteration  
-For Genomic_Change, the annotator takes genomic change from columns Chromosome, Start_Position, End_Position, Reference_Allele, Tumor_Seq_Allele1 and Tumor_Seq_Allele2.
+#### For HGVSp_Short
+The annotator takes alteration from the column HGVSp_Short or Alteration  
+
+#### For HGVSp
+The annotator takes alteration from the column HGVSp or Alteration  
+
+#### For HGVSg
+The annotator takes alteration from the column HGVSg or Alteration  
+
+#### For Genomic_Change
+The annotator takes genomic change from columns Chromosome, Start_Position, End_Position, Reference_Allele, Tumor_Seq_Allele1(Optional) and Tumor_Seq_Allele2.  
+Typically Tumor_Seq_Allele1 is the reference allele, Tumor_Seq_Allele2 is the variant allele. This is why Tumor_Seq_Allele1 is optional.  
+The annotator uses both if the value is different from Reference_Allele. Tumor_Seq_Allele2 has higher priority than Tumor_Seq_Allele1.  
 
 Annotation with Genomic_Change is relatively slow. We need to annotate the variant first with GenomeNexus(https://www.genomenexus.org/) then get annotation one by one. There is a plan to improve this method. If you are annotating a lot of data, please prioritize using other query type if applicable. 
 
