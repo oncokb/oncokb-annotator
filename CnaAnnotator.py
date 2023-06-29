@@ -20,7 +20,9 @@ def main(argv):
     if argv.help:
         log.info(
             '\n'
-            'CnaAnnotator.py -i <input CNA file> -o <output CNA file> [-p previous results] [-c <input clinical file>] [-s sample list filter] [-t <default tumor type>] [-u oncokb-base-url] [-b oncokb_api_bear_token] [-z annotate_gain_loss] [-f CNA file formt, gistic or individual]\n'
+            'CnaAnnotator.py -i <input CNA file> -o <output CNA file> [-p previous results] [-c <input clinical file>] '
+            '[-s sample list filter] [-t <default tumor type>] [-u oncokb-base-url] [-b oncokb_api_bear_token] '
+            '[-z annotate_gain_loss] [-f CNA file formt, gistic or individual] [-d include descriptions]\n'
             '  Input CNA file uses GISTIC output by default (https://docs.cbioportal.org/5.1-data-loading/data-loading/file-formats#data-file-1). You can also list copy number alteration individually by specifying -f=individual\n'
             '  Essential clinical columns:\n'
             '    SAMPLE_ID: sample ID\n'
@@ -57,7 +59,7 @@ def main(argv):
     validate_oncokb_token()
 
     log.info('annotating %s ...' % argv.input_file)
-    process_cna_data(argv.input_file, argv.output_file, argv.previous_result_file, argv.default_cancer_type, cancertypemap, argv.annotate_gain_loss, argv.cna_file_format.lower())
+    process_cna_data(argv.input_file, argv.output_file, argv.previous_result_file, argv.default_cancer_type, cancertypemap, argv.include_descriptions, argv.annotate_gain_loss, argv.cna_file_format.lower())
 
     log.info('done!')
 
@@ -75,6 +77,7 @@ if __name__ == "__main__":
     parser.add_argument('-b', dest='oncokb_api_bearer_token', default='', type=str)
     parser.add_argument('-z', dest='annotate_gain_loss', action="store_true", default=False)
     parser.add_argument('-f', dest='cna_file_format', default=CNA_FILE_FORMAT_GISTIC)
+    parser.add_argument('-d', dest='include_descriptions', action="store_true", default=False)
     parser.set_defaults(func=main)
 
     args = parser.parse_args()

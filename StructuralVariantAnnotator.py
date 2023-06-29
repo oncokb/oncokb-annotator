@@ -20,7 +20,9 @@ def main(argv):
     if argv.help:
         log.info(
             '\n'
-            'StructuralVariantAnnotator.py -i <input structural variant file> -o <output structural variant file> [-p previous results] [-c <input clinical file>] [-s sample list filter] [-t <default tumor type>] [-u <oncokb api url>] [-b <oncokb api bear token>]\n'
+            'StructuralVariantAnnotator.py -i <input structural variant file> -o <output structural variant file> '
+            '[-p previous results] [-c <input clinical file>] [-s sample list filter] [-t <default tumor type>] '
+            '[-u <oncokb api url>] [-b <oncokb api bear token>] [-d include descriptions]\n'
             '  Essential structural variant columns (case insensitive):\n'
             '    GENEA: Hugo gene symbol for gene A\n'
             '    GENEB: Hugo gene symbol for gene B\n'
@@ -63,7 +65,8 @@ def main(argv):
     validate_oncokb_token()
 
     log.info('annotating %s ...' % argv.input_file)
-    process_sv(argv.input_file, argv.output_file, argv.previous_result_file, argv.default_cancer_type, cancertypemap)
+    process_sv(argv.input_file, argv.output_file, argv.previous_result_file, argv.default_cancer_type, cancertypemap,
+               argv.include_descriptions)
 
     log.info('done!')
 
@@ -81,6 +84,7 @@ if __name__ == "__main__":
     parser.add_argument('-u', dest='oncokb_api_url', default='', type=str)
     parser.add_argument('-v', dest='cancer_hotspots_base_url', default='', type=str)
     parser.add_argument('-b', dest='oncokb_api_bearer_token', default='', type=str)
+    parser.add_argument('-d', dest='include_descriptions', action="store_true", default=False)
     parser.set_defaults(func=main)
 
     args = parser.parse_args()
