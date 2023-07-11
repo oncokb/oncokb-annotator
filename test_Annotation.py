@@ -3,7 +3,7 @@ import pytest
 import os
 import logging
 
-from AnnotatorCore import pull_hgvsg_info
+from AnnotatorCore import pull_hgvsg_info, DESCRIPTION_HEADERS
 from AnnotatorCore import pull_genomic_change_info
 from AnnotatorCore import pull_protein_change_info
 from AnnotatorCore import pull_structural_variant_info
@@ -33,7 +33,8 @@ HIGHEST_DX_LEVEL_INDEX = HIGHEST_LEVEL_INDEX + 7
 HIGHEST_PX_LEVEL_INDEX = HIGHEST_DX_LEVEL_INDEX + 5
 UNKNOWN = 'Unknown'
 NUMBER_OF_ANNOTATION_COLUMNS = 27
-NUMBER_OF_ANNOTATION_COLUMNS_WITH_DESCRIPTIONS = 32
+NUMBER_OF_DESCRIPTION_COLUMNS = len(DESCRIPTION_HEADERS)
+NUMBER_OF_ANNOTATION_COLUMNS_WITH_DESCRIPTIONS = NUMBER_OF_ANNOTATION_COLUMNS + NUMBER_OF_DESCRIPTION_COLUMNS
 
 
 def fake_gene_one_query_suite(annotations, include_descriptions):

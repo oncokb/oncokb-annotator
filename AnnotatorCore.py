@@ -211,7 +211,7 @@ SV_TYPE_HEADER = ['SV_CLASS_NAME', 'SV_TYPE', 'CLASS']
 SV_TYPES = ['DELETION', 'TRANSLOCATION', 'DUPLICATION', 'INSERTION', 'INVERSION', 'FUSION', 'UNKNOWN']
 
 DESCRIPTION_HEADERS = ['GENE_SUMMARY', 'VARIANT_SUMMARY', 'TUMOR_TYPE_SUMMARY', 'DIAGNOSTIC_SUMMARY',
-                       'PROGNOSTIC_SUMMARY']
+                       'PROGNOSTIC_SUMMARY', 'MUTATION_EFFECT_DESCRIPTION']
 
 UNKNOWN = 'UNKNOWN'
 
@@ -569,10 +569,10 @@ def get_oncokb_annotation_column_headers(include_descriptions):
         headers.append(px_level)
     headers.append("HIGHEST_PX_LEVEL")
     headers.append("PX_CITATIONS")
-    
+
     if include_descriptions:
         headers.extend(DESCRIPTION_HEADERS)
-        
+
     return headers
 
 
@@ -1726,6 +1726,7 @@ def process_oncokb_annotation(annotation, include_descriptions, annotate_hotspot
     oncokbdata[VARIANT_IN_ONCOKB_HEADER] = VARIANT_IN_ONCOKB_DEFAULT
     oncokbdata['mutation_effect'] = ""
     oncokbdata['mutation_effect_citations'] = []
+    oncokbdata['mutation_effect_description'] = ""
     oncokbdata['citations'] = []
     oncokbdata['oncogenic'] = ""
     oncokbdata['tx_citations'] = []
@@ -1748,6 +1749,7 @@ def process_oncokb_annotation(annotation, include_descriptions, annotate_hotspot
         # mutation effect
         if (annotation['mutationEffect'] is not None):
             oncokbdata['mutation_effect'] = annotation['mutationEffect']['knownEffect']
+            oncokbdata['mutation_effect_description'] = annotation['mutationEffect']['description']
             oncokbdata['mutation_effect_citations'] = appendoncokbcitations(oncokbdata['mutation_effect_citations'],
                                                                             annotation['mutationEffect']['citations'][
                                                                                 'pmids'],
@@ -1829,7 +1831,7 @@ def process_oncokb_annotation(annotation, include_descriptions, annotate_hotspot
         ret.append(annotation['tumorTypeSummary'])
         ret.append(annotation['diagnosticSummary'])
         ret.append(annotation['prognosticSummary'])
-        
+        ret.append(oncokbdata['mutation_effect_description'])
 
     return ret
 
