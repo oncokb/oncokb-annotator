@@ -23,7 +23,8 @@ def main(argv):
         log.info(
             '\n'
             'MafAnnotator.py -i <input MAF file> -o <output MAF file> [-p previous results] [-c <input clinical file>] '
-            '[-s sample list filter] [-t <default tumor type>] [-u oncokb-base-url] [-b oncokb api bear token] [-a] [-q query type] [-r default reference genome]\n'
+            '[-s sample list filter] [-t <default tumor type>] [-u oncokb-base-url] [-b oncokb api bear token] [-a] '
+            '[-q query type] [-r default reference genome] [-d include descriptions]\n'
             'For definitions of the MAF format, please see https://docs.gdc.cancer.gov/Data/File_Formats/MAF_Format/\n\n'
             'Essential MAF columns for querying HGVSp_Short and HGVSp(case insensitive):\n'
             '    Hugo_Symbol: Hugo gene symbol\n'
@@ -111,7 +112,8 @@ def main(argv):
     validate_oncokb_token()
 
     processalterationevents(argv.input_file, argv.output_file, argv.previous_result_file, argv.default_cancer_type,
-                            cancertypemap, argv.annotate_hotspots, user_input_query_type, default_reference_genome)
+                            cancertypemap, argv.annotate_hotspots, user_input_query_type, default_reference_genome,
+                            argv.include_descriptions)
 
     log.info('done!')
 
@@ -131,6 +133,7 @@ if __name__ == "__main__":
     parser.add_argument('-b', dest='oncokb_api_bearer_token', default='', type=str)
     parser.add_argument('-q', dest='query_type', default=None, type=str)
     parser.add_argument('-r', dest='default_reference_genome', default=None, type=str)
+    parser.add_argument('-d', dest='include_descriptions', action="store_true", default=False)
     parser.set_defaults(func=main)
 
     args = parser.parse_args()
