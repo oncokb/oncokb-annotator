@@ -3,7 +3,7 @@ import pytest
 import os
 import logging
 
-from AnnotatorCore import pull_hgvsg_info, DESCRIPTION_HEADERS
+from AnnotatorCore import pull_hgvsg_info, DESCRIPTION_HEADERS, ONCOKB_ANNOTATION_HEADERS_GC
 from AnnotatorCore import pull_genomic_change_info
 from AnnotatorCore import pull_protein_change_info
 from AnnotatorCore import pull_structural_variant_info
@@ -34,7 +34,10 @@ HIGHEST_PX_LEVEL_INDEX = HIGHEST_DX_LEVEL_INDEX + 5
 UNKNOWN = 'Unknown'
 NUMBER_OF_ANNOTATION_COLUMNS = 27
 NUMBER_OF_DESCRIPTION_COLUMNS = len(DESCRIPTION_HEADERS)
+NUMBER_OF_ONCOKB_ANNOTATION_GC_COLUMNS = len(ONCOKB_ANNOTATION_HEADERS_GC)
 NUMBER_OF_ANNOTATION_COLUMNS_WITH_DESCRIPTIONS = NUMBER_OF_ANNOTATION_COLUMNS + NUMBER_OF_DESCRIPTION_COLUMNS
+NUMBER_OF_GC_ANNOTATION_COLUMNS = NUMBER_OF_ANNOTATION_COLUMNS + NUMBER_OF_ONCOKB_ANNOTATION_GC_COLUMNS
+NUMBER_OF_GC_ANNOTATION_COLUMNS_WITH_DESCRIPTIONS = NUMBER_OF_GC_ANNOTATION_COLUMNS + NUMBER_OF_DESCRIPTION_COLUMNS
 
 
 def fake_gene_one_query_suite(annotations, include_descriptions):
@@ -163,22 +166,22 @@ def test_check_hgvsg():
     assert len(annotations) == 3
 
     annotation = annotations[0]
-    assert len(annotation) == NUMBER_OF_ANNOTATION_COLUMNS
-    assert annotation[MUTATION_EFFECT_INDEX] == 'Gain-of-function'
-    assert annotation[ONCOGENIC_INDEX] == 'Oncogenic'
-    assert annotation[HIGHEST_LEVEL_INDEX] == 'LEVEL_1'
+    assert len(annotation) == NUMBER_OF_GC_ANNOTATION_COLUMNS
+    assert annotation[MUTATION_EFFECT_INDEX + NUMBER_OF_ONCOKB_ANNOTATION_GC_COLUMNS] == 'Gain-of-function'
+    assert annotation[ONCOGENIC_INDEX + NUMBER_OF_ONCOKB_ANNOTATION_GC_COLUMNS] == 'Oncogenic'
+    assert annotation[HIGHEST_LEVEL_INDEX + NUMBER_OF_ONCOKB_ANNOTATION_GC_COLUMNS] == 'LEVEL_1'
 
     annotation = annotations[1]
-    assert len(annotation) == NUMBER_OF_ANNOTATION_COLUMNS
-    assert annotation[MUTATION_EFFECT_INDEX] == 'Gain-of-function'
-    assert annotation[ONCOGENIC_INDEX] == 'Oncogenic'
-    assert annotation[HIGHEST_LEVEL_INDEX] == 'LEVEL_1'
+    assert len(annotation) == NUMBER_OF_GC_ANNOTATION_COLUMNS
+    assert annotation[MUTATION_EFFECT_INDEX + NUMBER_OF_ONCOKB_ANNOTATION_GC_COLUMNS] == 'Gain-of-function'
+    assert annotation[ONCOGENIC_INDEX + NUMBER_OF_ONCOKB_ANNOTATION_GC_COLUMNS] == 'Oncogenic'
+    assert annotation[HIGHEST_LEVEL_INDEX + NUMBER_OF_ONCOKB_ANNOTATION_GC_COLUMNS] == 'LEVEL_1'
 
     annotation = annotations[2]
-    assert len(annotation) == NUMBER_OF_ANNOTATION_COLUMNS
-    assert annotation[MUTATION_EFFECT_INDEX] == 'Likely Gain-of-function'
-    assert annotation[ONCOGENIC_INDEX] == 'Likely Oncogenic'
-    assert annotation[HIGHEST_LEVEL_INDEX] == ''
+    assert len(annotation) == NUMBER_OF_GC_ANNOTATION_COLUMNS
+    assert annotation[MUTATION_EFFECT_INDEX + NUMBER_OF_ONCOKB_ANNOTATION_GC_COLUMNS] == 'Likely Gain-of-function'
+    assert annotation[ONCOGENIC_INDEX + NUMBER_OF_ONCOKB_ANNOTATION_GC_COLUMNS] == 'Likely Oncogenic'
+    assert annotation[HIGHEST_LEVEL_INDEX + NUMBER_OF_ONCOKB_ANNOTATION_GC_COLUMNS] == ''
 
 
 @pytest.mark.skipif(ONCOKB_API_TOKEN in (None, ''), reason="oncokb api token required")
@@ -196,22 +199,22 @@ def test_check_genomic_change():
     assert len(annotations) == 3
 
     annotation = annotations[0]
-    assert len(annotation) == NUMBER_OF_ANNOTATION_COLUMNS
-    assert annotation[MUTATION_EFFECT_INDEX] == 'Gain-of-function'
-    assert annotation[ONCOGENIC_INDEX] == 'Oncogenic'
-    assert annotation[HIGHEST_LEVEL_INDEX] == 'LEVEL_1'
+    assert len(annotation) == NUMBER_OF_GC_ANNOTATION_COLUMNS
+    assert annotation[MUTATION_EFFECT_INDEX + NUMBER_OF_ONCOKB_ANNOTATION_GC_COLUMNS] == 'Gain-of-function'
+    assert annotation[ONCOGENIC_INDEX + NUMBER_OF_ONCOKB_ANNOTATION_GC_COLUMNS] == 'Oncogenic'
+    assert annotation[HIGHEST_LEVEL_INDEX + NUMBER_OF_ONCOKB_ANNOTATION_GC_COLUMNS] == 'LEVEL_1'
 
     annotation = annotations[1]
-    assert len(annotation) == NUMBER_OF_ANNOTATION_COLUMNS
-    assert annotation[MUTATION_EFFECT_INDEX] == 'Gain-of-function'
-    assert annotation[ONCOGENIC_INDEX] == 'Oncogenic'
-    assert annotation[HIGHEST_LEVEL_INDEX] == 'LEVEL_1'
+    assert len(annotation) == NUMBER_OF_GC_ANNOTATION_COLUMNS
+    assert annotation[MUTATION_EFFECT_INDEX + NUMBER_OF_ONCOKB_ANNOTATION_GC_COLUMNS] == 'Gain-of-function'
+    assert annotation[ONCOGENIC_INDEX + NUMBER_OF_ONCOKB_ANNOTATION_GC_COLUMNS] == 'Oncogenic'
+    assert annotation[HIGHEST_LEVEL_INDEX + NUMBER_OF_ONCOKB_ANNOTATION_GC_COLUMNS] == 'LEVEL_1'
 
     annotation = annotations[2]
-    assert len(annotation) == NUMBER_OF_ANNOTATION_COLUMNS
-    assert annotation[MUTATION_EFFECT_INDEX] == 'Likely Gain-of-function'
-    assert annotation[ONCOGENIC_INDEX] == 'Likely Oncogenic'
-    assert annotation[HIGHEST_LEVEL_INDEX] == ''
+    assert len(annotation) == NUMBER_OF_GC_ANNOTATION_COLUMNS
+    assert annotation[MUTATION_EFFECT_INDEX + NUMBER_OF_ONCOKB_ANNOTATION_GC_COLUMNS] == 'Likely Gain-of-function'
+    assert annotation[ONCOGENIC_INDEX + NUMBER_OF_ONCOKB_ANNOTATION_GC_COLUMNS] == 'Likely Oncogenic'
+    assert annotation[HIGHEST_LEVEL_INDEX + NUMBER_OF_ONCOKB_ANNOTATION_GC_COLUMNS] == ''
 
 
 @pytest.mark.skipif(ONCOKB_API_TOKEN in (None, ''), reason="oncokb api token required")
