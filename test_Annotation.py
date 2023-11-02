@@ -319,7 +319,7 @@ def check_brca2_s1882_without_cancertype(annotation):
     assert annotation[MUTATION_EFFECT_INDEX] == 'Likely Loss-of-function'
     assert annotation[ONCOGENIC_INDEX] == 'Likely Oncogenic'
     assert annotation[HIGHEST_LEVEL_INDEX] == 'LEVEL_1'
-    assert annotation[LEVEL_1_INDEX] == 'Olaparib,Olaparib+Bevacizumab,Rucaparib,Niraparib'
+    assert annotation[LEVEL_1_INDEX] == 'Olaparib,Olaparib+Bevacizumab,Rucaparib,Olaparib+Abiraterone+Prednisone,Niraparib,Olaparib+Abiraterone+Prednisolone,Talazoparib+Enzalutamide'
     assert annotation[LEVEL_2_INDEX] == 'Olaparib,Rucaparib,Niraparib'
     assert annotation[LEVEL_3A_INDEX] == 'Olaparib,Talazoparib'
 
