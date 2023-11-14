@@ -15,7 +15,6 @@ from requests.adapters import HTTPAdapter
 from urllib3 import Retry
 from datetime import date
 
-
 logging.basicConfig(level=logging.INFO)
 logging.getLogger("requests").setLevel(logging.WARNING)
 logging.getLogger("urllib3").setLevel(logging.WARNING)
@@ -27,7 +26,8 @@ REQUEST_TIMEOUT = 240
 
 API_REQUEST_RETRY_STATUS_FORCELIST = [429, 500, 502, 503, 504]
 
-csv.field_size_limit(int(ct.c_ulong(-1).value // 2))  # Deal with overflow problem on Windows, https://stackoverflow.co/120m/questions/15063936/csv-error-field-larger-than-field-limit-131072
+csv.field_size_limit(int(ct.c_ulong(
+    -1).value // 2))  # Deal with overflow problem on Windows, https://stackoverflow.co/120m/questions/15063936/csv-error-field-larger-than-field-limit-131072
 sizeLimit = csv.field_size_limit()
 csv.field_size_limit(sizeLimit)  # for reading large files
 
@@ -185,7 +185,8 @@ HGVSP_HEADER = 'HGVSP'
 HGVSG_HEADER = 'HGVSG'
 # columns for copy number alteration
 CNA_HEADERS = [ALTERATION_HEADER, 'COPY_NUMBER_ALTERATION', 'CNA', 'GISTIC']
-HGVS_HEADERS = [ALTERATION_HEADER, HGVSP_SHORT_HEADER, HGVSP_HEADER, HGVSG_HEADER, 'AMINO_ACID_CHANGE', 'FUSION'] + CNA_HEADERS
+HGVS_HEADERS = [ALTERATION_HEADER, HGVSP_SHORT_HEADER, HGVSP_HEADER, HGVSG_HEADER, 'AMINO_ACID_CHANGE',
+                'FUSION'] + CNA_HEADERS
 SAMPLE_HEADERS = ['SAMPLE_ID', 'TUMOR_SAMPLE_BARCODE']
 PROTEIN_START_HEADERS = ['PROTEIN_START']
 PROTEIN_END_HEADERS = ['PROTEIN_END']
@@ -254,7 +255,8 @@ def getOncokbInfo():
 
 def validate_oncokb_token():
     if not oncokb_annotation_api_url.startswith(DEFAULT_ONCOKB_URL):
-        log.warning("OncoKB base url has been specified by the user that is different from the default www.oncokb.org. The token validation is skipped.")
+        log.warning(
+            "OncoKB base url has been specified by the user that is different from the default www.oncokb.org. The token validation is skipped.")
         return None
 
     if oncokb_api_bearer_token is None or not oncokb_api_bearer_token:
@@ -495,7 +497,8 @@ def append_headers(outf, newncols, include_descriptions, genomic_change_annotati
 
     outf.write("\n")
     return newncols
-    
+
+
 def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerType, cancerTypeMap,
                             annotatehotspots, user_input_query_type, default_reference_genome, include_descriptions):
     if annotatehotspots:
@@ -641,7 +644,8 @@ def process_alteration(maffilereader, outf, maf_headers, alteration_column_names
 
         end = get_cell_content(row, iend)
 
-        if start is None and iproteinpos >= 0 and row[iproteinpos] != "" and row[iproteinpos] != "." and row[iproteinpos] != "-":
+        if start is None and iproteinpos >= 0 and row[iproteinpos] != "" and row[iproteinpos] != "." and \
+                row[iproteinpos] != "-":
             poss = row[iproteinpos].split('/')[0].split('-')
             try:
                 if len(poss) > 0:
@@ -973,7 +977,8 @@ def get_cna(cell_value, annotate_gain_loss=False):
     return cna
 
 
-def process_gistic_data(outf, gistic_data_file, defaultCancerType, cancerTypeMap, annotate_gain_loss, include_descriptions):
+def process_gistic_data(outf, gistic_data_file, defaultCancerType, cancerTypeMap, annotate_gain_loss,
+                        include_descriptions):
     with open(gistic_data_file, DEFAULT_READ_FILE_MODE) as infile:
         reader = csv.reader(infile, delimiter='\t')
         headers = readheaders(reader)
@@ -1022,13 +1027,15 @@ def process_gistic_data(outf, gistic_data_file, defaultCancerType, cancerTypeMap
                         rows.append([sample, cancer_type, hugo, cna_type])
                         queries.append(CNAQuery(hugo, cna_type, cancer_type))
 
-        headers = ['SAMPLE_ID', 'CANCER_TYPE', 'HUGO_SYMBOL', 'ALTERATION'] + get_oncokb_annotation_column_headers(include_descriptions, False)
+        headers = ['SAMPLE_ID', 'CANCER_TYPE', 'HUGO_SYMBOL', 'ALTERATION'] + get_oncokb_annotation_column_headers(
+            include_descriptions, False)
         outf.write('\t'.join(headers))
         outf.write('\n')
         return headers, rows, queries
 
 
-def process_individual_cna_file(outf, cna_data_file, defaultCancerType, cancerTypeMap, annotate_gain_loss, include_descriptions):
+def process_individual_cna_file(outf, cna_data_file, defaultCancerType, cancerTypeMap, annotate_gain_loss,
+                                include_descriptions):
     with open(cna_data_file, DEFAULT_READ_FILE_MODE) as infile:
         reader = csv.reader(infile, delimiter='\t')
         headers = readheaders(reader)
@@ -1069,7 +1076,8 @@ def process_individual_cna_file(outf, cna_data_file, defaultCancerType, cancerTy
         return row_headers, rows, queries
 
 
-def process_cna_data(cnafile, outfile, previousoutfile, defaultCancerType, cancerTypeMap, include_descriptions, annotate_gain_loss=False,
+def process_cna_data(cnafile, outfile, previousoutfile, defaultCancerType, cancerTypeMap, include_descriptions,
+                     annotate_gain_loss=False,
                      cna_format=CNA_FILE_FORMAT_GISTIC):
     if os.path.isfile(previousoutfile):
         cacheannotated(previousoutfile, defaultCancerType, cancerTypeMap)
@@ -1484,7 +1492,8 @@ class ProteinChangeQuery:
             self.referenceGenome = reference_genome.value
 
     def __repr__(self):
-        return ",".join([self.gene.hugoSymbol, self.alteration, self.tumorType, self.consequence, self.proteinStart, self.proteinEnd, self.referenceGenome])
+        return ",".join([self.gene.hugoSymbol, self.alteration, self.tumorType, self.consequence, self.proteinStart,
+                         self.proteinEnd, self.referenceGenome])
 
 
 class HGVSgQuery:
@@ -1601,7 +1610,8 @@ def pull_protein_change_info(queries, include_descriptions, annotate_hotspot):
 
     processed_annotation = []
     for query_annotation in annotation:
-        processed_annotation.append(process_oncokb_annotation(query_annotation, include_descriptions, False, annotate_hotspot))
+        processed_annotation.append(
+            process_oncokb_annotation(query_annotation, include_descriptions, False, annotate_hotspot))
     return processed_annotation
 
 
@@ -1629,7 +1639,8 @@ def pull_hgvsg_info(queries, include_descriptions, annotate_hotspot):
 
     processed_annotation = []
     for query_annotation in annotation:
-        processed_annotation.append(process_oncokb_annotation(query_annotation, include_descriptions, True, annotate_hotspot))
+        processed_annotation.append(
+            process_oncokb_annotation(query_annotation, include_descriptions, True, annotate_hotspot))
     return processed_annotation
 
 
@@ -1657,7 +1668,8 @@ def pull_genomic_change_info(queries, include_descriptions, annotate_hotspot):
 
     processed_annotation = []
     for query_annotation in annotation:
-        processed_annotation.append(process_oncokb_annotation(query_annotation, include_descriptions, True, annotate_hotspot))
+        processed_annotation.append(
+            process_oncokb_annotation(query_annotation, include_descriptions, True, annotate_hotspot))
     return processed_annotation
 
 
@@ -1687,7 +1699,8 @@ def pull_cna_info(queries, include_descriptions):
 
     processed_annotation = []
     for query_annotation in annotation:
-        processed_annotation.append(process_oncokb_annotation(query_annotation, include_descriptions, False, annotate_hotspot=False))
+        processed_annotation.append(
+            process_oncokb_annotation(query_annotation, include_descriptions, False, annotate_hotspot=False))
     return processed_annotation
 
 
@@ -1721,7 +1734,8 @@ def pull_structural_variant_info(queries, include_descriptions):
 
     processed_annotation = []
     for query_annotation in annotation:
-        processed_annotation.append(process_oncokb_annotation(query_annotation, include_descriptions, False, annotate_hotspot=False))
+        processed_annotation.append(
+            process_oncokb_annotation(query_annotation, include_descriptions, False, annotate_hotspot=False))
     return processed_annotation
 
 
