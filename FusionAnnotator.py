@@ -20,7 +20,10 @@ def main(argv):
     if argv.help:
         log.info(
             '\n'
-            "FusionAnnotator.py -i <input Fusion file> -o <output Fusion file> [-p previous results] [-c <input clinical file>] [-s sample list filter] [-t <default tumor type>] [-u <oncokb api url>] [-b <oncokb api bear token>] [-r <structural variant name format, default: [A-Za-z\\d]+-[A-Za-z\\d]+>]\n"
+            "FusionAnnotator.py -i <input Fusion file> -o <output Fusion file> [-p previous results] "
+            "[-c <input clinical file>] [-s sample list filter] [-t <default tumor type>] [-u <oncokb api url>] "
+            "[-b <oncokb api bear token>] [-r <structural variant name format, default: [A-Za-z\\d]+-[A-Za-z\\d]+>] "
+            "[-d include descriptions]\n"
             '  Essential Fusion columns (case insensitive):\n'
             '    HUGO_SYMBOL: Hugo gene symbol\n'
             '    VARIANT_CLASSIFICATION: Translational effect of variant allele\n'
@@ -63,7 +66,7 @@ def main(argv):
     validate_oncokb_token()
 
     log.info('annotating %s ...' % argv.input_file)
-    process_fusion(argv.input_file, argv.output_file, argv.previous_result_file, argv.default_cancer_type, cancertypemap, argv.structural_variant_name_format)
+    process_fusion(argv.input_file, argv.output_file, argv.previous_result_file, argv.default_cancer_type, cancertypemap, argv.structural_variant_name_format, argv.include_descriptions)
 
     log.info('done!')
 
@@ -82,6 +85,7 @@ if __name__ == "__main__":
     parser.add_argument('-v', dest='cancer_hotspots_base_url', default='', type=str)
     parser.add_argument('-b', dest='oncokb_api_bearer_token', default='', type=str)
     parser.add_argument('-r', dest='structural_variant_name_format', default=None, type=str)
+    parser.add_argument('-d', dest='include_descriptions', action="store_true", default=False)
     parser.set_defaults(func=main)
 
     args = parser.parse_args()
