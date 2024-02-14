@@ -1286,7 +1286,7 @@ def process_clinical_data(annotatedmutfiles, clinicalfile, outfile):
         outf.write('\tHIGHEST_PX_LEVEL')
         outf.write(
             '\tONCOGENIC_MUTATIONS\t#ONCOGENIC_MUTATIONS\tRESISTANCE_MUTATIONS\t#RESISTANCE_MUTATIONS\t#MUTATIONS_WITH_SENSITIVE_THERAPEUTIC_IMPLICATIONS\t#MUTATIONS_WITH_RESISTANCE_THERAPEUTIC_IMPLICATIONS\t#MUTATIONS_WITH_DIAGNOSTIC_IMPLICATIONS\t#MUTATIONS_WITH_PROGNOSTIC_IMPLICATIONS\t#MUTATIONS\n')
-        isample = headers['SAMPLE_ID']
+        isample = geIndexOfHeader(headers, SAMPLE_HEADERS)
 
         for row in reader:
             sample = row[isample]
@@ -1912,8 +1912,8 @@ def readCancerTypes(clinicalFile, data):
         reader = csv.reader(infile, delimiter='\t')
         headers = readheaders(reader)
 
-        iSample = geIndexOfHeader(headers, ['SAMPLE_ID'])
-        iCancerType = geIndexOfHeader(headers, ['ONCOTREE_CODE', 'CANCER_TYPE'])
+        iSample = geIndexOfHeader(headers, SAMPLE_HEADERS)
+        iCancerType = geIndexOfHeader(headers, CANCER_TYPE_HEADERS)
 
         for row in reader:
             data[row[iSample]] = row[iCancerType]
