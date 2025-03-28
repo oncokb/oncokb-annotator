@@ -323,7 +323,7 @@ def check_brca2_s1882_without_cancertype(annotation, genomic_query=False):
     assert annotation[(
             NUMBER_OF_ONCOKB_ANNOTATION_GC_COLUMNS + HIGHEST_LEVEL_INDEX) if genomic_query else HIGHEST_LEVEL_INDEX] == 'LEVEL_1'
     assert annotation[(
-            NUMBER_OF_ONCOKB_ANNOTATION_GC_COLUMNS + LEVEL_1_INDEX) if genomic_query else LEVEL_1_INDEX] == 'Olaparib,Olaparib+Bevacizumab,Rucaparib,Olaparib+Abiraterone+Prednisone,Niraparib,Olaparib+Abiraterone+Prednisolone,Talazoparib+Enzalutamide,Niraparib+Abiraterone Acetate+Prednisone'
+            NUMBER_OF_ONCOKB_ANNOTATION_GC_COLUMNS + LEVEL_1_INDEX) if genomic_query else LEVEL_1_INDEX] == 'Olaparib,Olaparib+Bevacizumab,Rucaparib,Olaparib+Abiraterone+Prednisone,Niraparib,Talazoparib+Enzalutamide,Niraparib+Abiraterone Acetate+Prednisone'
     assert annotation[(
             NUMBER_OF_ONCOKB_ANNOTATION_GC_COLUMNS + LEVEL_2_INDEX) if genomic_query else LEVEL_2_INDEX] == 'Olaparib,Rucaparib,Niraparib'
     assert annotation[(
