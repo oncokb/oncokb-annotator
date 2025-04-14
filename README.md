@@ -30,7 +30,8 @@ Example input files are under [data](data). An example script is here: [example.
 Annotates variants in MAF(https://docs.gdc.cancer.gov/Data/File_Formats/MAF_Format/) with OncoKB™ annotation. Supports both python2 and python3.  
 Get more details on the command line using `python MafAnnotator.py -h`.  
 
-We recommend processing VCF files by [vcf2maf](https://github.com/mskcc/vcf2maf/) before using the `MafAnnotator` here.
+Since OncoKB Annotator only supports MAF files, one option is to use [vcf2maf](https://github.com/mskcc/vcf2maf/) for conversion before using the `MafAnnotator` script.
+Note that OncoKB’s canonical transcripts may differ from Ensembl’s, so it’s important to use the `--custom-enst` option with vcf2maf. You can download the latest transcript IDs from OncoKB’s [Cancer Gene List page](https://www.oncokb.org/cancer-genes), but be sure to preprocess the list to make it compatible with vcf2maf.git 
 
 #### Atypical Alteration
 You can still use MAF format to annotate atypical alterations, such as MSI-H, TMB-H, EGFR vIII. Please see more examples [HERE](data/example_atypical_alterations.txt).  
