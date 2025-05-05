@@ -936,6 +936,13 @@ def process_sv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMa
             if igeneA < 0 or igeneB < 0:
                 log.warning("Please specify two genes")
                 continue
+            
+            # SVs will sometimes have only 1 gene (intragenic)
+            genes = []
+            if (igeneA > -1):
+                genes.append(igeneA)
+            if (igeneB > -1):
+                genes.append(igeneB)
 
             svtype = None
             if isvtype >= 0:
@@ -947,7 +954,8 @@ def process_sv(svdata, outfile, previousoutfile, defaultCancerType, cancerTypeMa
 
             cancertype = get_tumor_type_from_row(row, i, defaultCancerType, icancertype, cancerTypeMap, sample)
 
-            sv_query = StructuralVariantQuery(row[igeneA], row[igeneB], svtype, cancertype)
+            # If its only one gene, it's intragenic and thus not a functional fusion
+            sv_query = StructuralVariantQuery(row[igeneA], row[igeneB], svtype, cancertype, len(genes) > 1)
             queries.append(sv_query)
             rows.append(row)
 
@@ -1559,9 +1567,8 @@ class CNAQuery:
 
 
 class StructuralVariantQuery:
-    def __init__(self, hugoA, hugoB, structural_variant_type, cancertype):
-        # Assume all structural variants in the file are functional fusions
-        is_functional_fusion = True
+    # Assume all structural variants in the file are functional fusions unless intragenic
+    def __init__(self, hugoA, hugoB, structural_variant_type, cancertype, is_functional_fusion = True):
         if hugoA == hugoB:
             is_functional_fusion = False
             structural_variant_type = 'DELETION'
