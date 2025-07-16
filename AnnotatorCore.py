@@ -254,7 +254,6 @@ def getOncokbInfo():
 
 
 def validate_oncokb_token():
-    return
     if not oncokb_annotation_api_url.startswith(DEFAULT_ONCOKB_URL):
         log.warning(
             "OncoKB base url has been specified by the user that is different from the default www.oncokb.org. The token validation is skipped.")
