@@ -1,0 +1,19 @@
+Cell line		NSCLC/SCLC	Other mutations
+H2110	lung	NSCLC	 KRAS mutation  RIT1(M90I)
+H1568	lung	NSCLC	ATM, TP53
+H441	lung	NSCLC	 KRAS mutation 
+H838	lung	NSCLC	KEAP1,KRAS (G12D),TP53 (p.Glu62Ter)
+HCC827	lung	NSCLC	EGFR exon 19 (E746 - A750 deletion), TP53 Deletion (p.Val218del), 
+H1703	lung	NSCLC	PDGFRA, TP53
+H2122	lung	NSCLC	KRAS G12C
+H2286	lung	SCLC	DDR2 L63V
+H810	lung	NSCLC	TP53 homozygous mutation (p.Glu294Ter) and a DDR2 heterozygous deletion (p.Asn373del)
+H1623	lung	NSCLC	JAK2, ABL1
+H2023	lung	NSCLC	KRAS G12C
+H1435	lung	NSCLC	KEAP1
+A427	lung	NSCLC	KRAS G12D, CTNNB1, p73(Del603)
+H1836	lung	SCLC	TP53 and RB1
+H2135	lung	NSCLC	TP53, NRAS, SMAD4, and B2M
+H1581	lung	NSCLC	FGFR1 Amplification
+SHP77	lung	SCLC	TP53 and KRAS
+CALU1	lung	NSCLC	KRAS G12C
