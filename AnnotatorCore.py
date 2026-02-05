@@ -340,13 +340,52 @@ def requests_retry_session(
 
 
 def makeoncokbpostrequest(url, body):
+    """
+    Modified version of makeoncokbpostrequest to handle large input data.
+    Sends queries to the OncoKB API in smaller batches to avoid HTTP 500 errors
+    that occur when too many variants are sent in a single request.
+    """
+    import time
+    import json
+
     headers = {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer %s' % oncokb_api_bearer_token
+        'Authorization': f'Bearer {oncokb_api_bearer_token}'
     }
-    return requests_retry_session(allowed_methods=["POST"]).post(url, headers=headers,
-                                                                 data=json.dumps(body, default=lambda o: o.__dict__),
-                                                                 timeout=REQUEST_TIMEOUT)
+
+    batch_size = 100  
+    all_results = []
+
+    for i in range(0, len(body), batch_size):
+        batch = body[i:i + batch_size]
+        try:
+            resp = requests_retry_session(allowed_methods=["POST"]).post(
+                url,
+                headers=headers,
+                data=json.dumps(batch, default=lambda o: o.__dict__),
+                timeout=REQUEST_TIMEOUT
+            )
+
+            if resp.status_code == 200:
+                all_results.extend(resp.json())
+            else:
+                print(f"[WARN] Batch {i//batch_size + 1} failed with status code {resp.status_code}")
+        except Exception as e:
+            print(f"[ERROR] Batch {i//batch_size + 1} failed: {e}")
+
+        # Small delay to avoid overwhelming the server
+        time.sleep(0.2)
+
+    # Return the full list of annotations as a "mock" response object
+    class MockResponse:
+        def __init__(self, json_data):
+            self._json = json_data
+            self.status_code = 200
+        def json(self):
+            return self._json
+
+    return MockResponse(all_results)
+
 
 
 def makeoncokbgetrequest(url):
