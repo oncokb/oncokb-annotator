@@ -23,6 +23,7 @@ def main(argv):
             'CnaAnnotator.py -i <input CNA file> -o <output CNA file> [-p previous results] [-c <input clinical file>] '
             '[-s sample list filter] [-t <default tumor type>] [-u oncokb-base-url] [-b oncokb_api_bear_token] '
             '[-z annotate_gain_loss] [-f CNA file formt, gistic or individual] [-d include descriptions]\n'
+            '  Note: This annotator only supports somatic variants. Germline annotation is not supported.\n'
             '  Input CNA file uses GISTIC output by default (https://docs.cbioportal.org/5.1-data-loading/data-loading/file-formats#data-file-1). You can also list copy number alteration individually by specifying -f=individual\n'
             '  Essential clinical columns:\n'
             '    SAMPLE_ID: sample ID\n'

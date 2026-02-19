@@ -69,7 +69,7 @@ jobs:
           IICNA=data/"$INDIVIDUAL_CNA_DATA_NAME"
           OICNA=compare/"$PREFIX"_"$INDIVIDUAL_CNA_DATA_NAME"
 
-          python MafAnnotator.py -i "$IMAF" -o "$OMAF" -c "$IC" -b "$ONCOKB_API_TOKEN"
+          python MafAnnotator.py -i "$IMAF" -o "$OMAF" -c "$IC" -b "$ONCOKB_API_TOKEN" -g somatic
           python FusionAnnotator.py -i "$IF" -o "$OF" -c "$IC" -b "$ONCOKB_API_TOKEN"
           python CnaAnnotator.py -i "$IICNA" -o "$OICNA" -c "$IC" -b "$ONCOKB_API_TOKEN" -f "individual"
           python ClinicalDataAnnotator.py -i "$IC" -o "$OC" -a "$OMAF,$OICNA,$OF"

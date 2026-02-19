@@ -9,6 +9,7 @@ import os.path
 import logging
 import re
 import ctypes as ct
+from urllib.parse import urlencode
 
 from enum import Enum
 from requests.adapters import HTTPAdapter
@@ -85,6 +86,9 @@ def setsampleidsfileterfile(f):
 ANNOTATED_HEADER = 'ANNOTATED'
 GENE_IN_ONCOKB_HEADER = 'GENE_IN_ONCOKB'
 VARIANT_IN_ONCOKB_HEADER = 'VARIANT_IN_ONCOKB'
+PATHOGENIC_HEADER = 'PATHOGENIC (Germline)'
+PENETRANCE_HEADER = 'PENETRANCE (Germline)'
+GENOMIC_INDICATOR_HEADER = 'GENOMIC_INDICATOR (Germline)'
 
 GENE_IN_ONCOKB_DEFAULT = 'False'
 VARIANT_IN_ONCOKB_DEFAULT = 'False'
@@ -183,11 +187,13 @@ ALTERATION_HEADER = 'ALTERATION'
 HGVSP_SHORT_HEADER = 'HGVSP_SHORT'
 HGVSP_HEADER = 'HGVSP'
 HGVSG_HEADER = 'HGVSG'
+HGVSC_HEADER = 'HGVSC'
 # columns for copy number alteration
 CNA_HEADERS = [ALTERATION_HEADER, 'COPY_NUMBER_ALTERATION', 'CNA', 'GISTIC']
-HGVS_HEADERS = [ALTERATION_HEADER, HGVSP_SHORT_HEADER, HGVSP_HEADER, HGVSG_HEADER, 'AMINO_ACID_CHANGE',
-                'FUSION'] + CNA_HEADERS
+HGVS_HEADERS = [ALTERATION_HEADER, HGVSP_SHORT_HEADER, HGVSP_HEADER, HGVSG_HEADER, HGVSC_HEADER,
+                'AMINO_ACID_CHANGE', 'FUSION'] + CNA_HEADERS
 SAMPLE_HEADERS = ['SAMPLE_ID', 'TUMOR_SAMPLE_BARCODE']
+MUTATION_STATUS_HEADERS = ['MUTATION_STATUS']
 PROTEIN_START_HEADERS = ['PROTEIN_START']
 PROTEIN_END_HEADERS = ['PROTEIN_END']
 PROTEIN_POSITION_HEADERS = ['PROTEIN_POSITION']
@@ -223,6 +229,7 @@ class QueryType(Enum):
     HGVSP_SHORT = 'HGVSP_SHORT'
     HGVSP = 'HGVSP'
     HGVSG = 'HGVSG'
+    HGVSC = 'HGVSC'
     GENOMIC_CHANGE = 'GENOMIC_CHANGE'
 
 
@@ -231,10 +238,16 @@ class ReferenceGenome(Enum):
     GRCH38 = 'GRCh38'
 
 
+class MutationStatus(Enum):
+    SOMATIC = 'SOMATIC'
+    GERMLINE = 'GERMLINE'
+
+
 REQUIRED_QUERY_TYPE_COLUMNS = {
     QueryType.HGVSP_SHORT: [HGVSP_SHORT_HEADER],
     QueryType.HGVSP: [HGVSP_HEADER],
     QueryType.HGVSG: [HGVSG_HEADER],
+    QueryType.HGVSC: [HGVSC_HEADER],
     QueryType.GENOMIC_CHANGE: GENOMIC_CHANGE_HEADERS
 }
 
@@ -399,6 +412,16 @@ def conversion(hgvs):
     return hgvs
 
 
+def normalize_hgvsc(hgvsc, hugo):
+    if hgvsc is None or hgvsc == '' or hugo is None or hugo == '':
+        return hgvsc
+    if ':' in hgvsc:
+        return hugo + ':' + hgvsc.split(':', 1)[1]
+    if hgvsc.startswith('c.'):
+        return hugo + ':' + hgvsc
+    return hgvsc
+
+
 def replace_all(hgvs):
     # Author: Thomas Glaessle
     pattern = re.compile('|'.join(conversionlist), re.IGNORECASE)
@@ -435,6 +458,13 @@ def get_tumor_type_from_row(row, row_index, defaultCancerType, icancertype, canc
     return cancertype
 
 
+def get_row_mutation_status(row, imutationstatus):
+    mutation_status = get_cell_content(row, imutationstatus)
+    if mutation_status is not None and mutation_status.strip().lower() == 'germline':
+        return MutationStatus.GERMLINE
+    return MutationStatus.SOMATIC
+
+
 def has_desired_headers(desired_headers, file_headers):
     has_required_headers = True
     for header in desired_headers:
@@ -445,25 +475,48 @@ def has_desired_headers(desired_headers, file_headers):
     return has_required_headers
 
 
-def resolve_query_type(user_input_query_type, headers):
+def resolve_query_type(user_input_query_type, headers, mutation_status=None):
     selected_query_type = None
     if isinstance(user_input_query_type, QueryType):
         selected_query_type = user_input_query_type
 
-    if selected_query_type is None and HGVSP_SHORT_HEADER in headers:
-        selected_query_type = QueryType.HGVSP_SHORT
-    if selected_query_type is None and HGVSP_HEADER in headers:
-        selected_query_type = QueryType.HGVSP
-    if selected_query_type is None and HGVSG_HEADER in headers:
-        selected_query_type = QueryType.HGVSG
+    if mutation_status is None:
+        mutation_status = MutationStatus.SOMATIC
 
-    if selected_query_type is None and has_desired_headers(REQUIRED_QUERY_TYPE_COLUMNS[QueryType.GENOMIC_CHANGE],
-                                                           headers):
-        selected_query_type = QueryType.GENOMIC_CHANGE
+    if mutation_status == MutationStatus.GERMLINE:
+        allowed = {QueryType.HGVSC, QueryType.HGVSG, QueryType.GENOMIC_CHANGE}
+        if selected_query_type is not None and selected_query_type not in allowed:
+            raise Exception(
+                "Germline annotations support only HGVSc, HGVSg, or Genomic_Change query types."
+            )
+        if selected_query_type is None and HGVSC_HEADER in headers:
+            selected_query_type = QueryType.HGVSC
+        if selected_query_type is None and HGVSG_HEADER in headers:
+            selected_query_type = QueryType.HGVSG
+        if selected_query_type is None and has_desired_headers(REQUIRED_QUERY_TYPE_COLUMNS[QueryType.GENOMIC_CHANGE],
+                                                               headers):
+            selected_query_type = QueryType.GENOMIC_CHANGE
+        if selected_query_type is None:
+            selected_query_type = QueryType.HGVSC
+    else:
+        if selected_query_type == QueryType.HGVSC:
+            raise Exception(
+                "Somatic annotations do not support HGVSc query type."
+            )
+        if selected_query_type is None and HGVSP_SHORT_HEADER in headers:
+            selected_query_type = QueryType.HGVSP_SHORT
+        if selected_query_type is None and HGVSP_HEADER in headers:
+            selected_query_type = QueryType.HGVSP
+        if selected_query_type is None and HGVSG_HEADER in headers:
+            selected_query_type = QueryType.HGVSG
 
-    # default to HGVSp_Short
-    if selected_query_type is None:
-        selected_query_type = QueryType.HGVSP_SHORT
+        if selected_query_type is None and has_desired_headers(REQUIRED_QUERY_TYPE_COLUMNS[QueryType.GENOMIC_CHANGE],
+                                                               headers):
+            selected_query_type = QueryType.GENOMIC_CHANGE
+
+        # default to HGVSp_Short
+        if selected_query_type is None:
+            selected_query_type = QueryType.HGVSP_SHORT
 
     # check the file has required columns
     if has_desired_headers(REQUIRED_QUERY_TYPE_COLUMNS[selected_query_type], headers) is False:
@@ -471,12 +524,86 @@ def resolve_query_type(user_input_query_type, headers):
         if ALTERATION_HEADER not in headers:
             raise Exception(
                 "The file does not have required columns "
-                + ', '.join(REQUIRED_QUERY_TYPE_COLUMNS[user_input_query_type])
+                + ', '.join(REQUIRED_QUERY_TYPE_COLUMNS[selected_query_type])
                 + " for the query type: "
-                + user_input_query_type.value
+                + selected_query_type.value
             )
 
     return selected_query_type
+
+
+def get_query_type_priority(mutation_status):
+    if mutation_status == MutationStatus.GERMLINE:
+        return [QueryType.HGVSC, QueryType.HGVSG]
+    return [QueryType.HGVSP_SHORT, QueryType.HGVSP, QueryType.HGVSG]
+
+
+def is_hgvsg(value):
+    if value is None:
+        return False
+    normalized = value.strip().lower()
+    return normalized.startswith('g.') or ':g.' in normalized
+
+
+def is_hgvsc(value):
+    if value is None:
+        return False
+    normalized = value.strip().lower()
+    return normalized.startswith('c.') or ':c.' in normalized
+
+
+def get_alteration_value_for_query_type(row, headers, query_type):
+    if query_type == QueryType.HGVSP_SHORT:
+        index = geIndexOfHeader(headers, [HGVSP_SHORT_HEADER, ALTERATION_HEADER])
+        return get_cell_content(row, index)
+    if query_type == QueryType.HGVSP:
+        index = geIndexOfHeader(headers, [HGVSP_HEADER, ALTERATION_HEADER])
+        return get_cell_content(row, index)
+    if query_type == QueryType.HGVSG:
+        index = geIndexOfHeader(headers, [HGVSG_HEADER, ALTERATION_HEADER])
+        return get_cell_content(row, index)
+    if query_type == QueryType.HGVSC:
+        index = geIndexOfHeader(headers, [HGVSC_HEADER, ALTERATION_HEADER])
+        return get_cell_content(row, index)
+    return None
+
+
+def resolve_query_type_for_row(row, headers, user_input_query_type, mutation_status):
+    if user_input_query_type == QueryType.GENOMIC_CHANGE:
+        if has_desired_headers(REQUIRED_QUERY_TYPE_COLUMNS[QueryType.GENOMIC_CHANGE], headers):
+            return QueryType.GENOMIC_CHANGE
+        return None
+
+    if user_input_query_type is not None:
+        allowed = get_query_type_priority(mutation_status)
+        if user_input_query_type not in allowed:
+            return None
+        alteration_value = get_alteration_value_for_query_type(row, headers, user_input_query_type)
+        if user_input_query_type == QueryType.HGVSG and is_hgvsg(alteration_value):
+            return QueryType.HGVSG
+        if user_input_query_type == QueryType.HGVSC and is_hgvsc(alteration_value):
+            return QueryType.HGVSC
+        if user_input_query_type in [QueryType.HGVSP_SHORT, QueryType.HGVSP] and alteration_value is not None:
+            return user_input_query_type
+        return None
+
+    for query_type in get_query_type_priority(mutation_status):
+        alteration_value = get_alteration_value_for_query_type(row, headers, query_type)
+        if query_type == QueryType.HGVSG:
+            if is_hgvsg(alteration_value):
+                return QueryType.HGVSG
+        elif query_type == QueryType.HGVSC:
+            if is_hgvsc(alteration_value):
+                return QueryType.HGVSC
+        elif alteration_value is not None:
+            return query_type
+
+    if mutation_status == MutationStatus.SOMATIC:
+        alteration_value = get_cell_content(row, geIndexOfHeader(headers, [ALTERATION_HEADER]))
+        if alteration_value is not None and not is_hgvsc(alteration_value) and not is_hgvsg(alteration_value):
+            return QueryType.HGVSP_SHORT
+
+    return None
 
 
 def get_reference_genome_from_row(row_reference_genome, default_reference_genome):
@@ -490,8 +617,11 @@ def get_reference_genome_from_row(row_reference_genome, default_reference_genome
     return reference_genome
 
 
-def append_headers(outf, newncols, include_descriptions, genomic_change_annotation):
-    oncokb_annotation_headers = get_oncokb_annotation_column_headers(include_descriptions, genomic_change_annotation)
+def append_headers(outf, newncols, include_descriptions, genomic_change_annotation, mutation_status=MutationStatus.SOMATIC,
+                   combined_mode=False):
+    oncokb_annotation_headers = get_oncokb_annotation_column_headers(
+        include_descriptions, genomic_change_annotation, mutation_status, combined_mode
+    )
     outf.write("\t".join(oncokb_annotation_headers))
     newncols += len(oncokb_annotation_headers)
 
@@ -500,7 +630,18 @@ def append_headers(outf, newncols, include_descriptions, genomic_change_annotati
 
 
 def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerType, cancerTypeMap,
-                            annotatehotspots, user_input_query_type, default_reference_genome, include_descriptions):
+                            annotatehotspots, user_input_query_type, default_reference_genome, include_descriptions,
+                            mutation_status=None):
+    if mutation_status is None:
+        processalterationevents_mixed(
+            eventfile, outfile, previousoutfile, defaultCancerType, cancerTypeMap, annotatehotspots,
+            user_input_query_type, default_reference_genome, include_descriptions
+        )
+        return
+
+    if mutation_status == MutationStatus.GERMLINE and annotatehotspots:
+        log.warning("Hotspot annotation is not supported for germline queries. Ignoring -a flag.")
+        annotatehotspots = False
     if annotatehotspots:
         init_3d_hotspots()
     if os.path.isfile(previousoutfile):
@@ -525,28 +666,34 @@ def processalterationevents(eventfile, outfile, previousoutfile, defaultCancerTy
 
         outf.write("\t")
 
-        query_type = resolve_query_type(user_input_query_type, headers)
+        query_type = resolve_query_type(user_input_query_type, headers, mutation_status)
         if (query_type == QueryType.HGVSP_SHORT):
-            newncols = append_headers(outf, newncols, include_descriptions, False)
+            newncols = append_headers(outf, newncols, include_descriptions, False, mutation_status)
             process_alteration(reader, outf, headers, [HGVSP_SHORT_HEADER, ALTERATION_HEADER], ncols, newncols,
                                defaultCancerType,
                                cancerTypeMap, annotatehotspots, default_reference_genome, include_descriptions)
 
         if (query_type == QueryType.HGVSP):
-            newncols = append_headers(outf, newncols, include_descriptions, False)
+            newncols = append_headers(outf, newncols, include_descriptions, False, mutation_status)
             process_alteration(reader, outf, headers, [HGVSP_HEADER, ALTERATION_HEADER], ncols, newncols,
                                defaultCancerType,
                                cancerTypeMap, annotatehotspots, default_reference_genome, include_descriptions)
 
         if (query_type == QueryType.HGVSG):
-            newncols = append_headers(outf, newncols, include_descriptions, True)
+            newncols = append_headers(outf, newncols, include_descriptions, True, mutation_status)
             process_hvsg(reader, outf, headers, [HGVSG_HEADER, ALTERATION_HEADER], ncols, newncols, defaultCancerType,
-                         cancerTypeMap, annotatehotspots, default_reference_genome, include_descriptions)
+                         cancerTypeMap, annotatehotspots, default_reference_genome, include_descriptions, mutation_status)
+
+        if (query_type == QueryType.HGVSC):
+            newncols = append_headers(outf, newncols, include_descriptions, False, mutation_status)
+            process_hgvsc(reader, outf, headers, [HGVSC_HEADER, ALTERATION_HEADER], ncols, newncols, defaultCancerType,
+                          cancerTypeMap, annotatehotspots, default_reference_genome, include_descriptions,
+                          mutation_status)
 
         if (query_type == QueryType.GENOMIC_CHANGE):
-            newncols = append_headers(outf, newncols, include_descriptions, True)
+            newncols = append_headers(outf, newncols, include_descriptions, True, mutation_status)
             process_genomic_change(reader, outf, headers, ncols, newncols, defaultCancerType, cancerTypeMap,
-                                   annotatehotspots, default_reference_genome, include_descriptions)
+                                   annotatehotspots, default_reference_genome, include_descriptions, mutation_status)
 
     outf.close()
 
@@ -560,16 +707,20 @@ def get_cell_content(row, index, return_empty_string=False):
         return None
 
 
-def get_oncokb_annotation_column_headers(include_descriptions, genomic_change_annotation):
+def get_oncokb_annotation_column_headers(include_descriptions, genomic_change_annotation,
+                                         mutation_status=MutationStatus.SOMATIC, combined_mode=False):
     headers = [ANNOTATED_HEADER]
-    if genomic_change_annotation:
+    if genomic_change_annotation or combined_mode:
         headers.extend(ONCOKB_ANNOTATION_HEADERS_GC)
 
     headers.extend([GENE_IN_ONCOKB_HEADER,
                     VARIANT_IN_ONCOKB_HEADER,
                     "MUTATION_EFFECT",
-                    "MUTATION_EFFECT_CITATIONS",
-                    "ONCOGENIC"])
+                    "MUTATION_EFFECT_CITATIONS"])
+    if combined_mode or mutation_status != MutationStatus.GERMLINE:
+        headers.append("ONCOGENIC")
+    if combined_mode or mutation_status == MutationStatus.GERMLINE:
+        headers.extend([PATHOGENIC_HEADER, PENETRANCE_HEADER, GENOMIC_INDICATOR_HEADER])
 
     for level in sorted(levels):
         headers.append(level)
@@ -699,7 +850,7 @@ def get_var_allele(ref_allele, tumor_seq_allele1, tumor_seq_allele2):
 
 
 def process_genomic_change(maffilereader, outf, maf_headers, ncols, nannotationcols, defaultCancerType, cancerTypeMap,
-                           annotatehotspots, default_reference_genome, include_descriptions):
+                           annotatehotspots, default_reference_genome, include_descriptions, mutation_status):
     ichromosome = geIndexOfHeader(maf_headers, [GC_CHROMOSOME_HEADER])
     istart = geIndexOfHeader(maf_headers, [GC_START_POSITION_HEADER])
     iend = geIndexOfHeader(maf_headers, [GC_END_POSITION_HEADER])
@@ -743,18 +894,18 @@ def process_genomic_change(maffilereader, outf, maf_headers, ncols, nannotationc
         rows.append(row)
 
         if len(queries) == POST_QUERIES_THRESHOLD_GC_HGVSG:
-            annotations = pull_genomic_change_info(queries, include_descriptions, annotatehotspots)
+            annotations = pull_genomic_change_info(queries, include_descriptions, annotatehotspots, mutation_status)
             append_annotation_to_file(outf, ncols + nannotationcols, rows, annotations)
             queries = []
             rows = []
 
     if len(queries) > 0:
-        annotations = pull_genomic_change_info(queries, include_descriptions, annotatehotspots)
+        annotations = pull_genomic_change_info(queries, include_descriptions, annotatehotspots, mutation_status)
         append_annotation_to_file(outf, ncols + nannotationcols, rows, annotations)
 
 
 def process_hvsg(maffilereader, outf, maf_headers, alteration_column_names, ncols, nannotationcols, defaultCancerType,
-                 cancerTypeMap, annotatehotspots, default_reference_genome, include_descriptions):
+                 cancerTypeMap, annotatehotspots, default_reference_genome, include_descriptions, mutation_status):
     ihgvsg = geIndexOfHeader(maf_headers, alteration_column_names)
     isample = geIndexOfHeader(maf_headers, SAMPLE_HEADERS)
     icancertype = geIndexOfHeader(maf_headers, CANCER_TYPE_HEADERS)
@@ -794,14 +945,258 @@ def process_hvsg(maffilereader, outf, maf_headers, alteration_column_names, ncol
             rows.append(row)
 
         if len(queries) == POST_QUERIES_THRESHOLD_GC_HGVSG:
-            annotations = pull_hgvsg_info(queries, include_descriptions, annotatehotspots)
+            annotations = pull_hgvsg_info(queries, include_descriptions, annotatehotspots, mutation_status)
             append_annotation_to_file(outf, ncols + nannotationcols, rows, annotations)
             queries = []
             rows = []
 
     if len(queries) > 0:
-        annotations = pull_hgvsg_info(queries, include_descriptions, annotatehotspots)
+        annotations = pull_hgvsg_info(queries, include_descriptions, annotatehotspots, mutation_status)
         append_annotation_to_file(outf, ncols + nannotationcols, rows, annotations)
+
+
+def process_hgvsc(maffilereader, outf, maf_headers, alteration_column_names, ncols, nannotationcols, defaultCancerType,
+                  cancerTypeMap, annotatehotspots, default_reference_genome, include_descriptions, mutation_status):
+    ihgvsc = geIndexOfHeader(maf_headers, alteration_column_names)
+    ihugo = geIndexOfHeader(maf_headers, HUGO_HEADERS)
+    isample = geIndexOfHeader(maf_headers, SAMPLE_HEADERS)
+    icancertype = geIndexOfHeader(maf_headers, CANCER_TYPE_HEADERS)
+    ireferencegenome = geIndexOfHeader(maf_headers, REFERENCE_GENOME_HEADERS)
+
+    i = 0
+    queries = []
+    rows = []
+    for row in maffilereader:
+        i = i + 1
+
+        if i % POST_QUERIES_THRESHOLD_GC_HGVSG == 0:
+            log.info(i)
+
+        row = padrow(row, ncols)
+
+        sample = row[isample]
+        if sampleidsfilter and sample not in sampleidsfilter:
+            continue
+
+        hgvsc = get_cell_content(row, ihgvsc)
+        hugo = row[ihugo] if ihugo >= 0 else None
+        hgvsc = normalize_hgvsc(hgvsc, hugo)
+
+        cancertype = get_tumor_type_from_row(row, i, defaultCancerType, icancertype, cancerTypeMap, sample)
+        reference_genome = get_reference_genome_from_row(get_cell_content(row, ireferencegenome),
+                                                         default_reference_genome)
+
+        if hgvsc is None:
+            if annotatehotspots:
+                default_cols = [['', '', 'False']]
+            else:
+                default_cols = [['False']]
+            append_annotation_to_file(outf, ncols + nannotationcols, [row],
+                                      default_cols)
+        else:
+            query = HGVScQuery(hgvsc, cancertype, reference_genome)
+            queries.append(query)
+            rows.append(row)
+
+        if len(queries) == POST_QUERIES_THRESHOLD_GC_HGVSG:
+            annotations = pull_hgvsc_info(queries, include_descriptions, annotatehotspots, mutation_status)
+            append_annotation_to_file(outf, ncols + nannotationcols, rows, annotations)
+            queries = []
+            rows = []
+
+    if len(queries) > 0:
+        annotations = pull_hgvsc_info(queries, include_descriptions, annotatehotspots, mutation_status)
+        append_annotation_to_file(outf, ncols + nannotationcols, rows, annotations)
+
+
+def build_row_query(row, row_index, maf_headers, query_type, mutation_status, defaultCancerType, cancerTypeMap,
+                    default_reference_genome):
+    isample = geIndexOfHeader(maf_headers, SAMPLE_HEADERS)
+    icancertype = geIndexOfHeader(maf_headers, CANCER_TYPE_HEADERS)
+    ireferencegenome = geIndexOfHeader(maf_headers, REFERENCE_GENOME_HEADERS)
+
+    sample = row[isample]
+    cancertype = get_tumor_type_from_row(row, row_index, defaultCancerType, icancertype, cancerTypeMap, sample)
+    reference_genome = get_reference_genome_from_row(get_cell_content(row, ireferencegenome), default_reference_genome)
+
+    if query_type in [QueryType.HGVSP_SHORT, QueryType.HGVSP]:
+        ihugo = geIndexOfHeader(maf_headers, HUGO_HEADERS)
+        iconsequence = geIndexOfHeader(maf_headers, CONSEQUENCE_HEADERS)
+        istart = geIndexOfHeader(maf_headers, PROTEIN_START_HEADERS)
+        iend = geIndexOfHeader(maf_headers, PROTEIN_END_HEADERS)
+        iproteinpos = geIndexOfHeader(maf_headers, PROTEIN_POSITION_HEADERS)
+        alteration_column_names = [HGVSP_SHORT_HEADER, ALTERATION_HEADER] if query_type == QueryType.HGVSP_SHORT else [
+            HGVSP_HEADER, ALTERATION_HEADER]
+
+        posp = re.compile('[0-9]+')
+        hugo = row[ihugo]
+        consequence = get_cell_content(row, iconsequence)
+        if consequence in mutationtypeconsequencemap:
+            consequence = '%2B'.join(mutationtypeconsequencemap[consequence])
+
+        hgvs = get_cell_content(row, geIndexOfHeader(maf_headers, alteration_column_names), True)
+        if hgvs.startswith('p.'):
+            hgvs = hgvs[2:]
+        hgvs = conversion(hgvs)
+
+        start = get_cell_content(row, istart)
+        end = get_cell_content(row, iend)
+        if start is None and iproteinpos >= 0 and row[iproteinpos] not in ["", ".", "-"]:
+            poss = row[iproteinpos].split('/')[0].split('-')
+            try:
+                if len(poss) > 0:
+                    start = int(poss[0])
+                if len(poss) == 2:
+                    end = int(poss[1])
+            except ValueError:
+                log.info("position wrong at line %s: %s" % (str(row_index), row[iproteinpos]))
+
+        if start is None and consequence == "missense_variant":
+            m = posp.search(hgvs)
+            if m:
+                start = m.group()
+
+        if start is not None and end is None:
+            end = start
+
+        return ProteinChangeQuery(hugo, hgvs, cancertype, reference_genome, consequence, start, end)
+
+    if query_type == QueryType.HGVSG:
+        hgvsg = get_cell_content(row, geIndexOfHeader(maf_headers, [HGVSG_HEADER, ALTERATION_HEADER]))
+        return HGVSgQuery(hgvsg, cancertype, reference_genome)
+
+    if query_type == QueryType.HGVSC:
+        ihugo = geIndexOfHeader(maf_headers, HUGO_HEADERS)
+        hgvsc = get_cell_content(row, geIndexOfHeader(maf_headers, [HGVSC_HEADER, ALTERATION_HEADER]))
+        hgvsc = normalize_hgvsc(hgvsc, row[ihugo] if ihugo >= 0 else None)
+        return HGVScQuery(hgvsc, cancertype, reference_genome)
+
+    if query_type == QueryType.GENOMIC_CHANGE:
+        ichromosome = geIndexOfHeader(maf_headers, [GC_CHROMOSOME_HEADER])
+        istart = geIndexOfHeader(maf_headers, [GC_START_POSITION_HEADER])
+        iend = geIndexOfHeader(maf_headers, [GC_END_POSITION_HEADER])
+        irefallele = geIndexOfHeader(maf_headers, [GC_REF_ALLELE_HEADER])
+        ivarallele1 = geIndexOfHeader(maf_headers, [GC_VAR_ALLELE_1_HEADER])
+        ivarallele2 = geIndexOfHeader(maf_headers, [GC_VAR_ALLELE_2_HEADER])
+
+        chromosome = get_cell_content(row, ichromosome, True)
+        start = get_cell_content(row, istart, True)
+        end = get_cell_content(row, iend, True)
+        ref_allele = get_cell_content(row, irefallele, True)
+        var_allele_1 = get_cell_content(row, ivarallele1, True)
+        var_allele_2 = get_cell_content(row, ivarallele2, True)
+        var_allele = get_var_allele(ref_allele, var_allele_1, var_allele_2)
+
+        return GenomicChangeQuery(chromosome, start, end, ref_allele, var_allele, cancertype, reference_genome)
+
+    raise Exception("Unsupported query type %s for %s row" % (query_type.value, mutation_status.value))
+
+
+def pull_annotations_by_query_type(query_type, queries, include_descriptions, annotate_hotspots, mutation_status,
+                                   combined_mode):
+    if query_type in [QueryType.HGVSP_SHORT, QueryType.HGVSP]:
+        return pull_protein_change_info(
+            queries, include_descriptions, annotate_hotspots, mutation_status, combined_mode
+        )
+    if query_type == QueryType.HGVSG:
+        return pull_hgvsg_info(
+            queries, include_descriptions, annotate_hotspots, mutation_status, combined_mode
+        )
+    if query_type == QueryType.HGVSC:
+        return pull_hgvsc_info(
+            queries, include_descriptions, annotate_hotspots, mutation_status, combined_mode
+        )
+    if query_type == QueryType.GENOMIC_CHANGE:
+        return pull_genomic_change_info(
+            queries, include_descriptions, annotate_hotspots, mutation_status, combined_mode
+        )
+    raise Exception("Unsupported query type %s" % query_type.value)
+
+
+def processalterationevents_mixed(eventfile, outfile, previousoutfile, defaultCancerType, cancerTypeMap,
+                                  annotatehotspots, user_input_query_type, default_reference_genome,
+                                  include_descriptions):
+    if os.path.isfile(previousoutfile):
+        cacheannotated(previousoutfile, defaultCancerType, cancerTypeMap)
+
+    outf = open(outfile, 'w+', 1000)
+    with open(eventfile, DEFAULT_READ_FILE_MODE) as infile:
+        reader = csv.reader(infile, delimiter='\t')
+
+        headers = readheaders(reader)
+        ncols = headers["length"]
+        if ncols == 0:
+            return
+
+        newncols = 0
+        outf.write(headers['^-$'])
+
+        if annotatehotspots:
+            outf.write("\tIS-A-HOTSPOT")
+            outf.write("\tIS-A-3D-HOTSPOT")
+            newncols += 2
+            init_3d_hotspots()
+
+        outf.write("\t")
+        newncols = append_headers(
+            outf, newncols, include_descriptions, True, MutationStatus.SOMATIC, combined_mode=True
+        )
+
+        imutationstatus = geIndexOfHeader(headers, MUTATION_STATUS_HEADERS)
+        isample = geIndexOfHeader(headers, SAMPLE_HEADERS)
+
+        rows_to_write = []
+        grouped_queries = {}
+        group_indices = {}
+
+        for row_index, row in enumerate(reader, start=1):
+            row = padrow(row, ncols)
+
+            sample = row[isample]
+            if sampleidsfilter and sample not in sampleidsfilter:
+                continue
+
+            row_mutation_status = get_row_mutation_status(row, imutationstatus)
+            row_query_type = resolve_query_type_for_row(row, headers, user_input_query_type, row_mutation_status)
+            row_output = {
+                'row': row,
+                'annotation': ['', '', 'False'] if annotatehotspots else ['False']
+            }
+            rows_to_write.append(row_output)
+
+            if row_query_type is None:
+                if row_mutation_status == MutationStatus.GERMLINE:
+                    log.warning(
+                        "Skipping germline variant at line %s: p. notation is not supported for germline. Use HGVSc (c.) or HGVSg (g.) instead." % row_index
+                    )
+                continue
+
+            query = build_row_query(
+                row, row_index, headers, row_query_type, row_mutation_status, defaultCancerType, cancerTypeMap,
+                default_reference_genome
+            )
+            annotate_row_hotspots = annotatehotspots and row_mutation_status == MutationStatus.SOMATIC
+            group_key = (row_mutation_status, row_query_type, annotate_row_hotspots)
+            if group_key not in grouped_queries:
+                grouped_queries[group_key] = []
+                group_indices[group_key] = []
+            grouped_queries[group_key].append(query)
+            group_indices[group_key].append(len(rows_to_write) - 1)
+
+        for group_key, queries in grouped_queries.items():
+            row_mutation_status, row_query_type, annotate_row_hotspots = group_key
+            annotations = pull_annotations_by_query_type(
+                row_query_type, queries, include_descriptions, annotate_row_hotspots, row_mutation_status, True
+            )
+            if annotatehotspots and not annotate_row_hotspots:
+                annotations = [['', ''] + annotation for annotation in annotations]
+            for annotation_index, row_output_index in enumerate(group_indices[group_key]):
+                rows_to_write[row_output_index]['annotation'] = annotations[annotation_index]
+
+        for row_output in rows_to_write:
+            append_annotation_to_file(outf, ncols + newncols, [row_output['row']], [row_output['annotation']])
+
+    outf.close()
 
 
 def getgenesfromfusion(fusion, nameregex=None):
@@ -1477,6 +1872,17 @@ def appendoncokbcitations(citations, pmids, abstracts):
     return citations
 
 
+def build_get_url(url, params):
+    filtered = {}
+    for key, value in params.items():
+        if value is None or value == '':
+            continue
+        filtered[key] = value
+    if not filtered:
+        return url
+    return url + '?' + urlencode(filtered, doseq=True)
+
+
 class Gene:
     def __init__(self, hugo):
         self.hugoSymbol = hugo
@@ -1513,6 +1919,17 @@ class HGVSgQuery:
 
     def __repr__(self):
         return ",".join([self.hgvsg, self.tumorType, self.referenceGenome])
+
+
+class HGVScQuery:
+    def __init__(self, hgvsc, cancertype, reference_genome=None):
+        self.hgvsc = hgvsc
+        self.tumorType = cancertype
+        if reference_genome is not None:
+            self.referenceGenome = reference_genome.value
+
+    def __repr__(self):
+        return ",".join([self.hgvsc, self.tumorType, self.referenceGenome])
 
 
 def gettumortypename(tumortype):
@@ -1552,6 +1969,10 @@ class GenomicChangeQuery:
         if reference_genome is not None:
             self.referenceGenome = reference_genome.value
 
+    @property
+    def is_empty(self):
+        return self.genomicLocation == ',,,,'
+
     def __repr__(self):
         return " ".join([self.genomicLocation, self.tumorType])
 
@@ -1571,7 +1992,6 @@ class StructuralVariantQuery:
     def __init__(self, hugoA, hugoB, structural_variant_type, cancertype, is_functional_fusion=True):
         if hugoA == hugoB:
             is_functional_fusion = False
-            structural_variant_type = 'DELETION'
 
         self.geneA = Gene(hugoA)
         self.geneB = Gene(hugoB)
@@ -1585,7 +2005,8 @@ class StructuralVariantQuery:
              self.tumorType])
 
 
-def pull_protein_change_info(queries, include_descriptions, annotate_hotspot):
+def pull_protein_change_info(queries, include_descriptions, annotate_hotspot, mutation_status=MutationStatus.SOMATIC,
+                             combined_mode=False):
     url = oncokb_annotation_api_url + '/annotate/mutations/byProteinChange'
     response = makeoncokbpostrequest(url, queries)
     if response.status_code == 401:
@@ -1595,18 +2016,18 @@ def pull_protein_change_info(queries, include_descriptions, annotate_hotspot):
         annotation = response.json()
     else:
         for query in queries:
-            geturl = url + '?'
-            geturl += 'hugoSymbol=' + query.gene.hugoSymbol
-            geturl += '&alteration=' + query.alteration
-            geturl += '&tumorType=' + query.tumorType
+            params = {
+                'hugoSymbol': query.gene.hugoSymbol,
+                'alteration': query.alteration,
+                'tumorType': query.tumorType,
+            }
             if hasattr(query, 'consequence') and query.consequence:
-                geturl += '&consequence=' + query.consequence
-            if hasattr(query,
-                       'proteinStart') and query.proteinStart and query.proteinStart != '\\N' and query.proteinStart != 'NULL' and query.proteinStart != '':
-                geturl += '&proteinStart=' + str(query.proteinStart)
-            if hasattr(query,
-                       'proteinEnd') and query.proteinEnd and query.proteinEnd != '\\N' and query.proteinEnd != 'NULL' and query.proteinEnd != '':
-                geturl += '&proteinEnd=' + str(query.proteinEnd)
+                params['consequence'] = query.consequence
+            if hasattr(query, 'proteinStart') and query.proteinStart and query.proteinStart != '\\N' and query.proteinStart != 'NULL':
+                params['proteinStart'] = str(query.proteinStart)
+            if hasattr(query, 'proteinEnd') and query.proteinEnd and query.proteinEnd != '\\N' and query.proteinEnd != 'NULL':
+                params['proteinEnd'] = str(query.proteinEnd)
+            geturl = build_get_url(url, params)
             getresponse = makeoncokbgetrequest(geturl)
             if getresponse.status_code == 200:
                 annotation.append(getresponse.json())
@@ -1618,12 +2039,17 @@ def pull_protein_change_info(queries, include_descriptions, annotate_hotspot):
     processed_annotation = []
     for query_annotation in annotation:
         processed_annotation.append(
-            process_oncokb_annotation(query_annotation, include_descriptions, False, annotate_hotspot))
+            process_oncokb_annotation(query_annotation, include_descriptions, False, annotate_hotspot, mutation_status,
+                                      combined_mode))
     return processed_annotation
 
 
-def pull_hgvsg_info(queries, include_descriptions, annotate_hotspot):
-    url = oncokb_annotation_api_url + '/annotate/mutations/byHGVSg'
+def pull_hgvsg_info(queries, include_descriptions, annotate_hotspot, mutation_status=MutationStatus.SOMATIC,
+                    combined_mode=False):
+    if mutation_status == MutationStatus.GERMLINE:
+        url = oncokb_annotation_api_url + '/annotate/germline/mutations/byHGVSg'
+    else:
+        url = oncokb_annotation_api_url + '/annotate/mutations/byHGVSg'
     response = makeoncokbpostrequest(url, queries)
     if response.status_code == 401:
         raise Exception('unauthorized')
@@ -1632,9 +2058,10 @@ def pull_hgvsg_info(queries, include_descriptions, annotate_hotspot):
         annotation = response.json()
     else:
         for query in queries:
-            geturl = url + '?'
-            geturl += 'hgvsg=' + query.hgvsg
-            geturl += '&tumorType=' + query.tumorType
+            geturl = build_get_url(url, {
+                'hgvsg': query.hgvsg,
+                'tumorType': query.tumorType
+            })
             getresponse = makeoncokbgetrequest(geturl)
             if getresponse.status_code == 200:
                 annotation.append(getresponse.json())
@@ -1647,12 +2074,17 @@ def pull_hgvsg_info(queries, include_descriptions, annotate_hotspot):
     processed_annotation = []
     for query_annotation in annotation:
         processed_annotation.append(
-            process_oncokb_annotation(query_annotation, include_descriptions, True, annotate_hotspot))
+            process_oncokb_annotation(query_annotation, include_descriptions, True, annotate_hotspot, mutation_status,
+                                      combined_mode))
     return processed_annotation
 
 
-def pull_genomic_change_info(queries, include_descriptions, annotate_hotspot):
-    url = oncokb_annotation_api_url + '/annotate/mutations/byGenomicChange'
+def pull_hgvsc_info(queries, include_descriptions, annotate_hotspot, mutation_status, combined_mode=False):
+    if mutation_status == MutationStatus.GERMLINE:
+        url = oncokb_annotation_api_url + '/annotate/germline/mutations/byHGVSc'
+    else:
+        url = oncokb_annotation_api_url + '/annotate/mutations/byHGVSc'
+
     response = makeoncokbpostrequest(url, queries)
     if response.status_code == 401:
         raise Exception('unauthorized')
@@ -1661,9 +2093,13 @@ def pull_genomic_change_info(queries, include_descriptions, annotate_hotspot):
         annotation = response.json()
     else:
         for query in queries:
-            geturl = url + '?'
-            geturl += 'genomicLocation=' + query.genomicLocation
-            geturl += '&tumorType=' + query.tumorType
+            params = {
+                'hgvsc': query.hgvsc,
+                'tumorType': query.tumorType,
+            }
+            if hasattr(query, 'referenceGenome'):
+                params['referenceGenome'] = query.referenceGenome
+            geturl = build_get_url(url, params)
             getresponse = makeoncokbgetrequest(geturl)
             if getresponse.status_code == 200:
                 annotation.append(getresponse.json())
@@ -1676,7 +2112,53 @@ def pull_genomic_change_info(queries, include_descriptions, annotate_hotspot):
     processed_annotation = []
     for query_annotation in annotation:
         processed_annotation.append(
-            process_oncokb_annotation(query_annotation, include_descriptions, True, annotate_hotspot))
+            process_oncokb_annotation(query_annotation, include_descriptions, False, annotate_hotspot, mutation_status,
+                                      combined_mode))
+    return processed_annotation
+
+
+def pull_genomic_change_info(queries, include_descriptions, annotate_hotspot, mutation_status=MutationStatus.SOMATIC,
+                             combined_mode=False):
+    if mutation_status == MutationStatus.GERMLINE:
+        url = oncokb_annotation_api_url + '/annotate/germline/mutations/byGenomicChange'
+    else:
+        url = oncokb_annotation_api_url + '/annotate/mutations/byGenomicChange'
+
+    valid_indices = [i for i, q in enumerate(queries) if not q.is_empty]
+    valid_queries = [queries[i] for i in valid_indices]
+
+    raw_annotations = [None] * len(queries)
+
+    if valid_queries:
+        response = makeoncokbpostrequest(url, valid_queries)
+        if response.status_code == 401:
+            raise Exception('unauthorized')
+        api_annotations = []
+        if response.status_code == 200:
+            api_annotations = response.json()
+        else:
+            for query in valid_queries:
+                geturl = build_get_url(url, {
+                    'genomicLocation': query.genomicLocation,
+                    'tumorType': query.tumorType
+                })
+                getresponse = makeoncokbgetrequest(geturl)
+                if getresponse.status_code == 200:
+                    api_annotations.append(getresponse.json())
+                else:
+                    # if the api call fails, we should still push a None into the list
+                    # to keep the same length of the queries
+                    print('Error on annotating the url ' + geturl)
+                    api_annotations.append(None)
+
+        for i, ann in zip(valid_indices, api_annotations):
+            raw_annotations[i] = ann
+
+    processed_annotation = []
+    for query_annotation in raw_annotations:
+        processed_annotation.append(
+            process_oncokb_annotation(query_annotation, include_descriptions, True, annotate_hotspot, mutation_status,
+                                      combined_mode))
     return processed_annotation
 
 
@@ -1691,10 +2173,11 @@ def pull_cna_info(queries, include_descriptions):
         annotation = response.json()
     else:
         for query in queries:
-            geturl = url + '?'
-            geturl += 'hugoSymbol=' + query.gene.hugoSymbol
-            geturl += '&copyNameAlterationType=' + query.copyNameAlterationType
-            geturl += '&tumorType=' + query.tumorType
+            geturl = build_get_url(url, {
+                'hugoSymbol': query.gene.hugoSymbol,
+                'copyNameAlterationType': query.copyNameAlterationType,
+                'tumorType': query.tumorType
+            })
             getresponse = makeoncokbgetrequest(geturl)
             if getresponse.status_code == 200:
                 annotation.append(getresponse.json())
@@ -1722,13 +2205,14 @@ def pull_structural_variant_info(queries, include_descriptions):
         annotation = response.json()
     else:
         for query in queries:
-            geturl = url + '?'
-            geturl += 'hugoSymbolA=' + query.geneA.hugoSymbol
-            geturl += '&hugoSymbolB=' + query.geneB.hugoSymbol
-            geturl += '&structuralVariantType=' + query.structuralVariantType
-            geturl += '&isFunctionalFusion=' + str(query.functionalFusion).upper() if type(
-                query.functionalFusion) is bool else query.functionalFusion
-            geturl += '&tumorType=' + query.tumorType
+            geturl = build_get_url(url, {
+                'hugoSymbolA': query.geneA.hugoSymbol,
+                'hugoSymbolB': query.geneB.hugoSymbol,
+                'structuralVariantType': query.structuralVariantType,
+                'isFunctionalFusion': str(query.functionalFusion).upper()
+                if type(query.functionalFusion) is bool else query.functionalFusion,
+                'tumorType': query.tumorType
+            })
 
             getresponse = makeoncokbgetrequest(geturl)
             if getresponse.status_code == 200:
@@ -1746,9 +2230,14 @@ def pull_structural_variant_info(queries, include_descriptions):
     return processed_annotation
 
 
-def process_oncokb_annotation(annotation, include_descriptions, genomic_change_annotation, annotate_hotspot):
+def process_oncokb_annotation(annotation, include_descriptions, genomic_change_annotation, annotate_hotspot,
+                              mutation_status=MutationStatus.SOMATIC, combined_mode=False):
     if annotation is None:
-        return ['False']
+        ret = []
+        if annotate_hotspot:
+            ret.extend(['', ''])
+        ret.append('False')
+        return ret
 
     oncokbdata = {}
     for level in levels:
@@ -1765,25 +2254,39 @@ def process_oncokb_annotation(annotation, include_descriptions, genomic_change_a
     oncokbdata['mutation_effect_description'] = ""
     oncokbdata['citations'] = []
     oncokbdata['oncogenic'] = ""
+    oncokbdata['pathogenic'] = ""
+    oncokbdata['penetrance'] = ""
+    oncokbdata['genomic_indicator'] = []
     oncokbdata['tx_citations'] = []
     oncokbdata['dx_citations'] = []
     oncokbdata['px_citations'] = []
+    oncokbdata['highestDiagnosticImplicationLevel'] = None
+    oncokbdata['highestPrognosticImplicationLevel'] = None
 
     try:
         # oncogenic
-        oncokbdata[GENE_IN_ONCOKB_HEADER] = GENE_IN_ONCOKB_DEFAULT if annotation['geneExist'] is None else str(
-            annotation['geneExist'])
-        oncokbdata[VARIANT_IN_ONCOKB_HEADER] = VARIANT_IN_ONCOKB_DEFAULT if annotation['variantExist'] is None else str(
-            annotation['variantExist'])
+        oncokbdata[GENE_IN_ONCOKB_HEADER] = GENE_IN_ONCOKB_DEFAULT if annotation.get('geneExist') is None else str(
+            annotation.get('geneExist'))
+        oncokbdata[VARIANT_IN_ONCOKB_HEADER] = VARIANT_IN_ONCOKB_DEFAULT if annotation.get('variantExist') is None else str(
+            annotation.get('variantExist'))
 
         # oncogenic
-        oncokbdata['oncogenic'] = annotation['oncogenic']
+        oncokbdata['oncogenic'] = annotation.get('oncogenic', "")
+        oncokbdata['pathogenic'] = annotation.get('pathogenic', "")
+        oncokbdata['penetrance'] = annotation.get('penetrance', "")
+        genomic_indicators = annotation.get('genomicIndicators') or []
+        for indicator in genomic_indicators:
+            if indicator is None:
+                continue
+            name = indicator.get('name')
+            if name and name not in oncokbdata['genomic_indicator']:
+                oncokbdata['genomic_indicator'].append(name)
 
         # if not evidences['geneExist'] or (not evidences['variantExist'] and not evidences['alleleExist']):
         #     return ''
 
         # mutation effect
-        if (annotation['mutationEffect'] is not None):
+        if (annotation.get('mutationEffect') is not None):
             oncokbdata['mutation_effect'] = annotation['mutationEffect']['knownEffect']
             oncokbdata['mutation_effect_description'] = annotation['mutationEffect']['description']
             oncokbdata['mutation_effect_citations'] = appendoncokbcitations(oncokbdata['mutation_effect_citations'],
@@ -1793,10 +2296,10 @@ def process_oncokb_annotation(annotation, include_descriptions, genomic_change_a
                                                                                 'abstracts'])
 
         # oncogenic
-        oncokbdata['oncogenic'] = annotation['oncogenic']
+        oncokbdata['oncogenic'] = annotation.get('oncogenic', "")
 
         # get treatment
-        for treatment in annotation['treatments']:
+        for treatment in annotation.get('treatments', []):
             level = treatment['level']
 
             if level not in levels:
@@ -1816,14 +2319,14 @@ def process_oncokb_annotation(annotation, include_descriptions, genomic_change_a
                     treatmentname = '+'.join(drugnames)
                     if treatmentname not in oncokbdata[level]:
                         oncokbdata[level].append('+'.join(drugnames))
-        if annotation['diagnosticImplications'] is not None:
+        if annotation.get('diagnosticImplications') is not None:
             getimplications(oncokbdata, 'dx', dxLevels, annotation['diagnosticImplications'])
 
-        if annotation['prognosticImplications'] is not None:
+        if annotation.get('prognosticImplications') is not None:
             getimplications(oncokbdata, 'px', pxLevels, annotation['prognosticImplications'])
 
-        oncokbdata['highestDiagnosticImplicationLevel'] = annotation['highestDiagnosticImplicationLevel']
-        oncokbdata['highestPrognosticImplicationLevel'] = annotation['highestPrognosticImplicationLevel']
+        oncokbdata['highestDiagnosticImplicationLevel'] = annotation.get('highestDiagnosticImplicationLevel')
+        oncokbdata['highestPrognosticImplicationLevel'] = annotation.get('highestPrognosticImplicationLevel')
     except Exception:
         log.error("error when processing %s " % annotation)
 
@@ -1840,21 +2343,29 @@ def process_oncokb_annotation(annotation, include_descriptions, genomic_change_a
 
     ret.append('True')
 
-    if genomic_change_annotation:
-        query_hugo_symbol = annotation['query']['hugoSymbol']
-        ret.append('' if query_hugo_symbol is None else query_hugo_symbol)
+    if genomic_change_annotation or combined_mode:
+        if genomic_change_annotation:
+            query_hugo_symbol = annotation['query']['hugoSymbol']
+            ret.append('' if query_hugo_symbol is None else query_hugo_symbol)
 
-        query_alteration = annotation['query']['alteration']
-        ret.append('' if query_alteration is None else query_alteration)
+            query_alteration = annotation['query']['alteration']
+            ret.append('' if query_alteration is None else query_alteration)
 
-        query_consequence = annotation['query']['consequence']
-        ret.append('' if query_consequence is None else query_consequence)
+            query_consequence = annotation['query']['consequence']
+            ret.append('' if query_consequence is None else query_consequence)
+        else:
+            ret.extend(['', '', ''])
 
     ret.append(oncokbdata[GENE_IN_ONCOKB_HEADER])
     ret.append(oncokbdata[VARIANT_IN_ONCOKB_HEADER])
     ret.append(oncokbdata['mutation_effect'])
     ret.append(';'.join(oncokbdata['mutation_effect_citations']))
-    ret.append(oncokbdata['oncogenic'])
+    if combined_mode or mutation_status != MutationStatus.GERMLINE:
+        ret.append(oncokbdata['oncogenic'] if mutation_status != MutationStatus.GERMLINE else '')
+    if combined_mode or mutation_status == MutationStatus.GERMLINE:
+        ret.append(oncokbdata['pathogenic'] if mutation_status == MutationStatus.GERMLINE else '')
+        ret.append(oncokbdata['penetrance'] if mutation_status == MutationStatus.GERMLINE else '')
+        ret.append(','.join(oncokbdata['genomic_indicator']) if mutation_status == MutationStatus.GERMLINE else '')
     for level in sorted(levels):
         ret.append(','.join(oncokbdata[level]))
     ret.append(get_highest_tx_level(oncokbdata))

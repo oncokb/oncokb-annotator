@@ -23,6 +23,7 @@ def main(argv):
             'StructuralVariantAnnotator.py -i <input structural variant file> -o <output structural variant file> '
             '[-p previous results] [-c <input clinical file>] [-s sample list filter] [-t <default tumor type>] '
             '[-u <oncokb api url>] [-b <oncokb api bear token>] [-d include descriptions]\n'
+            '  Note: This annotator only supports somatic variants. Germline annotation is not supported.\n'
             '  Essential structural variant columns (case insensitive):\n'
             '    GENEA: Hugo gene symbol for gene A\n'
             '    GENEB: Hugo gene symbol for gene B\n'

@@ -24,6 +24,7 @@ def main(argv):
             "[-c <input clinical file>] [-s sample list filter] [-t <default tumor type>] [-u <oncokb api url>] "
             "[-b <oncokb api bear token>] [-r <structural variant name format, default: [A-Za-z\\d]+-[A-Za-z\\d]+>] "
             "[-d include descriptions]\n"
+            '  Note: This annotator only supports somatic variants. Germline annotation is not supported.\n'
             '  Essential Fusion columns (case insensitive):\n'
             '    HUGO_SYMBOL: Hugo gene symbol\n'
             '    VARIANT_CLASSIFICATION: Translational effect of variant allele\n'

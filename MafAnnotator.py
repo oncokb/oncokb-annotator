@@ -34,6 +34,11 @@ def main(argv):
             'Essential MAF columns for querying HGVSg(case insensitive):\n'
             '    Tumor_Sample_Barcode: sample ID\n'
             '    HGVSg: Genomic change in HGVSg format\n'
+            'Essential MAF columns for querying HGVSc(case insensitive):\n'
+            '    Tumor_Sample_Barcode: sample ID\n'
+            '    HGVSc: cDNA change in HGVSc format\n'
+            'Recommended column for mixed somatic/germline annotation:\n'
+            '    Mutation_Status: row mutation status. Germline rows use germline endpoints, all other values default to somatic.\n'
             'Essential MAF columns for querying genomic change(case insensitive):\n'
             '    Tumor_Sample_Barcode: sample ID\n'
             '    Chromosome: Chromosome number\n'
@@ -56,8 +61,13 @@ def main(argv):
             '      It reads from column HGVSp or Alteration\n'
             '    - HGVSg\n'
             '      It reads from column HGVSg or Alteration\n'
+            '    - HGVSc\n'
+            '      It reads from column HGVSc or Alteration\n'
             '    - Genomic_Change\n'
             '      It reads from columns Chromosome, Start_Position, End_Position, Reference_Allele, Tumor_Seq_Allele1 and Tumor_Seq_Allele2  \n'
+            'The annotator infers row mutation status from Mutation_Status and defaults unknown values to somatic.\n'
+            'Germline supports HGVSc, HGVSg, or Genomic_Change query types.\n'
+            'Somatic supports HGVSp_Short, HGVSp, HGVSg, or Genomic_Change query types.\n'
             'Reference Genome only allows the following values(case-insensitive):\n'
             '    - GRCh37\n'
             '      GRCh38\n'
@@ -97,7 +107,7 @@ def main(argv):
             user_input_query_type = QueryType[argv.query_type.upper()]
         except KeyError:
             log.error(
-                'Query type is not acceptable. Only the following allows(case insensitive): HGVSp_Short, HGVSp, HGVSg, Genomic_Change')
+                'Query type is not acceptable. Only the following allows(case insensitive): HGVSp_Short, HGVSp, HGVSg, HGVSc (germline only), Genomic_Change')
             raise
 
     default_reference_genome = None

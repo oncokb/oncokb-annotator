@@ -1,8 +1,20 @@
 
-## UPDATE: 
-- v3.4 allows you to include descriptions into the annotated files with `-d` parameter.
-- When annotating genomic change, HGVSg, three additional columns will be added. `ONCOKB_HUGO_SYMBOL`, `ONCOKB_PROTEIN_CHANGE` and `ONCOKB_CONSEQUENCE`
-- See [Columns added section](#columns-added) for more details
+## Changelog
+
+### v3.5
+- **Germline annotation support**: `MafAnnotator.py` now routes rows with `Mutation_Status = germline` to dedicated germline API endpoints. See the [OncoKB™ API](#oncokb-api) section and the [`-q` query type table](#annotate-with-hgvsp_short-hgvsp-hgvsg-hgvsc-or-genomic-change) for supported formats.
+- **New `Mutation_Status` column routing**: for mixed somatic/germline MAF files, set `Mutation_Status` to `germline` per row to trigger germline annotation; all other values default to somatic.
+- **New germline columns**: germline rows now receive `PATHOGENIC`, `PENETRANCE`, and `GENOMIC_INDICATOR` columns. See the [Columns added](#columns-added) table for details.
+- **`ClinicalDataAnnotator` column renames**: `ONCOGENIC_MUTATIONS` and `#ONCOGENIC_MUTATIONS` have been renamed to `SOMATIC_ONCOGENIC_MUTATIONS` and `#SOMATIC_ONCOGENIC_MUTATIONS`. Two new columns are added: `GERMLINE_PATHOGENIC_MUTATIONS` and `#GERMLINE_PATHOGENIC_MUTATIONS`. See the [ClinicalDataAnnotator columns](#clinicaldataannotator) table for details.
+
+<details>
+<summary>Older versions</summary>
+
+### v3.4
+- Allows you to include descriptions into the annotated files with the `-d` parameter.
+- When annotating genomic change or HGVSg, three additional columns will be added: `ONCOKB_HUGO_SYMBOL`, `ONCOKB_PROTEIN_CHANGE`, and `ONCOKB_CONSEQUENCE`. See [Columns added](#columns-added) for more details.
+
+</details>
 
 # oncokb-annotator <a href="https://ascopubs.org/doi/full/10.1200/PO.17.00011"><img src="https://img.shields.io/badge/DOI-10.1200%2FPO.17.00011-1c75cd" /></a>
 API token required, please see [OncoKB™ API section](#oncokb-api) for more information
@@ -43,12 +55,16 @@ Columns `Locus ID` and `Cytoband` are not required.
 #### Individual CNA
 You can also list copy number alteration individually by specifying `-f individual`, please see examples [HERE](data/example_individual_cna.txt).
 
+Note: CnaAnnotator only supports somatic variants. Germline annotation is not supported.
+
 Get more details on the command line using `python CnaAnnotator.py -h`.  
 
 ### Fusion
 OncoKB™ offers to annotate functional fusions.
 The fusion format for intragenic deletion is `GENE-intragenic` or `GENE-GENE`.
 For other fusions, please use `GENEA-GENEB` or `GENEA-GENEB Fusion`.  
+
+Note: FusionAnnotator only supports somatic variants. Germline annotation is not supported.
 
 Get more details on the command line using `python FusionAnnotator.py -h`.  
 
@@ -59,6 +75,8 @@ All other types will be converted to UNKNOWN.
 
 All structural variants with two different gene partners, they will be considered as functional fusions.
 
+Note: StructuralVariantAnnotator only supports somatic variants. Germline annotation is not supported.
+
 Get more details on the command line using `python StructuralVariantAnnotator.py -h`.
 
 ### Clinical Data (Combine MAF+CNA+Fusion)
@@ -66,10 +84,21 @@ You can combine all annotation on sample/patient level using the clinical data a
 
 Get more details on the command line using `python ClinicalDataAnnotator.py -h`.  
 
-### Annotate with HGVSp_Short, HGVSp, HGVSg or Genomic Change
-OncoKB™ MafAnnotator supports annotating the alteration with HGVSp, HGVSp_Short, HGVSg or Genomic Change format. Please specify the query type with -q parameter.
-The acceptable values are HGVSp_Short, HGVSp, HGVSg and Genomic_Change(case-insensitive). Please see data/example.sh for examples.  
+### Annotate with HGVSp_Short, HGVSp, HGVSg, HGVSc or Genomic Change
+OncoKB™ MafAnnotator supports annotating the alteration with HGVSp, HGVSp_Short, HGVSg, HGVSc or Genomic Change format. Please specify the query type with -q parameter.
+The acceptable values are HGVSp_Short, HGVSp, HGVSg, HGVSc (germline only) and Genomic_Change(case-insensitive). Please see data/example.sh for examples.  
 If you do not specify query type, the MafAnnotator will try to figure out the query type based on the headers.  
+For mixed somatic and germline MAF files, MafAnnotator uses `Mutation_Status` per row. `germline` routes to germline annotation; all other values default to somatic.
+
+Supported `-q` query types by `Mutation_Status`:
+
+| -q value        | somatic | germline |
+|-----------------|:-------:|:--------:|
+| HGVSp_Short     |   Yes   |    No    |
+| HGVSp           |   Yes   |    No    |
+| HGVSc           |   No    |   Yes    |
+| HGVSg           |   Yes   |   Yes    |
+| Genomic_Change  |   Yes   |   Yes    |
 
 #### For HGVSp_Short
 The annotator takes alteration from the column HGVSp_Short or Alteration  
@@ -79,6 +108,11 @@ The annotator takes alteration from the column HGVSp or Alteration
 
 #### For HGVSg
 The annotator takes alteration from the column HGVSg or Alteration  
+
+#### For HGVSc
+The annotator takes alteration from the column HGVSc or Alteration  
+
+When `Mutation_Status` is `Germline`, only `HGVSc`/`Alteration` values with `c.` notation and `HGVSg`/`Alteration` values with `g.` notation are annotated. Germline rows without valid `c.`/`g.` input are logged and skipped.
 
 #### For Genomic_Change
 The annotator takes genomic change from columns Chromosome, Start_Position, End_Position, Reference_Allele, Tumor_Seq_Allele1(Optional) and Tumor_Seq_Allele2.  
@@ -116,6 +150,7 @@ With the token listed under [OncoKB™ Account Settings Page](https://www.oncokb
 ```
 python ${FILE_NAME.py} -i ${INPUT_FILE} -o ${OUTPUT_FILE} -b ${ONCOKB_API_TOKEN}
 ``` 
+For `MafAnnotator.py`, use `Mutation_Status` in the input MAF to control germline vs. somatic annotation per row.
 
 
 ## Columns added
@@ -131,6 +166,9 @@ python ${FILE_NAME.py} -i ${INPUT_FILE} -o ${OUTPUT_FILE} -b ${ONCOKB_API_TOKEN}
 | MUTATION_EFFECT             |                                                    | Gain-of-function, Likely Gain-of-function, Loss-of-function, Likely Loss-of-function, Switch-of-function, Likely Switch-of-function, Neutral, Likely Neutral, Inconclusive, Unknown | The biological effect of a mutation/alteration on the protein function that gives rise to changes in the biological properties of cells expressing the mutant/altered protein compared to cells expressing the wildtype protein. |
 | MUTATION_EFFECT_CITATIONS   |                                                    | PMID, Abstract, Website link                                                                                                                                                        | All citations related to the biological effect.                                                                                                                                                                                  |
 | ONCOGENIC                   |                                                    | Oncogenic, Likely Oncogenic, Likely Neutral, Inconclusive, Unknown, Resistance                                                                                                      | In OncoKB™, “oncogenic” is defined as “referring to the ability to induce or cause cancer” as described in the second edition of The Biology of Cancer by Robert Weinberg (2014).                                                |
+| PATHOGENIC (Germline)       | Germline rows                                       | Pathogenic, Likely Pathogenic, Likely Benign, Benign, VUS with Special Interpretation                                                                                               | Germline pathogenicity assessment from OncoKB™.                                                                                                                                                                                  |
+| PENETRANCE (Germline)       | Germline rows                                       | High, Moderate, Low, Uncertain                                                                                                                                                      | Germline penetrance assessment from OncoKB™.                                                                                                                                                                                     |
+| GENOMIC_INDICATOR (Germline)| Germline rows                                       |                                                                                                                                                                                     | Germline genomic indicator values from OncoKB™.                                                                                                                                                                                  |
 | LEVEL_*                     |                                                    | Therapeutic implications                                                                                                                                                            | The leveled therapeutic implications.                                                                                                                                                                                            |
 | HIGHEST_LEVEL               |                                                    | LEVEL_1, LEVEL_2, LEVEL_3A, LEVEL_3B, LEVEL_4, LEVEL_R1, LEVEL_R2                                                                                                                   | The highest level of evidence for therapeutic implications. Order: LEVEL_R1 > LEVEL_1 > LEVEL_2 > LEVEL_3A > LEVEL_3B > LEVEL_4 > LEVEL_R2                                                                                       |
 | HIGHEST_SENSITIVE_LEVEL     |                                                    | LEVEL_1, LEVEL_2, LEVEL_3A, LEVEL_3B, LEVEL_4                                                                                                                                       | The highest sensitive level of evidence for therapeutic implications. Order: LEVEL_1 > LEVEL_2 > LEVEL_3A > LEVEL_3B > LEVEL_4                                                                                                   |
@@ -155,8 +193,10 @@ Beside these columsn, the following columns will also be added.
 
 | Column                                              | Description                                                                 |
 |-----------------------------------------------------|-----------------------------------------------------------------------------|
-| ONCOGENIC_MUTATIONS                                 | The list of mutations that are Oncogenic or Likely Oncogenic.               |
-| #ONCOGENIC_MUTATIONS                                | Number of oncogenic mutations.                                              |
+| SOMATIC_ONCOGENIC_MUTATIONS                         | The list of somatic mutations that are Oncogenic or Likely Oncogenic.       |
+| #SOMATIC_ONCOGENIC_MUTATIONS                        | Number of somatic oncogenic mutations.                                      |
+| GERMLINE_PATHOGENIC_MUTATIONS                       | The list of germline mutations that are Pathogenic or Likely Pathogenic.    |
+| #GERMLINE_PATHOGENIC_MUTATIONS                      | Number of germline pathogenic mutations.                                    |
 | RESISTANCE_MUTATIONS                                | The list of resistance mutations.                                           |
 | #RESISTANCE_MUTATIONS                               | Number of resistance mutations.                                             |
 | #MUTATIONS_WITH_SENSITIVE_THERAPEUTIC_IMPLICATIONS  | Number of mutations in the sample with sensitive therapeutic implications.  |
