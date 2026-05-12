@@ -9,6 +9,7 @@ OMAFHGVSPSHORT="data/example_maf_hgvsp_short.oncokb.txt"
 OMAFHGVSP="data/example_maf_hgvsp.oncokb.txt"
 OMAFHGVSG="data/example_maf_hgvsg.oncokb.txt"
 OMAFGC="data/example_maf_genomic_change.oncokb.txt"
+OMAFHGVSC="data/example_maf_hgvsc.oncokb.txt"
 
 IATYPICALALT="data/example_atypical_alterations.txt"
 OATYPICALALT="data/example_atypical_alterations.oncokb.txt"
@@ -45,6 +46,7 @@ $PYTHON MafAnnotator.py -i "$IMAF" -o "$OMAFHGVSPSHORT" -c "$IC" -b "$TOKEN" -q 
 $PYTHON MafAnnotator.py -i "$IMAF" -o "$OMAFHGVSP" -c "$IC" -b "$TOKEN" -q hgvsp
 $PYTHON MafAnnotator.py -i "$IMAF" -o "$OMAFHGVSG" -c "$IC" -b "$TOKEN" -q hgvsg
 $PYTHON MafAnnotator.py -i "$IMAF" -o "$OMAFGC" -c "$IC" -b "$TOKEN" -q genomic_change
+$PYTHON MafAnnotator.py -i "$IMAF" -o "$OMAFHGVSC" -c "$IC" -b "$TOKEN" -q hgvsc
 
 $PYTHON MafAnnotator.py -i "$IMAF38" -o "$OMAF38" -c "$IC" -b "$TOKEN"
 
