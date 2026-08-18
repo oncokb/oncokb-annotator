@@ -16,11 +16,10 @@ from AnnotatorCore import CNAQuery
 from AnnotatorCore import HGVSgQuery
 from AnnotatorCore import ReferenceGenome
 
-ONCOKB_API_TOKEN = os.environ["ONCOKB_API_TOKEN"]
+ONCOKB_API_TOKEN = os.environ.get("ONCOKB_API_TOKEN", "")
 setoncokbapitoken(ONCOKB_API_TOKEN)
 
 log = logging.getLogger('test_Annotation')
-log.info('test-----------', os.environ["ONCOKB_API_TOKEN"], '------')
 
 VARIANT_EXISTS_INDEX = 2
 MUTATION_EFFECT_INDEX = VARIANT_EXISTS_INDEX + 1
@@ -71,7 +70,7 @@ def test_check_protein_change():
     assert len(annotation) == NUMBER_OF_ANNOTATION_COLUMNS
     assert annotation[MUTATION_EFFECT_INDEX] == 'Gain-of-function'
     assert annotation[ONCOGENIC_INDEX] == 'Oncogenic'
-    assert annotation[HIGHEST_LEVEL_INDEX] == ''
+    assert annotation[HIGHEST_LEVEL_INDEX] == 'LEVEL_3B'
     assert annotation[HIGHEST_DX_LEVEL_INDEX] == 'LEVEL_Dx1'
     assert annotation[HIGHEST_PX_LEVEL_INDEX] == 'LEVEL_Px1'
 
@@ -244,7 +243,7 @@ def test_check_structural_variants():
     assert len(annotation) == NUMBER_OF_ANNOTATION_COLUMNS
     assert annotation[MUTATION_EFFECT_INDEX] == 'Gain-of-function'
     assert annotation[ONCOGENIC_INDEX] == 'Oncogenic'
-    assert annotation[HIGHEST_LEVEL_INDEX] == ''
+    assert annotation[HIGHEST_LEVEL_INDEX] == 'LEVEL_3B'
     assert annotation[HIGHEST_DX_LEVEL_INDEX] == 'LEVEL_Dx1'
     assert annotation[HIGHEST_PX_LEVEL_INDEX] == 'LEVEL_Px1'
 
