@@ -1593,11 +1593,11 @@ def process_clinical_data(annotatedmutfiles, clinicalfile, outfile):
                 sample = row[isample]
 
                 oncogenic = ""
-                if 0 <= ioncogenic < len(row):
+                if ioncogenic != -1 and ioncogenic < len(row):
                     oncogenic = row[ioncogenic].lower()
 
                 pathogenic = ""
-                if 0 <= ipathogenic < len(row):
+                if ipathogenic != -1 and ipathogenic < len(row):
                     pathogenic = row[ipathogenic].lower()
 
                 if sample not in samplelevels:
