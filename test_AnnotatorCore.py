@@ -291,3 +291,92 @@ def test_cna():
     assert get_cna('-1.5', True) == CNA_DELETION_TXT
     assert get_cna('-1', True) == CNA_LOSS_TXT
     assert get_cna('0', True) is None
+
+
+def _read_clinical_output(output_file):
+    with output_file.open() as handle:
+        reader = csv.reader(handle, delimiter='\t')
+        header = next(reader)
+        rows = list(reader)
+    return header, rows
+
+
+def test_process_clinical_data_somatic_and_germline(tmp_path):
+    somatic_file = tmp_path / "somatic.maf"
+    somatic_file.write_text(
+        "\t".join(["Hugo_Symbol", "Tumor_Sample_Barcode", "HGVSp_Short", "ONCOGENIC"]) + "\n"
+        + "\t".join(["BRAF", "S1", "p.V600E", "Oncogenic"]) + "\n"
+        + "\t".join(["TP53", "S1", "p.R273H", "Likely Oncogenic"]) + "\n"
+        + "\t".join(["EGFR", "S2", "p.T790M", "Resistance"]) + "\n"
+    )
+
+    germline_file = tmp_path / "germline.maf"
+    germline_file.write_text(
+        "\t".join(["Hugo_Symbol", "Tumor_Sample_Barcode", "HGVSp_Short", "PATHOGENIC (Germline)"]) + "\n"
+        + "\t".join(["BRCA2", "S1", "p.S1982fs", "Pathogenic"]) + "\n"
+        + "\t".join(["ATM", "S2", "p.R337H", "Likely Pathogenic"]) + "\n"
+        + "\t".join(["PALB2", "S2", "p.L35P", "Benign"]) + "\n"
+    )
+
+    clinical_file = tmp_path / "clinical.txt"
+    clinical_file.write_text("SAMPLE_ID\nS1\nS2\n")
+
+    output_file = tmp_path / "clinical.out.txt"
+    AnnotatorCore.process_clinical_data(
+        [str(somatic_file), str(germline_file)], str(clinical_file), str(output_file)
+    )
+
+    header, rows = _read_clinical_output(output_file)
+
+    # renamed columns, and the old names are gone
+    assert 'SOMATIC_ONCOGENIC_MUTATIONS' in header
+    assert '#SOMATIC_ONCOGENIC_MUTATIONS' in header
+    assert 'ONCOGENIC_MUTATIONS' not in header
+    assert '#ONCOGENIC_MUTATIONS' not in header
+
+    somatic_index = header.index('SOMATIC_ONCOGENIC_MUTATIONS')
+    somatic_count_index = header.index('#SOMATIC_ONCOGENIC_MUTATIONS')
+    germline_index = header.index('GERMLINE_PATHOGENIC_MUTATIONS')
+    germline_count_index = header.index('#GERMLINE_PATHOGENIC_MUTATIONS')
+    resistance_index = header.index('RESISTANCE_MUTATIONS')
+    mutation_count_index = header.index('#MUTATIONS')
+
+    # germline columns sit between the somatic and resistance columns
+    assert somatic_count_index < germline_index < germline_count_index < resistance_index
+
+    s1, s2 = rows
+    assert s1[somatic_index] == 'BRAF p.V600E;TP53 p.R273H'
+    assert s1[somatic_count_index] == '2'
+    assert s1[germline_index] == 'BRCA2 p.S1982fs'
+    assert s1[germline_count_index] == '1'
+    assert s1[mutation_count_index] == '3'
+
+    assert s2[somatic_index] == ''
+    assert s2[somatic_count_index] == '0'
+    assert s2[resistance_index] == 'EGFR p.T790M'
+    # Benign germline variants are not rolled up
+    assert s2[germline_index] == 'ATM p.R337H'
+    assert s2[germline_count_index] == '1'
+    assert s2[mutation_count_index] == '3'
+
+
+def test_process_clinical_data_germline_only_file(tmp_path):
+    # a germline-only annotated file has no ONCOGENIC column at all
+    germline_file = tmp_path / "germline.maf"
+    germline_file.write_text(
+        "\t".join(["Hugo_Symbol", "Tumor_Sample_Barcode", "HGVSp_Short", "PATHOGENIC (Germline)"]) + "\n"
+        + "\t".join(["BRCA1", "S1", "p.C61G", "Pathogenic"]) + "\n"
+    )
+
+    clinical_file = tmp_path / "clinical.txt"
+    clinical_file.write_text("SAMPLE_ID\nS1\n")
+
+    output_file = tmp_path / "clinical.out.txt"
+    AnnotatorCore.process_clinical_data(
+        [str(germline_file)], str(clinical_file), str(output_file)
+    )
+
+    header, rows = _read_clinical_output(output_file)
+    assert rows[0][header.index('GERMLINE_PATHOGENIC_MUTATIONS')] == 'BRCA1 p.C61G'
+    assert rows[0][header.index('#GERMLINE_PATHOGENIC_MUTATIONS')] == '1'
+    assert rows[0][header.index('#SOMATIC_ONCOGENIC_MUTATIONS')] == '0'

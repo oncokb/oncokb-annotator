@@ -1550,6 +1550,7 @@ def process_clinical_data(annotatedmutfiles, clinicalfile, outfile):
     samplepxlevels = {}
     sampleleveltreatments = {}
     sampledrivers = {}
+    sample_germline_pathogenic = {}
     sample_resistance = {}
     samplemutationswithdiagnosis = {}
     samplemutationswithprognosis = {}
@@ -1573,7 +1574,10 @@ def process_clinical_data(annotatedmutfiles, clinicalfile, outfile):
             ihugo = geIndexOfHeader(headers, HUGO_HEADERS)
             ihgvs = geIndexOfHeader(headers, HGVS_HEADERS)
             isample = geIndexOfHeader(headers, SAMPLE_HEADERS)
-            ioncogenic = headers['ONCOGENIC']
+            # ONCOGENIC is absent from germline-only annotated files, and
+            # PATHOGENIC (Germline) is absent from somatic-only ones
+            ioncogenic = geIndexOfHeader(headers, ['ONCOGENIC'])
+            ipathogenic = geIndexOfHeader(headers, [PATHOGENIC_HEADER])
 
             isfusion = (igeneA != -1 and igeneB != -1) or ifusion != -1
             ismutorcna = ihugo != -1 and ihgvs != -1
@@ -1589,14 +1593,20 @@ def process_clinical_data(annotatedmutfiles, clinicalfile, outfile):
                 sample = row[isample]
 
                 oncogenic = ""
-                if ioncogenic < len(row):
+                if 0 <= ioncogenic < len(row):
                     oncogenic = row[ioncogenic].lower()
+
+                pathogenic = ""
+                if 0 <= ipathogenic < len(row):
+                    pathogenic = row[ipathogenic].lower()
+
                 if sample not in samplelevels:
                     samplelevels[sample] = {}
                     sampledxlevels[sample] = []
                     samplepxlevels[sample] = []
                     sampleleveltreatments[sample] = {}
                     sampledrivers[sample] = []
+                    sample_germline_pathogenic[sample] = []
                     sample_resistance[sample] = []
                     sample_tx_sensitive_count[sample] = {}
                     sample_tx_resistance_count[sample] = {}
@@ -1633,6 +1643,8 @@ def process_clinical_data(annotatedmutfiles, clinicalfile, outfile):
                     sampledrivers[sample].append(variant)
                 if oncogenic == "resistance":
                     sample_resistance[sample].append(variant)
+                if pathogenic == "pathogenic" or pathogenic == "likely pathogenic":
+                    sample_germline_pathogenic[sample].append(variant)
 
                 for level in levels:
                     il = geIndexOfHeader(headers, [level])
@@ -1693,7 +1705,7 @@ def process_clinical_data(annotatedmutfiles, clinicalfile, outfile):
             outf.write('\t' + px_level)
         outf.write('\tHIGHEST_PX_LEVEL')
         outf.write(
-            '\tONCOGENIC_MUTATIONS\t#ONCOGENIC_MUTATIONS\tRESISTANCE_MUTATIONS\t#RESISTANCE_MUTATIONS\t#MUTATIONS_WITH_SENSITIVE_THERAPEUTIC_IMPLICATIONS\t#MUTATIONS_WITH_RESISTANCE_THERAPEUTIC_IMPLICATIONS\t#MUTATIONS_WITH_DIAGNOSTIC_IMPLICATIONS\t#MUTATIONS_WITH_PROGNOSTIC_IMPLICATIONS\t#MUTATIONS\n')
+            '\tSOMATIC_ONCOGENIC_MUTATIONS\t#SOMATIC_ONCOGENIC_MUTATIONS\tGERMLINE_PATHOGENIC_MUTATIONS\t#GERMLINE_PATHOGENIC_MUTATIONS\tRESISTANCE_MUTATIONS\t#RESISTANCE_MUTATIONS\t#MUTATIONS_WITH_SENSITIVE_THERAPEUTIC_IMPLICATIONS\t#MUTATIONS_WITH_RESISTANCE_THERAPEUTIC_IMPLICATIONS\t#MUTATIONS_WITH_DIAGNOSTIC_IMPLICATIONS\t#MUTATIONS_WITH_PROGNOSTIC_IMPLICATIONS\t#MUTATIONS\n')
         isample = geIndexOfHeader(headers, SAMPLE_HEADERS)
 
         for row in reader:
@@ -1756,14 +1768,19 @@ def process_clinical_data(annotatedmutfiles, clinicalfile, outfile):
                 alterationcount = samplealterationcount[sample]
 
             drivercount = 0
+            germline_pathogenic_count = 0
             resistance_count = 0
             diagnosiscount = 0
             prognosiscount = 0
             drivermutations = ""
+            germline_pathogenic_mutations = ""
             resistance_mutations = ""
             if sample in sampledrivers:
                 drivercount = len(sampledrivers[sample])
                 drivermutations = ";".join(sampledrivers[sample])
+            if sample in sample_germline_pathogenic:
+                germline_pathogenic_count = len(sample_germline_pathogenic[sample])
+                germline_pathogenic_mutations = ";".join(sample_germline_pathogenic[sample])
             if sample in sample_resistance:
                 resistance_count = len(sample_resistance[sample])
                 resistance_mutations = ";".join(sample_resistance[sample])
@@ -1774,6 +1791,8 @@ def process_clinical_data(annotatedmutfiles, clinicalfile, outfile):
 
             outf.write('\t' + drivermutations)
             outf.write('\t' + str(drivercount))
+            outf.write('\t' + germline_pathogenic_mutations)
+            outf.write('\t' + str(germline_pathogenic_count))
             outf.write('\t' + str(resistance_mutations))
             outf.write('\t' + str(resistance_count))
             outf.write('\t' + str(tx_sensitive_count))
