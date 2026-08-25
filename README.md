@@ -1,11 +1,19 @@
 
 ## Changelog
 
+### v4.1
+- **`ClinicalDataAnnotator` germline roll-up (backfill of a missed v4.0 change)**: the column renames and new germline columns below were documented as part of v4.0, but the change was never made to `ClinicalDataAnnotator.py` and v4.0 still emitted the old columns. It ships here.
+  - `ONCOGENIC_MUTATIONS` and `#ONCOGENIC_MUTATIONS` are renamed to `SOMATIC_ONCOGENIC_MUTATIONS` and `#SOMATIC_ONCOGENIC_MUTATIONS`.
+  - New `GERMLINE_PATHOGENIC_MUTATIONS` and `#GERMLINE_PATHOGENIC_MUTATIONS` columns list the variants annotated `Pathogenic` or `Likely Pathogenic`. See the [ClinicalDataAnnotator columns](#clinicaldataannotator) table for details.
+  - Annotated files containing only germline rows no longer fail, and `OncoKBPlots.py` still reads clinical files produced by v4.0 or earlier that carry the old `ONCOGENIC_MUTATIONS` column.
+- ⚠️ If you consume the `ClinicalDataAnnotator` output downstream, this is the release in which the column names actually change — update against v4.1, not v4.0.
+
 ### v4.0
 - **Germline annotation support**: `MafAnnotator.py` now routes rows with `Mutation_Status = germline` to dedicated germline API endpoints. See the [OncoKB™ API](#oncokb-api) section and the [`-q` query type table](#annotate-with-hgvsp_short-hgvsp-hgvsg-hgvsc-or-genomic-change) for supported formats.
 - **New `Mutation_Status` column routing**: for mixed somatic/germline MAF files, set `Mutation_Status` to `germline` per row to trigger germline annotation; all other values default to somatic.
 - **New germline columns**: germline rows now receive `PATHOGENIC`, `PENETRANCE`, and `GENOMIC_INDICATOR` columns. See the [Columns added](#columns-added) table for details.
-- ⚠️ **Breaking change** — **`ClinicalDataAnnotator` column renames**: `ONCOGENIC_MUTATIONS` and `#ONCOGENIC_MUTATIONS` have been renamed to `SOMATIC_ONCOGENIC_MUTATIONS` and `#SOMATIC_ONCOGENIC_MUTATIONS`. Two new columns are added: `GERMLINE_PATHOGENIC_MUTATIONS` and `#GERMLINE_PATHOGENIC_MUTATIONS`. See the [ClinicalDataAnnotator columns](#clinicaldataannotator) table for details. **Note:** if you were previously using the somatic annotation path for germline variants, the counts in `SOMATIC_ONCOGENIC_MUTATIONS` may be lower than in prior versions, as germline rows are now routed to the dedicated germline endpoints.
+- ⚠️ **`ClinicalDataAnnotator` column renames — documented here but not actually released until [v4.1](#v41)**. v4.0 still emits `ONCOGENIC_MUTATIONS` and `#ONCOGENIC_MUTATIONS`.
+- **Note:** if you were previously using the somatic annotation path for germline variants, the counts in the oncogenic mutation columns may be lower than in prior versions, as germline rows are now routed to the dedicated germline endpoints.
 
 <details>
 <summary>Older versions</summary>

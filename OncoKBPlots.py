@@ -35,7 +35,11 @@ def plotclinicalactionability(ax, annotatedclinicalfile, outfile, parameters):
         headers = readheaders(reader)
         isample = geIndexOfHeader(headers, SAMPLE_HEADERS)
         ilevel = headers['HIGHEST_LEVEL']
-        ioncogenic = headers['ONCOGENIC_MUTATIONS']
+        # ONCOGENIC_MUTATIONS is the pre-germline-support name, kept for
+        # clinical files annotated with an older version of the annotator
+        ioncogenic = geIndexOfHeader(headers, ['SOMATIC_ONCOGENIC_MUTATIONS', 'ONCOGENIC_MUTATIONS'])
+        if ioncogenic == -1:
+            raise KeyError('SOMATIC_ONCOGENIC_MUTATIONS')
         icat = headers[parameters["catogerycolumn"].upper()]  # e.g. "CANCER_TYPE"
 
         catsamplecount = {}

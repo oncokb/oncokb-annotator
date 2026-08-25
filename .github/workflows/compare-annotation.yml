@@ -46,7 +46,7 @@ jobs:
           INDIVIDUAL_CNA_DATA_NAME=data_individual_CNA.txt
 
           cd data || exit
-          curl -s -H "Authorization: token ${ONCOKB_OAUTH_TOKEN}" https://api.github.com/repos/knowledgesystems/oncokb-data/contents/annotation/annotator-test/data?ref=germline-annotator-data | jq -r '.[] | .download_url + " " + .name' | while IFS=' ' read -r downloadurl name; do
+          curl -s -H "Authorization: token ${ONCOKB_OAUTH_TOKEN}" https://api.github.com/repos/knowledgesystems/oncokb-data/contents/annotation/annotator-test/data?ref=master | jq -r '.[] | .download_url + " " + .name' | while IFS=' ' read -r downloadurl name; do
             if [[ "$name" == "$FIEL_NAME_PREFIX"* ]]; then
               curl -s "$downloadurl" -o $name
             fi
@@ -90,7 +90,7 @@ jobs:
           rm -f compare/*.txt
 
           cd compare || exit
-          curl -s -H "Authorization: token ${ONCOKB_OAUTH_TOKEN}" https://api.github.com/repos/knowledgesystems/oncokb-data/contents/annotation/annotator-test/annotation?ref=germline-annotator-data | jq -r '.[] | .download_url + " " + .name' | while IFS=' ' read -r downloadurl name; do
+          curl -s -H "Authorization: token ${ONCOKB_OAUTH_TOKEN}" https://api.github.com/repos/knowledgesystems/oncokb-data/contents/annotation/annotator-test/annotation?ref=master | jq -r '.[] | .download_url + " " + .name' | while IFS=' ' read -r downloadurl name; do
             if [[ "$name" == "$FIEL_NAME_PREFIX"* ]]; then
               curl -s "$downloadurl" -o $name
             fi
